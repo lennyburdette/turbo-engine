@@ -1,0 +1,138 @@
+# e2e.yml — Full end-to-end integration tests.
+# Builds all Docker images, starts the platform via Docker Compose,
+# runs smoke tests, captures traces, and uploads a CI report.
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: End-to-end integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Build all Docker images
+      # -----------------------------------------------------------------------
+      - name: Build Docker images
+        run: docker compose -f infra/docker/docker-compose.yml build
+        env:
+          DOCKER_BUILDKIT: "1"
+          COMPOSE_DOCKER_CLI_BUILD: "1"
+
+      # -----------------------------------------------------------------------
+      # Start the platform
+      # -----------------------------------------------------------------------
+      - name: Start platform
+        run: docker compose -f infra/docker/docker-compose.yml up -d
+
+      - name: Wait for services to be healthy
+        run: ./hack/scripts/wait-for-healthy.sh 180
+        env:
+          HEALTH_TIMEOUT: "180"
+
+      # -----------------------------------------------------------------------
+      # Run smoke tests
+      # -----------------------------------------------------------------------
+      - name: Run smoke tests
+        id: smoke
+        run: ./hack/scripts/run-smoke-tests.sh
+
+      # -----------------------------------------------------------------------
+      # Capture observability data (always, even if smoke tests fail)
+      # -----------------------------------------------------------------------
+      - name: Capture traces
+        if: always()
+        run: ./hack/scripts/capture-traces.sh
+        env:
+          LOOKBACK_MINUTES: "10"
+
+      - name: Capture screenshots
+        if: always()
+        run: ./hack/scripts/capture-screenshots.sh
+
+      # -----------------------------------------------------------------------
+      # Generate the CI report
+      # -----------------------------------------------------------------------
+      - name: Generate CI report
+        if: always()
+        run: ./hack/scripts/dump-ci-report.sh
+
+      - name: Print CI report
+        if: always()
+        run: cat ci-report/REPORT.md
+
+      # -----------------------------------------------------------------------
+      # Dump logs on failure for debugging
+      # -----------------------------------------------------------------------
+      - name: Dump service logs on failure
+        if: failure()
+        run: docker compose -f infra/docker/docker-compose.yml logs --no-color --tail=500
+
+      # -----------------------------------------------------------------------
+      # Upload artifacts
+      # -----------------------------------------------------------------------
+      - name: Upload CI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-report
+          path: ci-report/
+          retention-days: 14
+
+      # -----------------------------------------------------------------------
+      # Post summary to PR
+      # -----------------------------------------------------------------------
+      - name: Post smoke test summary
+        if: always()
+        run: |
+          if [ -f ci-report/smoke-results.json ]; then
+            total=$(grep -o '"total":\s*[0-9]*' ci-report/smoke-results.json | grep -o '[0-9]*' || echo "?")
+            passed=$(grep -o '"passed":\s*[0-9]*' ci-report/smoke-results.json | grep -o '[0-9]*' || echo "?")
+            failed=$(grep -o '"failed":\s*[0-9]*' ci-report/smoke-results.json | grep -o '[0-9]*' || echo "?")
+
+            if [ "$failed" = "0" ]; then
+              echo "### E2E Smoke Tests: All ${total} passed" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "### E2E Smoke Tests: ${failed} failed (${passed}/${total} passed)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Test | Status | Duration |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|------|--------|----------|" >> "$GITHUB_STEP_SUMMARY"
+
+            # Parse each test result from the JSON
+            while IFS= read -r line; do
+              name=$(echo "$line" | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+              status=$(echo "$line" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+              duration=$(echo "$line" | grep -o '"duration_ms":[0-9]*' | cut -d: -f2)
+              if [ -n "$name" ]; then
+                icon="✅"
+                [ "$status" = "fail" ] && icon="❌"
+                echo "| ${name} | ${icon} ${status} | ${duration:-0}ms |" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            done < <(grep -o '{[^}]*}' ci-report/smoke-results.json | grep '"name"')
+          else
+            echo "### E2E Smoke Tests: No results (tests may not have run)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Full CI report available in the **ci-report** artifact." >> "$GITHUB_STEP_SUMMARY"
+
+      # -----------------------------------------------------------------------
+      # Teardown
+      # -----------------------------------------------------------------------
+      - name: Stop platform
+        if: always()
+        run: docker compose -f infra/docker/docker-compose.yml down -v

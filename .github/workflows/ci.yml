@@ -1,0 +1,144 @@
+# ci.yml — Fast lint + unit tests on every push/PR.
+# Runs Go, Rust, and TypeScript checks in parallel.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.23"
+  RUST_VERSION: "1.83"
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Spec linting — fast, no heavy toolchains required
+  # ---------------------------------------------------------------------------
+  specs:
+    name: Lint specs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ github.token }}
+
+      - name: Lint protobuf
+        run: buf lint specs/protobuf
+
+  # ---------------------------------------------------------------------------
+  # Go services — test all four in a single job using the workspace
+  # ---------------------------------------------------------------------------
+  go:
+    name: Go services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: |
+            services/registry/go.sum
+            services/builder/go.sum
+            services/operator/go.sum
+            services/envmanager/go.sum
+
+      - name: Download dependencies
+        run: |
+          cd services/registry && go mod download &
+          cd services/builder && go mod download &
+          cd services/operator && go mod download &
+          cd services/envmanager && go mod download &
+          wait
+
+      - name: Vet
+        run: |
+          go vet ./services/registry/...
+          go vet ./services/builder/...
+          go vet ./services/operator/...
+          go vet ./services/envmanager/...
+
+      - name: Test with race detector
+        run: |
+          go test -race -count=1 -coverprofile=coverage-registry.out ./services/registry/...
+          go test -race -count=1 -coverprofile=coverage-builder.out ./services/builder/...
+          go test -race -count=1 -coverprofile=coverage-operator.out ./services/operator/...
+          go test -race -count=1 -coverprofile=coverage-envmanager.out ./services/envmanager/...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: coverage-*.out
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Rust gateway
+  # ---------------------------------------------------------------------------
+  rust:
+    name: Gateway (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/gateway
+
+      - name: Check formatting
+        working-directory: services/gateway
+        run: cargo fmt --check
+
+      - name: Clippy
+        working-directory: services/gateway
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        working-directory: services/gateway
+        run: cargo test --all-targets
+
+  # ---------------------------------------------------------------------------
+  # TypeScript — CLI + Console + Explorer
+  # ---------------------------------------------------------------------------
+  typescript:
+    name: TypeScript (CLI + UIs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm -r typecheck
+
+      - name: Test
+        run: pnpm -r test
+
+      - name: Build
+        run: pnpm -r build
