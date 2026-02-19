@@ -1,0 +1,183 @@
+# APIGraph Custom Resource Definition.
+# Matches the spec defined in specs/protobuf/turboengine/v1/operator.proto.
+#
+# An APIGraph represents a deployed dependency tree: the root package, its
+# resolved components, and the ingress/gateway configuration for serving them.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: apigraphs.turboengine.io
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+spec:
+  group: turboengine.io
+  names:
+    kind: APIGraph
+    listKind: APIGraphList
+    plural: apigraphs
+    singular: apigraph
+    shortNames:
+      - ag
+    categories:
+      - turbo-engine
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Root Package
+          type: string
+          jsonPath: .spec.rootPackage
+        - name: Environment
+          type: string
+          jsonPath: .spec.environmentId
+        - name: Preview URL
+          type: string
+          jsonPath: .status.previewUrl
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: >-
+            APIGraph represents a deployed dependency tree managed by the
+            Turbo Engine operator.
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required:
+                - environmentId
+                - rootPackage
+              properties:
+                environmentId:
+                  type: string
+                  description: The environment (fork) this graph belongs to.
+                buildId:
+                  type: string
+                  description: The build that produced the artifact set.
+                rootPackage:
+                  type: string
+                  description: Name of the root package in the graph.
+                components:
+                  type: array
+                  description: Resolved components to deploy.
+                  items:
+                    type: object
+                    required:
+                      - packageName
+                      - packageVersion
+                    properties:
+                      packageName:
+                        type: string
+                      packageVersion:
+                        type: string
+                      kind:
+                        type: string
+                        description: "Package kind (e.g. graphql-subgraph, rest-api, static-assets)."
+                      artifactHash:
+                        type: string
+                        description: Content-addressable hash of the build artifact.
+                      runtime:
+                        type: object
+                        properties:
+                          replicas:
+                            type: integer
+                            minimum: 0
+                            default: 1
+                          resources:
+                            type: object
+                            properties:
+                              cpuRequest:
+                                type: string
+                              cpuLimit:
+                                type: string
+                              memoryRequest:
+                                type: string
+                              memoryLimit:
+                                type: string
+                          env:
+                            type: object
+                            additionalProperties:
+                              type: string
+                          annotations:
+                            type: object
+                            additionalProperties:
+                              type: string
+                ingress:
+                  type: object
+                  description: Gateway / ingress configuration.
+                  properties:
+                    host:
+                      type: string
+                    routes:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - path
+                          - targetComponent
+                        properties:
+                          path:
+                            type: string
+                          targetComponent:
+                            type: string
+                          targetPort:
+                            type: integer
+                    tls:
+                      type: object
+                      properties:
+                        secretName:
+                          type: string
+                        autoCert:
+                          type: boolean
+                          default: false
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  description: "Current phase: Pending, Deploying, Running, Degraded, Failed."
+                  enum:
+                    - Pending
+                    - Deploying
+                    - Running
+                    - Degraded
+                    - Failed
+                componentStatuses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      packageName:
+                        type: string
+                      phase:
+                        type: string
+                        enum:
+                          - Pending
+                          - Running
+                          - Failed
+                      readyReplicas:
+                        type: integer
+                      desiredReplicas:
+                        type: integer
+                      message:
+                        type: string
+                previewUrl:
+                  type: string
+                  description: URL where this environment can be previewed.
+                message:
+                  type: string
+                  description: Human-readable status message.

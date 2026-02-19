@@ -1,0 +1,140 @@
+# https://taskfile.dev
+version: "3"
+
+vars:
+  REGISTRY_PORT: 8081
+  BUILDER_PORT: 8082
+  ENVMANAGER_PORT: 8083
+  GATEWAY_PORT: 8080
+  UI_PORT: 3000
+  EXPLORER_PORT: 3001
+  OTEL_COLLECTOR_PORT: 4317
+  JAEGER_PORT: 16686
+
+includes:
+  specs:
+    taskfile: specs/Taskfile.yml
+    dir: specs
+  registry:
+    taskfile: services/registry/Taskfile.yml
+    dir: services/registry
+  builder:
+    taskfile: services/builder/Taskfile.yml
+    dir: services/builder
+  operator:
+    taskfile: services/operator/Taskfile.yml
+    dir: services/operator
+  envmanager:
+    taskfile: services/envmanager/Taskfile.yml
+    dir: services/envmanager
+  gateway:
+    taskfile: services/gateway/Taskfile.yml
+    dir: services/gateway
+  cli:
+    taskfile: tools/cli/Taskfile.yml
+    dir: tools/cli
+  console:
+    taskfile: ui/console/Taskfile.yml
+    dir: ui/console
+  explorer:
+    taskfile: ui/explorer/Taskfile.yml
+    dir: ui/explorer
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  # --- Spec generation ---
+  generate:
+    desc: Generate code from all specs (protobuf, JSON Schema, OpenAPI)
+    cmds:
+      - task: specs:generate
+
+  # --- Build all ---
+  build:
+    desc: Build all services and tools
+    deps: [generate]
+    cmds:
+      - task: registry:build
+      - task: builder:build
+      - task: operator:build
+      - task: envmanager:build
+      - task: gateway:build
+      - task: cli:build
+      - task: console:build
+
+  # --- Test all ---
+  test:
+    desc: Run all tests
+    cmds:
+      - task: specs:lint
+      - task: registry:test
+      - task: builder:test
+      - task: operator:test
+      - task: envmanager:test
+      - task: gateway:test
+      - task: cli:test
+      - task: console:test
+
+  # --- Lint all ---
+  lint:
+    desc: Lint all code
+    cmds:
+      - task: specs:lint
+      - task: registry:lint
+      - task: builder:lint
+      - task: operator:lint
+      - task: envmanager:lint
+      - task: gateway:lint
+      - task: cli:lint
+      - task: console:lint
+
+  # --- Docker compose for local dev ---
+  dev:up:
+    desc: Start all services in Docker Compose (with observability)
+    cmds:
+      - docker compose -f infra/docker/docker-compose.yml up -d --build
+
+  dev:down:
+    desc: Stop all services
+    cmds:
+      - docker compose -f infra/docker/docker-compose.yml down
+
+  dev:logs:
+    desc: Tail logs from all services
+    cmds:
+      - docker compose -f infra/docker/docker-compose.yml logs -f
+
+  # --- CI harness for Claude Code ---
+  ci:harness:
+    desc: Run the full platform in CI mode, capture logs/traces/screenshots
+    cmds:
+      - task: dev:up
+      - hack/scripts/wait-for-healthy.sh
+      - hack/scripts/run-smoke-tests.sh
+      - hack/scripts/capture-traces.sh
+      - hack/scripts/capture-screenshots.sh
+      - hack/scripts/dump-ci-report.sh
+    ignore_error: true
+
+  ci:report:
+    desc: Generate a human/LLM-readable CI report
+    cmds:
+      - hack/scripts/dump-ci-report.sh
+
+  # --- Example systems ---
+  example:petstore:
+    desc: Deploy the petstore example system
+    cmds:
+      - task: dev:up
+      - hack/scripts/wait-for-healthy.sh
+      - tools/cli/bin/turbo-engine publish --dir examples/petstore
+
+  example:federation:
+    desc: Deploy the GraphQL federation example
+    cmds:
+      - task: dev:up
+      - hack/scripts/wait-for-healthy.sh
+      - tools/cli/bin/turbo-engine publish --dir examples/federation

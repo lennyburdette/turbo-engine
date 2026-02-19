@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://turbo-engine.dev/schemas/package-manifest.json",
+  "title": "Turbo Engine Package Manifest",
+  "description": "The turbo-engine.yaml manifest file that developers author to describe a package.",
+  "type": "object",
+  "required": ["name", "kind"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*(/[a-z][a-z0-9-]*)?$",
+      "description": "Package name, optionally namespaced (e.g., 'petstore/users-api')."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "graphql-subgraph",
+        "openapi-service",
+        "graphql-operations",
+        "postman-collection",
+        "graphql-supergraph",
+        "workflow-engine",
+        "ingress",
+        "egress"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version. Omit to auto-increment."
+    },
+    "schema": {
+      "type": "string",
+      "description": "Path to the schema file (relative to manifest), or inline schema string."
+    },
+    "upstream": {
+      "$ref": "#/$defs/upstream"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dependency"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "dependency": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": {
+          "type": "string",
+          "description": "Semver range constraint (e.g., '^1.0.0'). Omit for 'latest'."
+        }
+      }
+    },
+    "upstream": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "auth": {
+          "oneOf": [
+            { "$ref": "#/$defs/bearerAuth" },
+            { "$ref": "#/$defs/oauth2Auth" },
+            { "$ref": "#/$defs/mtlsAuth" }
+          ]
+        }
+      }
+    },
+    "bearerAuth": {
+      "type": "object",
+      "required": ["type", "tokenSecretRef"],
+      "properties": {
+        "type": { "const": "bearer" },
+        "tokenSecretRef": { "type": "string" }
+      }
+    },
+    "oauth2Auth": {
+      "type": "object",
+      "required": ["type", "tokenEndpoint", "clientIdSecretRef", "clientSecretSecretRef"],
+      "properties": {
+        "type": { "const": "oauth2-client-credentials" },
+        "tokenEndpoint": { "type": "string", "format": "uri" },
+        "clientIdSecretRef": { "type": "string" },
+        "clientSecretSecretRef": { "type": "string" },
+        "scopes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "mtlsAuth": {
+      "type": "object",
+      "required": ["type", "certSecretRef", "keySecretRef"],
+      "properties": {
+        "type": { "const": "mtls" },
+        "certSecretRef": { "type": "string" },
+        "keySecretRef": { "type": "string" },
+        "caSecretRef": { "type": "string" }
+      }
+    }
+  }
+}

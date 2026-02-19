@@ -1,0 +1,13 @@
+{
+  "name": "@turbo-engine/specs",
+  "private": true,
+  "scripts": {
+    "generate": "task generate",
+    "lint": "task lint"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^15.0.0",
+    "openapi-typescript": "^7.0.0",
+    "@redocly/cli": "^1.0.0"
+  }
+}

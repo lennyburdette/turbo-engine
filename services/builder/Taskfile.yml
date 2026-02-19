@@ -1,0 +1,39 @@
+# https://taskfile.dev
+version: "3"
+
+vars:
+  BINARY: builder
+  PORT: 8082
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  build:
+    desc: Build the builder service binary
+    cmds:
+      - go build -o bin/{{.BINARY}} ./cmd/builder
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go test -race -count=1 ./...
+
+  lint:
+    desc: Lint the codebase
+    cmds:
+      - golangci-lint run ./...
+
+  run:
+    desc: Run the builder service locally
+    env:
+      PORT: "{{.PORT}}"
+    cmds:
+      - go run ./cmd/builder
+
+  tidy:
+    desc: Tidy go modules
+    cmds:
+      - go mod tidy

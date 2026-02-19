@@ -1,0 +1,121 @@
+{
+  "info": {
+    "name": "Petstore API",
+    "description": "A Postman collection that covers every endpoint in the Petstore OpenAPI schema.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://petstore.example.com/api/v1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Pets",
+      "item": [
+        {
+          "name": "List pets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pets?status=available&limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets"],
+              "query": [
+                { "key": "status", "value": "available" },
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" }
+              ]
+            },
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ]
+          }
+        },
+        {
+          "name": "Create a pet",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/pets",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets"]
+            },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fido\",\n  \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n  \"status\": \"available\",\n  \"tagIds\": [\"a1b2c3d4-0000-0000-0000-000000000010\"],\n  \"photoUrls\": [\"https://example.com/photos/fido.jpg\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get a pet by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pets/a1b2c3d4-0000-0000-0000-000000000099",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets", "a1b2c3d4-0000-0000-0000-000000000099"]
+            },
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ]
+          }
+        },
+        {
+          "name": "Update a pet",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/pets/a1b2c3d4-0000-0000-0000-000000000099",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets", "a1b2c3d4-0000-0000-0000-000000000099"]
+            },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fido (updated)\",\n  \"categoryId\": \"a1b2c3d4-0000-0000-0000-000000000001\",\n  \"status\": \"adopted\",\n  \"tagIds\": [\"a1b2c3d4-0000-0000-0000-000000000010\", \"a1b2c3d4-0000-0000-0000-000000000011\"],\n  \"photoUrls\": [\"https://example.com/photos/fido-v2.jpg\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete a pet",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/pets/a1b2c3d4-0000-0000-0000-000000000099",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets", "a1b2c3d4-0000-0000-0000-000000000099"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            },
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

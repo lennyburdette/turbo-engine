@@ -1,0 +1,129 @@
+# Turbo Engine Operator deployment.
+# The operator watches APIGraph CRDs and reconciles the deployed components.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: turbo-engine-operator
+  namespace: turbo-engine
+  labels:
+    app.kubernetes.io/name: operator
+    app.kubernetes.io/component: controller
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: turbo-engine-operator
+  labels:
+    app.kubernetes.io/name: operator
+rules:
+  # APIGraph CRD access.
+  - apiGroups: ["turboengine.io"]
+    resources: ["apigraphs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["turboengine.io"]
+    resources: ["apigraphs/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["turboengine.io"]
+    resources: ["apigraphs/finalizers"]
+    verbs: ["update"]
+  # Manage workloads created for components.
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Networking for ingress routes.
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Events for status reporting.
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: turbo-engine-operator
+  labels:
+    app.kubernetes.io/name: operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: turbo-engine-operator
+subjects:
+  - kind: ServiceAccount
+    name: turbo-engine-operator
+    namespace: turbo-engine
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: turbo-engine-operator
+  namespace: turbo-engine
+  labels:
+    app.kubernetes.io/name: operator
+    app.kubernetes.io/component: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: operator
+        app.kubernetes.io/component: controller
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8084"
+    spec:
+      serviceAccountName: turbo-engine-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: operator
+          image: turbo-engine/operator:latest
+          ports:
+            - name: http
+              containerPort: 8084
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8084"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: LOG_FORMAT
+              value: "json"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-collector.turbo-engine.svc.cluster.local:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "operator"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+      terminationGracePeriodSeconds: 30

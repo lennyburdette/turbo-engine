@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package turboengine.v1;
+
+option go_package = "github.com/lennyburdette/turbo-engine/specs/gen/go/turboengine/v1";
+
+import "turboengine/v1/package.proto";
+import "google/protobuf/timestamp.proto";
+
+// --- Environment Manager Service ---
+// Manages "forks" — isolated environments for testing proposed changes,
+// like Netlify preview deploys or Railway environments.
+
+service EnvironmentService {
+  // Create a new environment (fork of a base dependency tree).
+  rpc CreateEnvironment(CreateEnvironmentRequest) returns (CreateEnvironmentResponse);
+
+  // Get environment details.
+  rpc GetEnvironment(GetEnvironmentRequest) returns (GetEnvironmentResponse);
+
+  // List all environments.
+  rpc ListEnvironments(ListEnvironmentsRequest) returns (ListEnvironmentsResponse);
+
+  // Apply package overrides to an environment (propose a change).
+  rpc ApplyOverrides(ApplyOverridesRequest) returns (ApplyOverridesResponse);
+
+  // Promote an environment's overrides back to the base.
+  rpc Promote(PromoteRequest) returns (PromoteResponse);
+
+  // Tear down an environment.
+  rpc DeleteEnvironment(DeleteEnvironmentRequest) returns (DeleteEnvironmentResponse);
+}
+
+enum EnvironmentStatus {
+  ENVIRONMENT_STATUS_UNSPECIFIED = 0;
+  ENVIRONMENT_STATUS_CREATING = 1;
+  ENVIRONMENT_STATUS_READY = 2;
+  ENVIRONMENT_STATUS_BUILDING = 3;
+  ENVIRONMENT_STATUS_FAILED = 4;
+  ENVIRONMENT_STATUS_DELETING = 5;
+}
+
+// PackageOverride replaces or patches a package in the dependency tree.
+message PackageOverride {
+  string package_name = 1;
+  // Provide a full replacement package or a patch.
+  oneof override {
+    Package replacement = 2;
+    bytes schema_patch = 3; // for partial schema updates
+  }
+}
+
+message Environment {
+  string id = 1;
+  string name = 2;
+
+  // The base dependency tree this environment forks from.
+  string base_root_package = 3;
+  string base_root_version = 4;
+
+  // Git-like metadata
+  string branch = 5;
+  string created_by = 6;
+
+  EnvironmentStatus status = 7;
+  repeated PackageOverride overrides = 8;
+
+  // The latest build for this environment, if any.
+  string current_build_id = 9;
+
+  // URL where the environment is accessible.
+  string preview_url = 10;
+
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message CreateEnvironmentRequest {
+  string name = 1;
+  string base_root_package = 2;
+  string base_root_version = 3;
+  string branch = 4;
+  string created_by = 5;
+  repeated PackageOverride overrides = 6;
+}
+
+message CreateEnvironmentResponse {
+  Environment environment = 1;
+}
+
+message GetEnvironmentRequest {
+  string environment_id = 1;
+}
+
+message GetEnvironmentResponse {
+  Environment environment = 1;
+}
+
+message ListEnvironmentsRequest {
+  string branch = 1;
+  string created_by = 2;
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListEnvironmentsResponse {
+  repeated Environment environments = 1;
+  string next_page_token = 2;
+}
+
+message ApplyOverridesRequest {
+  string environment_id = 1;
+  repeated PackageOverride overrides = 2;
+  bool trigger_build = 3; // if true, kick off a build immediately
+}
+
+message ApplyOverridesResponse {
+  Environment environment = 1;
+}
+
+message PromoteRequest {
+  string environment_id = 1;
+}
+
+message PromoteResponse {
+  // The new versions published to the base.
+  repeated Package promoted_packages = 1;
+}
+
+message DeleteEnvironmentRequest {
+  string environment_id = 1;
+}
+
+message DeleteEnvironmentResponse {}

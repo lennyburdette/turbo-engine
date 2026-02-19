@@ -1,0 +1,16 @@
+name: federation/products
+kind: graphql-subgraph
+version: "1.0.0"
+
+schema: schema.graphql
+
+upstream:
+  url: https://products.internal.example.com/graphql
+  auth:
+    type: bearer
+    tokenSecretRef: products-svc-token
+
+metadata:
+  title: "Products Subgraph"
+  description: "Owns Product and Category entities for the catalog domain."
+  owner: catalog-team

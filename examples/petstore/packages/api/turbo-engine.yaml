@@ -1,0 +1,16 @@
+name: petstore/api
+kind: openapi-service
+version: "1.0.0"
+
+schema: schema.openapi.yaml
+
+upstream:
+  url: https://petstore.example.com/api/v1
+  auth:
+    type: bearer
+    tokenSecretRef: petstore-api-token
+
+metadata:
+  title: "Petstore API"
+  description: "OpenAPI 3.1 definition for the Petstore service — pets, categories, and tags."
+  owner: api-team

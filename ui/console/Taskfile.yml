@@ -1,0 +1,44 @@
+# https://taskfile.dev
+version: "3"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  build:
+    desc: Build the console for production
+    cmds:
+      - pnpm run build
+    sources:
+      - src/**/*
+      - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - package.json
+
+  test:
+    desc: Run tests
+    cmds:
+      - pnpm run test
+
+  lint:
+    desc: Lint source code
+    cmds:
+      - pnpm run lint
+
+  typecheck:
+    desc: Run TypeScript type checking
+    cmds:
+      - pnpm run typecheck
+
+  dev:
+    desc: Start development server
+    cmds:
+      - pnpm run dev
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf dist/

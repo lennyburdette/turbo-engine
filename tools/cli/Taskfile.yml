@@ -1,0 +1,39 @@
+# https://taskfile.dev
+version: "3"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  build:
+    desc: Build the CLI
+    cmds:
+      - pnpm build
+    sources:
+      - "src/**/*.ts"
+      - tsup.config.ts
+      - package.json
+    generates:
+      - dist/index.js
+
+  test:
+    desc: Run all tests
+    cmds:
+      - pnpm test
+
+  lint:
+    desc: Run ESLint
+    cmds:
+      - pnpm lint
+
+  typecheck:
+    desc: Run TypeScript type checking
+    cmds:
+      - pnpm typecheck
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf dist/

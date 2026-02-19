@@ -1,0 +1,195 @@
+# ──────────────────────────────────────────────
+# Queries
+# ──────────────────────────────────────────────
+
+"""Fetch a single user along with their most recent reviews."""
+query GetUserWithReviews($userId: ID!, $reviewLimit: Int = 5) {
+  user(id: $userId) {
+    id
+    username
+    displayName
+    email
+    role
+    avatarUrl
+    reviews(limit: $reviewLimit) {
+      nodes {
+        id
+        title
+        rating
+        product {
+          id
+          name
+        }
+        createdAt
+      }
+      totalCount
+    }
+    averageRating
+  }
+}
+
+"""Browse the product catalog with optional filters."""
+query SearchProducts(
+  $search: String
+  $categoryId: ID
+  $inStock: Boolean
+  $limit: Int = 20
+  $offset: Int = 0
+) {
+  products(
+    search: $search
+    categoryId: $categoryId
+    inStock: $inStock
+    limit: $limit
+    offset: $offset
+  ) {
+    nodes {
+      id
+      name
+      description
+      price {
+        amount
+        currency
+      }
+      category {
+        id
+        name
+        slug
+      }
+      sku
+      inStock
+      imageUrl
+      averageRating
+      reviewCount
+    }
+    totalCount
+  }
+}
+
+"""Load full product details including reviews."""
+query GetProductDetails($productId: ID!, $reviewLimit: Int = 10) {
+  product(id: $productId) {
+    id
+    name
+    description
+    price {
+      amount
+      currency
+    }
+    category {
+      id
+      name
+    }
+    sku
+    inStock
+    imageUrl
+    averageRating
+    reviewCount
+    ratingsSummary
+    reviews(limit: $reviewLimit) {
+      nodes {
+        id
+        title
+        body
+        rating
+        author {
+          id
+          username
+          displayName
+          avatarUrl
+        }
+        createdAt
+      }
+      totalCount
+    }
+  }
+}
+
+"""Retrieve all product categories for navigation menus."""
+query ListCategories {
+  categories {
+    id
+    name
+    slug
+    parentId
+  }
+}
+
+"""Paginated user list for admin dashboards."""
+query ListUsers($role: Role, $limit: Int = 20, $offset: Int = 0) {
+  users(role: $role, limit: $limit, offset: $offset) {
+    nodes {
+      id
+      username
+      email
+      role
+      createdAt
+    }
+    totalCount
+  }
+}
+
+# ──────────────────────────────────────────────
+# Mutations
+# ──────────────────────────────────────────────
+
+"""Register a new user account."""
+mutation RegisterUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    id
+    username
+    email
+    role
+    createdAt
+  }
+}
+
+"""Add a new product to the catalog."""
+mutation AddProduct($input: CreateProductInput!) {
+  createProduct(input: $input) {
+    id
+    name
+    sku
+    price {
+      amount
+      currency
+    }
+    category {
+      id
+      name
+    }
+    inStock
+  }
+}
+
+"""Submit a review for a product."""
+mutation SubmitReview($input: CreateReviewInput!) {
+  createReview(input: $input) {
+    id
+    title
+    body
+    rating
+    author {
+      id
+      username
+    }
+    product {
+      id
+      name
+      averageRating
+      reviewCount
+    }
+    createdAt
+  }
+}
+
+"""Update an existing review."""
+mutation EditReview($reviewId: ID!, $input: UpdateReviewInput!) {
+  updateReview(id: $reviewId, input: $input) {
+    id
+    title
+    body
+    rating
+    updatedAt
+  }
+}

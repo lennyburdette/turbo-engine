@@ -1,0 +1,42 @@
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go
+vendor/
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Rust
+target/
+
+# Generated code
+specs/gen/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/
+
+# CI artifacts (kept in CI but not committed)
+ci-report/
+screenshots/
+traces/
+
+# Env
+.env
+.env.local

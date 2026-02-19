@@ -1,0 +1,14 @@
+name: petstore
+kind: ingress
+version: "1.0.0"
+
+dependencies:
+  - name: petstore/api
+    version: "^1.0.0"
+  - name: petstore/client
+    version: "^1.0.0"
+
+metadata:
+  title: "Petstore Ingress"
+  description: "Aggregates the Petstore OpenAPI service and its companion Postman collection."
+  team: platform-examples

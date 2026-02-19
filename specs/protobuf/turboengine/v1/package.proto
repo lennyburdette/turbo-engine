@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package turboengine.v1;
+
+option go_package = "github.com/lennyburdette/turbo-engine/specs/gen/go/turboengine/v1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// --- Package domain model ---
+
+// PackageKind classifies what a package provides to the platform.
+enum PackageKind {
+  PACKAGE_KIND_UNSPECIFIED = 0;
+
+  // Upstream API providers
+  PACKAGE_KIND_GRAPHQL_SUBGRAPH = 1;
+  PACKAGE_KIND_OPENAPI_SERVICE = 2;
+
+  // Downstream clients
+  PACKAGE_KIND_GRAPHQL_OPERATIONS = 3;
+  PACKAGE_KIND_POSTMAN_COLLECTION = 4;
+
+  // Orchestration
+  PACKAGE_KIND_GRAPHQL_SUPERGRAPH = 5;
+  PACKAGE_KIND_WORKFLOW_ENGINE = 6;
+
+  // Networking
+  PACKAGE_KIND_INGRESS = 7;
+  PACKAGE_KIND_EGRESS = 8;
+}
+
+// Package is the fundamental unit of the platform.
+// It describes an API component and its dependencies.
+message Package {
+  string id = 1;
+  string name = 2;
+  string namespace = 3;
+  PackageKind kind = 4;
+
+  // Semantic version (e.g., "1.2.3" or "0.0.0-dev.abc123")
+  string version = 5;
+
+  // Schema payload — the contents depend on `kind`.
+  // For GRAPHQL_SUBGRAPH: SDL string
+  // For OPENAPI_SERVICE: OpenAPI YAML/JSON
+  // For GRAPHQL_OPERATIONS: persisted query manifest
+  // For GRAPHQL_SUPERGRAPH: composed supergraph SDL
+  // For WORKFLOW_ENGINE: workflow definition
+  // For INGRESS/EGRESS: routing rules
+  bytes schema = 6;
+
+  // Networking and authentication details for upstream APIs
+  UpstreamConfig upstream_config = 7;
+
+  // Dependencies on other packages (by name, with version constraints)
+  repeated Dependency dependencies = 8;
+
+  // Arbitrary metadata for extensibility
+  google.protobuf.Struct metadata = 9;
+
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+// Dependency expresses a requirement on another package.
+message Dependency {
+  string package_name = 1;
+  string version_constraint = 2; // semver range, e.g., "^1.0.0"
+}
+
+// UpstreamConfig describes how to reach and authenticate with an upstream API.
+message UpstreamConfig {
+  string url = 1;
+  map<string, string> headers = 2;
+
+  oneof auth {
+    BearerAuth bearer = 3;
+    OAuth2ClientCredentials oauth2_cc = 4;
+    MutualTLS mtls = 5;
+  }
+}
+
+message BearerAuth {
+  string token_secret_ref = 1; // reference to a K8s Secret
+}
+
+message OAuth2ClientCredentials {
+  string token_endpoint = 1;
+  string client_id_secret_ref = 2;
+  string client_secret_secret_ref = 3;
+  repeated string scopes = 4;
+}
+
+message MutualTLS {
+  string cert_secret_ref = 1;
+  string key_secret_ref = 2;
+  string ca_secret_ref = 3;
+}

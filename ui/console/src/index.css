@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/*
+ * Custom utilities for the console UI
+ */
+
+/* Syntax highlighting for schema viewer */
+.syntax-keyword {
+  color: #8b5cf6;
+  font-weight: 600;
+}
+.syntax-type {
+  color: #0891b2;
+}
+.syntax-string {
+  color: #059669;
+}
+.syntax-comment {
+  color: #9ca3af;
+  font-style: italic;
+}
+.syntax-field {
+  color: #2563eb;
+}
+.syntax-directive {
+  color: #d97706;
+}
+.syntax-punctuation {
+  color: #6b7280;
+}
+
+/* Log viewer auto-scroll container */
+.log-viewer {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}

@@ -1,0 +1,18 @@
+name: federation/operations
+kind: graphql-operations
+version: "1.0.0"
+
+schema: operations.graphql
+
+dependencies:
+  - name: federation/users
+    version: "^1.0.0"
+  - name: federation/products
+    version: "^1.0.0"
+  - name: federation/reviews
+    version: "^1.0.0"
+
+metadata:
+  title: "Supergraph Operations"
+  description: "Curated set of queries and mutations that exercise the full federated supergraph."
+  owner: developer-experience

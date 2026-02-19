@@ -1,0 +1,49 @@
+# Dev overlay — reduced resource requirements for local development
+# and Kind/Minikube clusters.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: turbo-engine-dev
+
+resources:
+  - ../../base
+
+namePrefix: dev-
+
+commonLabels:
+  app.kubernetes.io/instance: dev
+
+# Patch the operator deployment with reduced resources and debug logging.
+patches:
+  - target:
+      kind: Deployment
+      name: turbo-engine-operator
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: turbo-engine-operator
+      spec:
+        replicas: 1
+        template:
+          spec:
+            containers:
+              - name: operator
+                resources:
+                  requests:
+                    cpu: 50m
+                    memory: 64Mi
+                  limits:
+                    cpu: 200m
+                    memory: 256Mi
+                env:
+                  - name: LOG_LEVEL
+                    value: "debug"
+                  - name: PORT
+                    value: "8084"
+                  - name: LOG_FORMAT
+                    value: "json"
+                  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                    value: "http://otel-collector.turbo-engine-dev.svc.cluster.local:4317"
+                  - name: OTEL_SERVICE_NAME
+                    value: "operator"

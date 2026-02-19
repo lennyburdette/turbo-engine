@@ -1,0 +1,86 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
+
+type Query {
+  """Look up a product by its unique ID."""
+  product(id: ID!): Product
+
+  """Search or browse the product catalog."""
+  products(
+    categoryId: ID
+    search: String
+    inStock: Boolean
+    limit: Int = 20
+    offset: Int = 0
+  ): ProductConnection!
+
+  """List all product categories."""
+  categories: [Category!]!
+}
+
+type Mutation {
+  """Add a new product to the catalog."""
+  createProduct(input: CreateProductInput!): Product!
+
+  """Update an existing product's details or inventory."""
+  updateProduct(id: ID!, input: UpdateProductInput!): Product!
+}
+
+type Product @key(fields: "id") {
+  id: ID!
+  name: String!
+  description: String
+  price: Price!
+  category: Category!
+  sku: String!
+  inStock: Boolean!
+  imageUrl: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Price @shareable {
+  amount: Int!
+  currency: CurrencyCode!
+}
+
+type Category @key(fields: "id") {
+  id: ID!
+  name: String!
+  slug: String!
+  parentId: ID
+}
+
+type ProductConnection {
+  nodes: [Product!]!
+  totalCount: Int!
+}
+
+input CreateProductInput {
+  name: String!
+  description: String
+  priceAmount: Int!
+  priceCurrency: CurrencyCode = USD
+  categoryId: ID!
+  sku: String!
+  imageUrl: String
+}
+
+input UpdateProductInput {
+  name: String
+  description: String
+  priceAmount: Int
+  priceCurrency: CurrencyCode
+  categoryId: ID
+  inStock: Boolean
+  imageUrl: String
+}
+
+enum CurrencyCode {
+  USD
+  EUR
+  GBP
+  JPY
+}
+
+scalar DateTime

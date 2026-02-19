@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package turboengine.v1;
+
+option go_package = "github.com/lennyburdette/turbo-engine/specs/gen/go/turboengine/v1";
+
+import "turboengine/v1/package.proto";
+
+// --- Package Registry Service ---
+// The registry stores and retrieves packages.
+
+service RegistryService {
+  // Publish a new package version.
+  rpc Publish(PublishRequest) returns (PublishResponse);
+
+  // Get a specific package by name and version.
+  rpc GetPackage(GetPackageRequest) returns (GetPackageResponse);
+
+  // List packages with optional filters.
+  rpc ListPackages(ListPackagesRequest) returns (ListPackagesResponse);
+
+  // Resolve a dependency tree from a root package.
+  rpc ResolveDependencies(ResolveDependenciesRequest) returns (ResolveDependenciesResponse);
+
+  // Yank (soft-delete) a package version.
+  rpc YankPackage(YankPackageRequest) returns (YankPackageResponse);
+}
+
+message PublishRequest {
+  Package package = 1;
+}
+
+message PublishResponse {
+  Package package = 1;
+}
+
+message GetPackageRequest {
+  string name = 1;
+  string version = 2; // exact version or "latest"
+  string namespace = 3;
+}
+
+message GetPackageResponse {
+  Package package = 1;
+}
+
+message ListPackagesRequest {
+  string namespace = 1;
+  PackageKind kind = 2;
+  string name_prefix = 3;
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListPackagesResponse {
+  repeated Package packages = 1;
+  string next_page_token = 2;
+}
+
+message ResolveDependenciesRequest {
+  string root_package_name = 1;
+  string root_package_version = 2;
+  string namespace = 3;
+}
+
+message ResolveDependenciesResponse {
+  // Topologically sorted list of packages in the dependency tree.
+  repeated Package packages = 1;
+}
+
+message YankPackageRequest {
+  string name = 1;
+  string version = 2;
+  string namespace = 3;
+}
+
+message YankPackageResponse {}

@@ -1,0 +1,292 @@
+openapi: "3.1.0"
+info:
+  title: Petstore API
+  version: "1.0.0"
+  description: |
+    A small but realistic pet store API that supports full CRUD on pets,
+    read-only access to categories, and tag management.
+  contact:
+    name: API Team
+    email: api-team@example.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: https://petstore.example.com/api/v1
+    description: Production
+
+tags:
+  - name: pets
+    description: Operations on pets
+  - name: categories
+    description: Pet categories
+  - name: tags
+    description: Freeform tags attached to pets
+
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      summary: List pets
+      description: Returns a paginated list of pets, with optional filtering.
+      tags: [pets]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/PetStatus"
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: A paginated list of pets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+    post:
+      operationId: createPet
+      summary: Create a pet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PetInput"
+      responses:
+        "201":
+          description: The newly created pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      operationId: getPet
+      summary: Get a pet by ID
+      tags: [pets]
+      responses:
+        "200":
+          description: The requested pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      operationId: updatePet
+      summary: Update a pet
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PetInput"
+      responses:
+        "200":
+          description: The updated pet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    delete:
+      operationId: deletePet
+      summary: Delete a pet
+      tags: [pets]
+      responses:
+        "204":
+          description: Pet deleted successfully.
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /categories:
+    get:
+      operationId: listCategories
+      summary: List all pet categories
+      tags: [categories]
+      responses:
+        "200":
+          description: A list of categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name, status, category]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          examples: ["Fido"]
+        status:
+          $ref: "#/components/schemas/PetStatus"
+        category:
+          $ref: "#/components/schemas/Category"
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        photoUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PetInput:
+      type: object
+      required: [name, categoryId]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        categoryId:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/PetStatus"
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        photoUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    PetStatus:
+      type: string
+      enum: [available, pending, adopted]
+
+    Category:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          examples: ["Dogs"]
+
+    Tag:
+      type: object
+      required: [id, label]
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+          examples: ["vaccinated"]
+
+    PetListResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pet"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              reason:
+                type: string
+
+  responses:
+    BadRequest:
+      description: The request was malformed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: One or more fields failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

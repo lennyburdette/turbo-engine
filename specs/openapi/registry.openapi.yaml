@@ -1,0 +1,181 @@
+openapi: "3.1.0"
+info:
+  title: Turbo Engine — Package Registry
+  version: 0.1.0
+  description: |
+    REST/JSON gateway for the Package Registry service.
+    The canonical API is defined in protobuf (registry.proto) and served via
+    Connect; this OpenAPI spec describes the REST transcoding for browser
+    clients and the CLI.
+
+servers:
+  - url: http://localhost:8081
+    description: Local development
+
+paths:
+  /v1/packages:
+    get:
+      operationId: listPackages
+      summary: List packages
+      parameters:
+        - name: namespace
+          in: query
+          schema: { type: string }
+        - name: kind
+          in: query
+          schema: { type: string }
+        - name: name_prefix
+          in: query
+          schema: { type: string }
+        - name: page_size
+          in: query
+          schema: { type: integer }
+        - name: page_token
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: A page of packages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPackagesResponse"
+
+    post:
+      operationId: publishPackage
+      summary: Publish a package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishRequest"
+      responses:
+        "201":
+          description: Package published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Package"
+
+  /v1/packages/{name}/versions/{version}:
+    get:
+      operationId: getPackage
+      summary: Get a specific package version
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+        - name: version
+          in: path
+          required: true
+          schema: { type: string }
+        - name: namespace
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: The package
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Package"
+        "404":
+          description: Package not found
+
+    delete:
+      operationId: yankPackage
+      summary: Yank (soft-delete) a package version
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+        - name: version
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Package yanked
+
+  /v1/packages/{name}/versions/{version}/dependencies:
+    get:
+      operationId: resolveDependencies
+      summary: Resolve the dependency tree for a package
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string }
+        - name: version
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Resolved dependency tree
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolveDependenciesResponse"
+
+components:
+  schemas:
+    Package:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        namespace: { type: string }
+        kind: { type: string }
+        version: { type: string }
+        schema: { type: string }
+        upstreamConfig:
+          $ref: "#/components/schemas/UpstreamConfig"
+        dependencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Dependency"
+        metadata: { type: object }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Dependency:
+      type: object
+      properties:
+        packageName: { type: string }
+        versionConstraint: { type: string }
+
+    UpstreamConfig:
+      type: object
+      properties:
+        url: { type: string }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+
+    PublishRequest:
+      type: object
+      required: [package]
+      properties:
+        package:
+          $ref: "#/components/schemas/Package"
+
+    ListPackagesResponse:
+      type: object
+      properties:
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Package"
+        nextPageToken: { type: string }
+
+    ResolveDependenciesResponse:
+      type: object
+      properties:
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Package"

@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package turboengine.v1;
+
+option go_package = "github.com/lennyburdette/turbo-engine/specs/gen/go/turboengine/v1";
+
+import "turboengine/v1/package.proto";
+import "google/protobuf/timestamp.proto";
+
+// --- Builder Service ---
+// Turns resolved dependency trees into deployable artifacts.
+
+service BuilderService {
+  // Trigger a build for a resolved dependency tree.
+  rpc CreateBuild(CreateBuildRequest) returns (CreateBuildResponse);
+
+  // Get the status and output of a build.
+  rpc GetBuild(GetBuildRequest) returns (GetBuildResponse);
+
+  // Stream build logs in real time.
+  rpc StreamBuildLogs(StreamBuildLogsRequest) returns (stream BuildLogEntry);
+}
+
+enum BuildStatus {
+  BUILD_STATUS_UNSPECIFIED = 0;
+  BUILD_STATUS_PENDING = 1;
+  BUILD_STATUS_RUNNING = 2;
+  BUILD_STATUS_SUCCEEDED = 3;
+  BUILD_STATUS_FAILED = 4;
+}
+
+// A build artifact — the output of a successful build step.
+message Artifact {
+  string id = 1;
+  string kind = 2; // e.g., "supergraph-config", "router-config", "workflow-bundle"
+  bytes content = 3;
+  string content_hash = 4; // SHA-256
+  map<string, string> labels = 5;
+}
+
+message Build {
+  string id = 1;
+  string environment_id = 2; // ties to an Environment (see envmanager)
+  BuildStatus status = 3;
+  repeated Package input_packages = 4;
+  repeated Artifact artifacts = 5;
+  string error_message = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp completed_at = 8;
+}
+
+message CreateBuildRequest {
+  string environment_id = 1;
+  // Either provide explicit packages or let the builder resolve from the registry.
+  repeated Package packages = 2;
+  string root_package_name = 3;
+  string root_package_version = 4;
+}
+
+message CreateBuildResponse {
+  Build build = 1;
+}
+
+message GetBuildRequest {
+  string build_id = 1;
+}
+
+message GetBuildResponse {
+  Build build = 1;
+}
+
+message StreamBuildLogsRequest {
+  string build_id = 1;
+}
+
+message BuildLogEntry {
+  google.protobuf.Timestamp timestamp = 1;
+  string level = 2; // INFO, WARN, ERROR
+  string message = 3;
+  string step = 4; // e.g., "resolve", "compose", "validate", "bundle"
+}

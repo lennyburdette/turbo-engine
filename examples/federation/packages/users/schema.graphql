@@ -1,0 +1,56 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@shareable"])
+
+type Query {
+  """Look up a single user by their unique ID."""
+  user(id: ID!): User
+
+  """Return a paginated list of users, optionally filtered by role."""
+  users(role: Role, limit: Int = 20, offset: Int = 0): UserConnection!
+}
+
+type Mutation {
+  """Register a new user account."""
+  createUser(input: CreateUserInput!): User!
+
+  """Update profile fields for an existing user."""
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+}
+
+type User @key(fields: "id") {
+  id: ID!
+  username: String!
+  email: String!
+  displayName: String
+  role: Role!
+  avatarUrl: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type UserConnection {
+  nodes: [User!]!
+  totalCount: Int!
+}
+
+input CreateUserInput {
+  username: String!
+  email: String!
+  displayName: String
+  role: Role = CUSTOMER
+}
+
+input UpdateUserInput {
+  displayName: String
+  email: String
+  role: Role
+  avatarUrl: String
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  VENDOR
+}
+
+scalar DateTime

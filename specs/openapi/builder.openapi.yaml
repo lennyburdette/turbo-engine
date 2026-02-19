@@ -1,0 +1,102 @@
+openapi: "3.1.0"
+info:
+  title: Turbo Engine — Builder
+  version: 0.1.0
+  description: REST gateway for the Builder service.
+
+servers:
+  - url: http://localhost:8082
+
+paths:
+  /v1/builds:
+    post:
+      operationId: createBuild
+      summary: Trigger a build
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBuildRequest"
+      responses:
+        "201":
+          description: Build created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Build"
+
+  /v1/builds/{buildId}:
+    get:
+      operationId: getBuild
+      summary: Get build status
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Build details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Build"
+
+  /v1/builds/{buildId}/logs:
+    get:
+      operationId: streamBuildLogs
+      summary: Stream build logs (SSE)
+      parameters:
+        - name: buildId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Build log stream
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/BuildLogEntry"
+
+components:
+  schemas:
+    Build:
+      type: object
+      properties:
+        id: { type: string }
+        environmentId: { type: string }
+        status: { type: string, enum: [pending, running, succeeded, failed] }
+        artifacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Artifact"
+        errorMessage: { type: string }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+
+    Artifact:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string }
+        contentHash: { type: string }
+        labels:
+          type: object
+          additionalProperties: { type: string }
+
+    CreateBuildRequest:
+      type: object
+      properties:
+        environmentId: { type: string }
+        rootPackageName: { type: string }
+        rootPackageVersion: { type: string }
+
+    BuildLogEntry:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        level: { type: string }
+        message: { type: string }
+        step: { type: string }

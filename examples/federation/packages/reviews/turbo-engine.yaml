@@ -1,0 +1,24 @@
+name: federation/reviews
+kind: graphql-subgraph
+version: "1.0.0"
+
+schema: schema.graphql
+
+upstream:
+  url: https://reviews.internal.example.com/graphql
+  auth:
+    type: mtls
+    certSecretRef: reviews-svc-cert
+    keySecretRef: reviews-svc-key
+    caSecretRef: internal-ca
+
+dependencies:
+  - name: federation/users
+    version: "^1.0.0"
+  - name: federation/products
+    version: "^1.0.0"
+
+metadata:
+  title: "Reviews Subgraph"
+  description: "Owns the Review entity and extends User and Product with review data."
+  owner: community-team

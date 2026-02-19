@@ -1,0 +1,75 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3", import: ["@key", "@external", "@requires"])
+
+type Query {
+  """Look up a specific review by ID."""
+  review(id: ID!): Review
+
+  """List reviews, optionally filtered by rating threshold."""
+  reviews(minRating: Int, limit: Int = 20, offset: Int = 0): ReviewConnection!
+}
+
+type Mutation {
+  """Submit a new review for a product."""
+  createReview(input: CreateReviewInput!): Review!
+
+  """Edit the body or rating of an existing review (author only)."""
+  updateReview(id: ID!, input: UpdateReviewInput!): Review!
+
+  """Delete a review (author or admin)."""
+  deleteReview(id: ID!): Boolean!
+}
+
+type Review @key(fields: "id") {
+  id: ID!
+  title: String!
+  body: String!
+  rating: Int!
+  author: User!
+  product: Product!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type ReviewConnection {
+  nodes: [Review!]!
+  totalCount: Int!
+}
+
+"""Extend the User entity from the users subgraph with review data."""
+type User @key(fields: "id") {
+  id: ID! @external
+  """All reviews written by this user."""
+  reviews(limit: Int = 10, offset: Int = 0): ReviewConnection!
+  """Average star rating across all reviews by this user."""
+  averageRating: Float
+}
+
+"""Extend the Product entity from the products subgraph with review data."""
+type Product @key(fields: "id") {
+  id: ID! @external
+  name: String! @external
+  """All reviews for this product."""
+  reviews(limit: Int = 10, offset: Int = 0): ReviewConnection!
+  """Average star rating for this product."""
+  averageRating: Float
+  """Total number of reviews for this product."""
+  reviewCount: Int!
+  """A short summary line, e.g. "4.3 stars (128 reviews)"."""
+  ratingsSummary: String! @requires(fields: "name")
+}
+
+input CreateReviewInput {
+  productId: ID!
+  title: String!
+  body: String!
+  rating: Int!
+}
+
+input UpdateReviewInput {
+  title: String
+  body: String
+  rating: Int
+}
+
+scalar DateTime

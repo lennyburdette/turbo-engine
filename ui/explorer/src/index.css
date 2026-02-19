@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/*
+ * Custom utilities for the explorer UI
+ */
+
+/* Safe area insets for notched devices */
+:root {
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sat: env(safe-area-inset-top, 0px);
+}
+
+/* Prevent overscroll bounce on iOS */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  padding-top: var(--sat);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+.dark {
+  color-scheme: dark;
+}
+
+/* Log viewer monospace */
+.log-viewer {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+/* Smooth card expand/collapse */
+.card-expand-enter {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+}
+.card-expand-active {
+  max-height: 500px;
+  opacity: 1;
+}
+
+/* Pull-to-refresh indicator */
+.pull-indicator {
+  transition: transform 0.2s ease-out;
+}
+
+/* Touch target minimum size */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}

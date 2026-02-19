@@ -1,0 +1,190 @@
+openapi: "3.1.0"
+info:
+  title: Turbo Engine — Environment Manager
+  version: 0.1.0
+  description: REST gateway for the Environment Manager (fork/preview) service.
+
+servers:
+  - url: http://localhost:8083
+
+paths:
+  /v1/environments:
+    post:
+      operationId: createEnvironment
+      summary: Create a new environment (fork)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEnvironmentRequest"
+      responses:
+        "201":
+          description: Environment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Environment"
+
+    get:
+      operationId: listEnvironments
+      summary: List environments
+      parameters:
+        - name: branch
+          in: query
+          schema: { type: string }
+        - name: created_by
+          in: query
+          schema: { type: string }
+        - name: page_size
+          in: query
+          schema: { type: integer }
+        - name: page_token
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Environments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvironmentsResponse"
+
+  /v1/environments/{environmentId}:
+    get:
+      operationId: getEnvironment
+      summary: Get environment details
+      parameters:
+        - name: environmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Environment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Environment"
+
+    delete:
+      operationId: deleteEnvironment
+      summary: Delete environment
+      parameters:
+        - name: environmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+
+  /v1/environments/{environmentId}/overrides:
+    post:
+      operationId: applyOverrides
+      summary: Apply package overrides to an environment
+      parameters:
+        - name: environmentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyOverridesRequest"
+      responses:
+        "200":
+          description: Updated environment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Environment"
+
+  /v1/environments/{environmentId}/promote:
+    post:
+      operationId: promote
+      summary: Promote environment overrides to base
+      parameters:
+        - name: environmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Promoted packages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromoteResponse"
+
+components:
+  schemas:
+    Environment:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        baseRootPackage: { type: string }
+        baseRootVersion: { type: string }
+        branch: { type: string }
+        createdBy: { type: string }
+        status: { type: string, enum: [creating, ready, building, failed, deleting] }
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageOverride"
+        currentBuildId: { type: string }
+        previewUrl: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    PackageOverride:
+      type: object
+      properties:
+        packageName: { type: string }
+        schema: { type: string }
+
+    CreateEnvironmentRequest:
+      type: object
+      required: [name, baseRootPackage]
+      properties:
+        name: { type: string }
+        baseRootPackage: { type: string }
+        baseRootVersion: { type: string }
+        branch: { type: string }
+        createdBy: { type: string }
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageOverride"
+
+    ApplyOverridesRequest:
+      type: object
+      properties:
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/PackageOverride"
+        triggerBuild: { type: boolean }
+
+    ListEnvironmentsResponse:
+      type: object
+      properties:
+        environments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Environment"
+        nextPageToken: { type: string }
+
+    PromoteResponse:
+      type: object
+      properties:
+        promotedPackages:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              version: { type: string }

@@ -1,0 +1,21 @@
+name: federation/users
+kind: graphql-subgraph
+version: "1.0.0"
+
+schema: schema.graphql
+
+upstream:
+  url: https://users.internal.example.com/graphql
+  auth:
+    type: oauth2-client-credentials
+    tokenEndpoint: https://auth.example.com/oauth/token
+    clientIdSecretRef: users-svc-client-id
+    clientSecretSecretRef: users-svc-client-secret
+    scopes:
+      - users:read
+      - users:write
+
+metadata:
+  title: "Users Subgraph"
+  description: "Owns the User entity and account management mutations."
+  owner: identity-team

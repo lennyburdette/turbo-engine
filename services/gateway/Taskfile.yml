@@ -1,0 +1,52 @@
+# https://taskfile.dev
+version: "3"
+
+vars:
+  BINARY: gateway
+  PORT: '{{.PORT | default "8080"}}'
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  build:
+    desc: Build the gateway service binary
+    cmds:
+      - cargo build --release
+    sources:
+      - "src/**/*.rs"
+      - Cargo.toml
+      - Cargo.lock
+    generates:
+      - target/release/{{.BINARY}}
+
+  test:
+    desc: Run all tests
+    cmds:
+      - cargo test --all-targets
+
+  lint:
+    desc: Run clippy and format check
+    cmds:
+      - cargo clippy --all-targets -- -D warnings
+      - cargo fmt -- --check
+
+  fmt:
+    desc: Format all Rust source files
+    cmds:
+      - cargo fmt
+
+  run:
+    desc: Run the gateway service locally
+    cmds:
+      - cargo run -- --port {{.PORT}}
+    env:
+      RUST_LOG: gateway=debug,tower_http=debug
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - cargo clean

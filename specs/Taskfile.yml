@@ -1,0 +1,34 @@
+version: "3"
+
+tasks:
+  generate:
+    desc: Generate code from all specs
+    cmds:
+      - task: generate:proto
+      - task: generate:jsonschema
+      - task: generate:openapi
+
+  generate:proto:
+    desc: Generate Go/TS code from protobuf definitions
+    cmds:
+      - |
+        mkdir -p gen/go gen/ts
+        buf generate
+
+  generate:jsonschema:
+    desc: Validate and generate TypeScript types from JSON Schemas
+    cmds:
+      - npx json2ts -i jsonschema/ -o gen/ts/schemas/
+
+  generate:openapi:
+    desc: Generate client stubs from OpenAPI specs
+    cmds:
+      - npx openapi-typescript openapi/registry.openapi.yaml -o gen/ts/registry-client.ts
+      - npx openapi-typescript openapi/builder.openapi.yaml -o gen/ts/builder-client.ts
+      - npx openapi-typescript openapi/envmanager.openapi.yaml -o gen/ts/envmanager-client.ts
+
+  lint:
+    desc: Lint all spec files
+    cmds:
+      - buf lint
+      - npx @redocly/cli lint openapi/*.openapi.yaml

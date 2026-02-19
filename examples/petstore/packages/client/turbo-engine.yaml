@@ -1,0 +1,14 @@
+name: petstore/client
+kind: postman-collection
+version: "1.0.0"
+
+schema: collection.json
+
+dependencies:
+  - name: petstore/api
+    version: "^1.0.0"
+
+metadata:
+  title: "Petstore Postman Collection"
+  description: "Ready-to-import Postman collection that exercises every Petstore API endpoint."
+  owner: developer-experience

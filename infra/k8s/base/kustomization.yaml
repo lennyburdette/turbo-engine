@@ -1,0 +1,14 @@
+# Kustomize base for the Turbo Engine platform.
+# Includes the APIGraph CRD and the operator deployment.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: turbo-engine
+
+resources:
+  - apigraph-crd.yaml
+  - operator-deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: turbo-engine
+  app.kubernetes.io/managed-by: kustomize
