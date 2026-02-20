@@ -27,23 +27,16 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Build Go service images
         run: |
-          # Validate compose config first
-          docker compose -f infra/docker/docker-compose.yml config --services
-          # Try building with full error capture
-          docker compose -f infra/docker/docker-compose.yml build --progress=plain registry 2>&1 || {
-            BUILD_ERR=$(docker compose -f infra/docker/docker-compose.yml build --progress=plain registry 2>&1 || true)
-            echo "::error title=Registry Build Failed::${BUILD_ERR//$'\n'/%0A}"
-            exit 1
-          }
-          docker compose -f infra/docker/docker-compose.yml build --progress=plain builder
-          docker compose -f infra/docker/docker-compose.yml build --progress=plain operator
-          docker compose -f infra/docker/docker-compose.yml build --progress=plain envmanager
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build registry
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build builder
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build operator
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build envmanager
 
       - name: Build gateway image
-        run: docker compose -f infra/docker/docker-compose.yml build --progress=plain gateway
+        run: docker compose --progress=plain -f infra/docker/docker-compose.yml build gateway
 
       - name: Build console image
-        run: docker compose -f infra/docker/docker-compose.yml build --progress=plain console
+        run: docker compose --progress=plain -f infra/docker/docker-compose.yml build console
 
       - name: Verify images
         run: |
