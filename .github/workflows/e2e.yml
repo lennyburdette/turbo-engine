@@ -25,61 +25,33 @@ jobs:
       # -----------------------------------------------------------------------
       # Build Docker images individually (matches working Build workflow)
       # -----------------------------------------------------------------------
-      - name: Build registry image
+      - name: Build Go service images
         run: |
-          docker build --progress=plain -t docker-registry services/registry 2>&1 | tee /tmp/build-registry.log || {
-            echo "### Registry build failed" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            tail -50 /tmp/build-registry.log >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          }
-        env:
-          DOCKER_BUILDKIT: "1"
-
-      - name: Build builder image
-        run: docker build --progress=plain -t docker-builder services/builder
-        env:
-          DOCKER_BUILDKIT: "1"
-
-      - name: Build operator image
-        run: docker build --progress=plain -t docker-operator services/operator
-        env:
-          DOCKER_BUILDKIT: "1"
-
-      - name: Build envmanager image
-        run: docker build --progress=plain -t docker-envmanager services/envmanager
+          docker build --progress=plain --load -t docker-registry services/registry
+          docker build --progress=plain --load -t docker-builder services/builder
+          docker build --progress=plain --load -t docker-operator services/operator
+          docker build --progress=plain --load -t docker-envmanager services/envmanager
         env:
           DOCKER_BUILDKIT: "1"
 
       - name: Build gateway image
-        run: |
-          docker build --progress=plain -t docker-gateway services/gateway 2>&1 | tee /tmp/build-gateway.log || {
-            echo "### Gateway build failed" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            tail -80 /tmp/build-gateway.log >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          }
+        run: docker build --progress=plain --load -t docker-gateway services/gateway
         env:
           DOCKER_BUILDKIT: "1"
 
       - name: Build console image
-        run: docker build --progress=plain -t docker-console ui/console
+        run: docker build --progress=plain --load -t docker-console ui/console
         env:
           DOCKER_BUILDKIT: "1"
 
-      - name: Verify images and compose config
+      - name: Verify images
         run: |
-          echo "### Docker Images" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -20 | tee -a "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Compose Config (images)" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          docker compose -f infra/docker/docker-compose.yml config --images 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          IMAGES=$(docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -15)
+          echo "$IMAGES"
+          echo "::warning title=Docker Images::${IMAGES//$'\n'/%0A}"
+          COMPOSE_IMAGES=$(docker compose -f infra/docker/docker-compose.yml config --images 2>&1)
+          echo "$COMPOSE_IMAGES"
+          echo "::warning title=Compose Expected Images::${COMPOSE_IMAGES//$'\n'/%0A}"
 
       - name: Pull infra images
         run: docker compose -f infra/docker/docker-compose.yml pull --ignore-buildable
