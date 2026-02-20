@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+# turbo-gh — lightweight GitHub API wrapper for Turbo Engine CI queries.
+# Works without authentication for public repos.
+set -euo pipefail
+
+REPO="lennyburdette/turbo-engine"
+API="https://api.github.com/repos/${REPO}"
+
+usage() {
+  cat <<EOF
+Usage: turbo-gh <command> [options]
+
+Commands:
+  runs [--limit N] [--branch B] [--workflow W]  List workflow runs
+  run <run-id>                                   Get run details
+  jobs <run-id>                                  List jobs for a run
+  logs <run-id> [--job J]                        Get failed job logs
+  annotations <run-id>                           Get annotations (errors/warnings)
+  status                                         Quick summary of latest runs
+  watch                                          Poll until all in-progress runs finish
+EOF
+}
+
+json_get() { python3 -c "import json,sys; d=json.load(sys.stdin); $1"; }
+api() { curl -sf -H "Accept: application/vnd.github.v3+json" "$@"; }
+
+cmd_runs() {
+  local limit=10 branch="" workflow=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --limit) limit="$2"; shift 2 ;;
+      --branch) branch="$2"; shift 2 ;;
+      --workflow) workflow="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+
+  local url="${API}/actions/runs?per_page=${limit}"
+  [[ -n "$branch" ]] && url="${url}&branch=${branch}"
+
+  api "$url" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+wf_filter = '${workflow}'.lower()
+print(f'Total: {data[\"total_count\"]} runs')
+print()
+fmt = '{:<10} {:<8} {:<12} {:<10} {:<30} {}'
+print(fmt.format('RUN ID', 'STATUS', 'CONCLUSION', 'BRANCH', 'WORKFLOW', 'CREATED'))
+print('-' * 110)
+for r in data['workflow_runs']:
+    if wf_filter and wf_filter not in r['name'].lower():
+        continue
+    print(fmt.format(
+        r['id'], r['status'], r.get('conclusion') or '-',
+        r['head_branch'][:28], r['name'][:28], r['created_at'][:19]))
+"
+}
+
+cmd_run() {
+  local run_id="$1"
+  api "${API}/actions/runs/${run_id}" | python3 -c "
+import json, sys
+r = json.load(sys.stdin)
+print(f'Run:        {r[\"id\"]}')
+print(f'Workflow:   {r[\"name\"]}')
+print(f'Status:     {r[\"status\"]}')
+print(f'Conclusion: {r.get(\"conclusion\", \"-\")}')
+print(f'Branch:     {r[\"head_branch\"]}')
+print(f'SHA:        {r[\"head_sha\"][:12]}')
+print(f'Event:      {r[\"event\"]}')
+print(f'Created:    {r[\"created_at\"]}')
+print(f'Updated:    {r[\"updated_at\"]}')
+print(f'URL:        {r[\"html_url\"]}')
+"
+}
+
+cmd_jobs() {
+  local run_id="$1"
+  api "${API}/actions/runs/${run_id}/jobs?per_page=50" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+fmt = '{:<12} {:<40} {:<12} {:<10} {}'
+print(fmt.format('JOB ID', 'NAME', 'STATUS', 'CONCLUSION', 'DURATION'))
+print('-' * 100)
+for j in data['jobs']:
+    started = j.get('started_at', '')
+    completed = j.get('completed_at', '')
+    dur = ''
+    if started and completed:
+        from datetime import datetime
+        s = datetime.fromisoformat(started.replace('Z','+00:00'))
+        c = datetime.fromisoformat(completed.replace('Z','+00:00'))
+        dur = str(c - s)
+    print(fmt.format(j['id'], j['name'][:38], j['status'], j.get('conclusion') or '-', dur))
+
+    # Show failed steps
+    for step in j.get('steps', []):
+        if step.get('conclusion') == 'failure':
+            print(f'  FAILED STEP: {step[\"name\"]}')
+"
+}
+
+cmd_logs() {
+  local run_id="$1"
+  shift
+  local job_name=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --job) job_name="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+
+  # Get jobs, find failed ones, fetch their logs
+  local jobs_json
+  jobs_json=$(api "${API}/actions/runs/${run_id}/jobs?per_page=50")
+
+  echo "$jobs_json" | python3 -c "
+import json, sys, subprocess
+data = json.load(sys.stdin)
+job_filter = '${job_name}'.lower()
+
+for j in data['jobs']:
+    if j.get('conclusion') != 'failure':
+        continue
+    if job_filter and job_filter not in j['name'].lower():
+        continue
+    print(f'=== JOB: {j[\"name\"]} (ID: {j[\"id\"]}) ===')
+    print()
+    for step in j.get('steps', []):
+        if step.get('conclusion') == 'failure':
+            print(f'--- FAILED STEP: {step[\"name\"]} ---')
+    print()
+" 2>/dev/null
+
+  # Download the actual log archive
+  local log_url="${API}/actions/runs/${run_id}/logs"
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  if curl -sL -o "${tmpdir}/logs.zip" "$log_url" 2>/dev/null && [ -s "${tmpdir}/logs.zip" ]; then
+    cd "$tmpdir"
+    unzip -q logs.zip 2>/dev/null || true
+    # Print logs for failed jobs, or all if no filter
+    for f in $(find . -name '*.txt' 2>/dev/null); do
+      [ -f "$f" ] || continue
+      if [[ -n "$job_name" ]] && ! echo "$f" | grep -qi "$job_name"; then
+        continue
+      fi
+      echo "=== LOG: $f ==="
+      # Show last 80 lines of each log (the failures tend to be at the end)
+      tail -80 "$f"
+      echo ""
+    done
+  else
+    echo "Could not download logs (may require authentication for this endpoint)."
+    echo ""
+    echo "Falling back to annotations..."
+    cmd_annotations "$run_id"
+  fi
+  rm -rf "$tmpdir"
+}
+
+cmd_annotations() {
+  local run_id="$1"
+  # Get check suites, then check runs for annotations
+  api "${API}/actions/runs/${run_id}/jobs?per_page=50" | python3 -c "
+import json, sys, urllib.request
+data = json.load(sys.stdin)
+for j in data['jobs']:
+    if j.get('conclusion') not in ('failure', 'cancelled'):
+        continue
+    print(f'=== {j[\"name\"]} ===')
+    for step in j.get('steps', []):
+        if step.get('conclusion') == 'failure':
+            print(f'  FAILED: {step[\"name\"]} (number: {step[\"number\"]})')
+    print()
+"
+}
+
+cmd_status() {
+  echo "Turbo Engine — Latest CI Status"
+  echo "================================"
+  echo ""
+  api "${API}/actions/runs?per_page=15" | python3 -c "
+import json, sys
+from collections import defaultdict
+data = json.load(sys.stdin)
+
+# Group by workflow name, take latest of each
+latest = {}
+for r in data['workflow_runs']:
+    wf = r['name'].split('#')[0].split(':')[0].strip()
+    if wf.startswith('Graph Update'):
+        continue
+    if wf not in latest:
+        latest[wf] = r
+
+for name, r in sorted(latest.items()):
+    status = r.get('conclusion') or r['status']
+    icon = {'success': 'PASS', 'failure': 'FAIL', 'in_progress': '....', 'queued': 'WAIT'}.get(status, status)
+    print(f'  [{icon:>4}]  {name:<30}  {r[\"head_branch\"]}  ({r[\"created_at\"][:19]})')
+    print(f'         {r[\"html_url\"]}')
+    print()
+"
+}
+
+cmd_watch() {
+  echo "Watching for in-progress runs..."
+  while true; do
+    local result
+    result=$(api "${API}/actions/runs?per_page=5" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+in_progress = [r for r in data['workflow_runs'] if r['status'] in ('in_progress', 'queued')]
+if not in_progress:
+    print('DONE')
+else:
+    for r in in_progress:
+        print(f'  [{r[\"status\"]:>12}]  {r[\"name\"][:40]}')
+")
+    if [[ "$result" == "DONE" ]]; then
+      echo "All runs complete."
+      cmd_status
+      return
+    fi
+    echo "$result"
+    sleep 15
+  done
+}
+
+# Dispatch
+case "${1:-}" in
+  runs)        shift; cmd_runs "$@" ;;
+  run)         shift; cmd_run "$@" ;;
+  jobs)        shift; cmd_jobs "$@" ;;
+  logs)        shift; cmd_logs "$@" ;;
+  annotations) shift; cmd_annotations "$@" ;;
+  status)      cmd_status ;;
+  watch)       cmd_watch ;;
+  *)           usage ;;
+esac

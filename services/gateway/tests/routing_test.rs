@@ -36,9 +36,7 @@ fn test_router(routes: Vec<gateway::config::Route>) -> Router {
 
     let config_handle = gateway::config::ConfigHandle::new(config);
 
-    let http_client = reqwest::Client::builder()
-        .build()
-        .expect("client");
+    let http_client = reqwest::Client::builder().build().expect("client");
 
     let state = gateway::proxy::AppState {
         config: config_handle,
@@ -85,9 +83,7 @@ async fn test_health_check_returns_ok() {
 
     assert_eq!(resp.status(), StatusCode::OK);
 
-    let body = axum::body::to_bytes(resp.into_body(), 1024)
-        .await
-        .unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), 1024).await.unwrap();
     let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["status"], "ok");
 }
@@ -105,9 +101,7 @@ async fn test_unmatched_route_returns_404() {
 
     assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 
-    let body = axum::body::to_bytes(resp.into_body(), 4096)
-        .await
-        .unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), 4096).await.unwrap();
     let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert!(value["error"]["message"]
         .as_str()
@@ -122,10 +116,7 @@ async fn test_proxy_forwards_to_upstream() {
 
     Mock::given(method("GET"))
         .and(path("/hello"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_json(json!({ "greeting": "world" })),
-        )
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "greeting": "world" })))
         .mount(&mock_server)
         .await;
 
@@ -140,9 +131,7 @@ async fn test_proxy_forwards_to_upstream() {
 
     assert_eq!(resp.status(), StatusCode::OK);
 
-    let body = axum::body::to_bytes(resp.into_body(), 4096)
-        .await
-        .unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), 4096).await.unwrap();
     let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["greeting"], "world");
 }
@@ -222,9 +211,7 @@ async fn test_longest_prefix_match() {
     let resp = app.oneshot(req).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
 
-    let body = axum::body::to_bytes(resp.into_body(), 4096)
-        .await
-        .unwrap();
+    let body = axum::body::to_bytes(resp.into_body(), 4096).await.unwrap();
     let value: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(value["service"], "users");
 }

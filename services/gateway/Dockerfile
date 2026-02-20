@@ -12,7 +12,7 @@ WORKDIR /app
 # Cache dependency builds: copy manifests first, create a dummy main, build
 # dependencies, then copy the real source and rebuild.
 COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo 'fn main() {}' > src/main.rs
+RUN mkdir src && echo 'fn main() {}' > src/main.rs && touch src/lib.rs
 RUN cargo build --release && rm -rf src
 
 # Copy real source and rebuild (only the gateway binary is recompiled).

@@ -11,6 +11,7 @@ use std::fmt;
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum GatewayError {
     #[error("no route matched for path: {0}")]
     RouteNotFound(String),
@@ -44,8 +45,6 @@ impl From<reqwest::Error> for GatewayError {
     fn from(err: reqwest::Error) -> Self {
         if err.is_timeout() {
             GatewayError::Timeout
-        } else if err.is_connect() {
-            GatewayError::UpstreamUnavailable(err.to_string())
         } else {
             GatewayError::UpstreamUnavailable(err.to_string())
         }
@@ -140,6 +139,7 @@ impl IntoResponse for GatewayError {
 // ---------------------------------------------------------------------------
 
 impl ErrorResponse {
+    #[allow(dead_code)]
     pub fn with_request_id(mut self, id: impl Into<String>) -> Self {
         self.error.request_id = Some(id.into());
         self

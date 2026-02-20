@@ -39,7 +39,11 @@ pub async fn proxy_handler(
     req: Request,
 ) -> Result<Response, GatewayError> {
     let path = req.uri().path().to_string();
-    let query = req.uri().query().map(|q| format!("?{q}")).unwrap_or_default();
+    let query = req
+        .uri()
+        .query()
+        .map(|q| format!("?{q}"))
+        .unwrap_or_default();
 
     // --- Route matching ---
     let config = state.config.read().await;
@@ -96,15 +100,14 @@ async fn forward_http(
     if let Some(host) = req.headers().get(header::HOST) {
         headers.insert("x-forwarded-host", host.clone());
     }
-    headers.insert(
-        "x-forwarded-proto",
-        HeaderValue::from_static("https"),
-    );
+    headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
 
     // Read body.
     let body_bytes = axum::body::to_bytes(req.into_body(), 10 * 1024 * 1024)
         .await
-        .map_err(|e| GatewayError::UpstreamUnavailable(format!("failed to read request body: {e}")))?;
+        .map_err(|e| {
+            GatewayError::UpstreamUnavailable(format!("failed to read request body: {e}"))
+        })?;
 
     // Forward the request.
     let upstream_resp = client
@@ -117,8 +120,8 @@ async fn forward_http(
         .await?;
 
     // Convert upstream response back to axum response.
-    let status = StatusCode::from_u16(upstream_resp.status().as_u16())
-        .unwrap_or(StatusCode::BAD_GATEWAY);
+    let status =
+        StatusCode::from_u16(upstream_resp.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
     let resp_headers = axum_headers(upstream_resp.headers());
     let body = upstream_resp.bytes().await?;
 
@@ -149,9 +152,7 @@ async fn handle_websocket_upgrade(
 
     // WebSocketUpgrade does not implement Clone, so we remove it from the
     // request extensions (taking ownership) instead of cloning.
-    let ws_upgrade: Option<WebSocketUpgrade> = req
-        .extensions_mut()
-        .remove::<WebSocketUpgrade>();
+    let ws_upgrade: Option<WebSocketUpgrade> = req.extensions_mut().remove::<WebSocketUpgrade>();
 
     let upgrade = match ws_upgrade {
         Some(u) => u,
@@ -233,10 +234,10 @@ fn axum_msg_to_tungstenite(msg: axum::extract::ws::Message) -> TungsteniteMsg {
 
 fn tungstenite_msg_to_axum(msg: TungsteniteMsg) -> axum::extract::ws::Message {
     match msg {
-        TungsteniteMsg::Text(t) => axum::extract::ws::Message::Text(t.into()),
-        TungsteniteMsg::Binary(b) => axum::extract::ws::Message::Binary(b.into()),
-        TungsteniteMsg::Ping(p) => axum::extract::ws::Message::Ping(p.into()),
-        TungsteniteMsg::Pong(p) => axum::extract::ws::Message::Pong(p.into()),
+        TungsteniteMsg::Text(t) => axum::extract::ws::Message::Text(t),
+        TungsteniteMsg::Binary(b) => axum::extract::ws::Message::Binary(b),
+        TungsteniteMsg::Ping(p) => axum::extract::ws::Message::Ping(p),
+        TungsteniteMsg::Pong(p) => axum::extract::ws::Message::Pong(p),
         TungsteniteMsg::Close(_) => axum::extract::ws::Message::Close(None),
         TungsteniteMsg::Frame(_) => axum::extract::ws::Message::Close(None),
     }
