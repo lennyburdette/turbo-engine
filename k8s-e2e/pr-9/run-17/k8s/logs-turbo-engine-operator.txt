@@ -1,0 +1,26 @@
+{"time":"2026-02-20T22:49:49.894242561Z","level":"INFO","msg":"starting operator service","version":"0.1.0","log_level":"debug"}
+{"time":"2026-02-20T22:49:49.894424912Z","level":"WARN","msg":"failed to initialize tracer, continuing without tracing","error":"creating resource: conflicting Schema URL: https://opentelemetry.io/schemas/1.26.0 and https://opentelemetry.io/schemas/1.24.0"}
+{"time":"2026-02-20T22:49:49.894434169Z","level":"INFO","msg":"operator mode: k8s — will create real Kubernetes resources"}
+{"time":"2026-02-20T22:49:49.895235014Z","level":"INFO","msg":"listening","addr":":8084"}
+{"time":"2026-02-20T22:49:49.89501231Z","level":"INFO","msg":"starting builder poll loop","component":"poller","builder_url":"http://builder:8082","interval":5000000000}
+{"time":"2026-02-20T22:49:54.896762604Z","level":"DEBUG","msg":"failed to poll builder (will retry)","component":"poller","builder_url":"http://builder:8082","error":"Get \"http://builder:8082/v1/graphs\": dial tcp 10.96.150.105:8082: connect: connection refused"}
+{"time":"2026-02-20T22:49:59.896449803Z","level":"DEBUG","msg":"failed to poll builder (will retry)","component":"poller","builder_url":"http://builder:8082","error":"Get \"http://builder:8082/v1/graphs\": dial tcp 10.96.150.105:8082: connect: connection refused"}
+{"time":"2026-02-20T22:50:04.897105165Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-20T22:50:05.176469351Z","level":"INFO","msg":"gateway config request","component":"handler","routes":0}
+{"time":"2026-02-20T22:50:09.901605859Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-20T22:50:12.124529496Z","level":"INFO","msg":"reconcile request received","component":"handler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5","build_id":"bld-1771627812038-1"}
+{"time":"2026-02-20T22:50:12.124563049Z","level":"INFO","msg":"starting reconciliation","component":"reconciler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5","build_id":"bld-1771627812038-1","components":1}
+{"time":"2026-02-20T22:50:12.124657926Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5","action":"Create","resource_kind":"Deployment","resource_name":"deploy-k8s-e2e-test-pkg","details":"image=artifact:e2e-test-hash replicas=1"}
+{"time":"2026-02-20T22:50:12.124679757Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5","action":"Create","resource_kind":"Service","resource_name":"svc-k8s-e2e-test-pkg","details":"selector=k8s-e2e-test-pkg"}
+{"time":"2026-02-20T22:50:12.124685558Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5","action":"Create","resource_kind":"ConfigMap","resource_name":"cm-k8s-e2e-test-pkg","details":"env_vars=0"}
+{"time":"2026-02-20T22:50:12.124691118Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5","action":"Create","resource_kind":"Ingress","resource_name":"localhost-ingress","details":"host=localhost routes=1 tls=false"}
+{"time":"2026-02-20T22:50:12.124697891Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Deployment","name":"deploy-k8s-e2e-test-pkg","details":"image=artifact:e2e-test-hash replicas=1"}
+{"time":"2026-02-20T22:50:12.136731613Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Service","name":"svc-k8s-e2e-test-pkg","details":"selector=k8s-e2e-test-pkg"}
+{"time":"2026-02-20T22:50:12.145199645Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"ConfigMap","name":"cm-k8s-e2e-test-pkg","details":"env_vars=0"}
+{"time":"2026-02-20T22:50:12.153886458Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Ingress","name":"localhost-ingress","details":"host=localhost routes=1 tls=false"}
+{"time":"2026-02-20T22:50:12.154530192Z","level":"WARN","msg":"unhandled action","component":"k8s-applier","type":"Create","kind":"Ingress"}
+{"time":"2026-02-20T22:50:12.154635068Z","level":"INFO","msg":"reconciliation complete","component":"reconciler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5","phase":"Running","actions":4}
+{"time":"2026-02-20T22:50:14.897847017Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-20T22:50:17.173458084Z","level":"INFO","msg":"status request","component":"handler","environment_id":"b6611891a0cb6d78142e9b02ca4665d5"}
+{"time":"2026-02-20T22:50:19.896829063Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-20T22:50:20.176820785Z","level":"INFO","msg":"gateway config request","component":"handler","routes":1}

@@ -1,0 +1,20 @@
+{
+  "total": 13,
+  "passed": 13,
+  "failed": 0,
+  "tests": [
+    {"name":"control-plane-rollout","status":"pass","detail":"All control plane deployments ready","duration_ms":350},
+    {"name":"port-forward-health","status":"pass","detail":"All port-forwards healthy","duration_ms":43},
+    {"name":"publish-package","status":"pass","detail":"Published k8s-e2e-test-pkg@1.0.0 (HTTP 201)","duration_ms":20},
+    {"name":"create-environment","status":"pass","detail":"Created environment b6611891a0cb6d78142e9b02ca4665d5 (HTTP 201)","duration_ms":38},
+    {"name":"trigger-build","status":"pass","detail":"Build bld-1771627812038-1 triggered (HTTP 201)","duration_ms":39},
+    {"name":"build-status","status":"pass","detail":"Build bld-1771627812038-1 succeeded","duration_ms":38},
+    {"name":"operator-reconcile","status":"pass","detail":"Reconciliation triggered, phase=Running (HTTP 200)","duration_ms":5084},
+    {"name":"verify-k8s-resources","status":"pass","detail":"All expected resources created by operator","duration_ms":149},
+    {"name":"verify-labels","status":"pass","detail":"Correct labels on operator-created resources","duration_ms":145},
+    {"name":"verify-pod-running","status":"pass","detail":"API service pod is running","duration_ms":149},
+    {"name":"echo-server-direct","status":"pass","detail":"Echo server responded (HTTP 200)","duration_ms":2016},
+    {"name":"gateway-routing","status":"pass","detail":"Gateway routes /api/e2e → echo server (HTTP 200)","duration_ms":2039},
+    {"name":"e2e-traffic","status":"pass","detail":"Request routed through gateway to echo server (path=/hello)","duration_ms":59}
+  ]
+}

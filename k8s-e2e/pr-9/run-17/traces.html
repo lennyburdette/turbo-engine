@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trace Viewer — Turbo Engine CI</title>
+<style>
+  :root {
+    --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+    --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+    --accent: #0366d6; --error: #cb2431; --warn: #b08800;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+      --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+      --accent: #58a6ff; --error: #f85149; --warn: #d29922;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 14px; line-height: 1.5; color: var(--fg); background: var(--bg);
+    padding: 16px; max-width: 100vw; overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 1.4em; margin-bottom: 4px; }
+  .subtitle { color: var(--fg-muted); font-size: 13px; margin-bottom: 16px; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+  .breadcrumb a { color: var(--fg-muted); }
+
+  /* Stats bar */
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stat { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+  .stat-value { font-size: 1.3em; font-weight: 600; }
+  .stat-label { font-size: 11px; color: var(--fg-muted); text-transform: uppercase; }
+
+  /* Service filter */
+  .filters { margin-bottom: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn {
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+    padding: 4px 10px; border-radius: 16px; cursor: pointer; font-size: 12px;
+  }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Trace list */
+  .trace { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
+  .trace-header {
+    padding: 8px 12px; background: var(--bg-code); cursor: pointer;
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+  }
+  .trace-header:hover { background: var(--border); }
+  .trace-toggle { font-size: 10px; color: var(--fg-muted); flex-shrink: 0; }
+  .trace-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .trace-meta { color: var(--fg-muted); white-space: nowrap; margin-left: auto; font-size: 12px; }
+  .trace-svc {
+    font-size: 11px; padding: 1px 6px; border-radius: 3px;
+    background: var(--accent); color: #fff; flex-shrink: 0;
+  }
+  .trace-body { display: none; padding: 0; }
+  .trace.open .trace-body { display: block; }
+  .trace.open .trace-toggle::after { content: "▼"; }
+  .trace-toggle::after { content: "▶"; }
+
+  /* Waterfall */
+  .waterfall { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .wf-row {
+    display: flex; align-items: center; border-top: 1px solid var(--border);
+    font-size: 12px; min-height: 28px;
+  }
+  .wf-row:hover { background: var(--bg-code); }
+  .wf-label {
+    min-width: 200px; max-width: 300px; padding: 2px 8px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex-shrink: 0; font-family: SFMono-Regular, Consolas, monospace;
+  }
+  .wf-label .indent { color: var(--fg-muted); }
+  .wf-bar-area { flex: 1; min-width: 200px; position: relative; height: 28px; }
+  .wf-bar {
+    position: absolute; top: 6px; height: 16px; border-radius: 3px;
+    min-width: 2px; opacity: 0.85;
+  }
+  .wf-bar:hover { opacity: 1; }
+  .wf-duration {
+    font-size: 11px; color: var(--fg-muted); padding: 2px 6px;
+    white-space: nowrap; flex-shrink: 0; min-width: 60px; text-align: right;
+  }
+  .wf-bar.error { background: var(--error) !important; }
+
+  /* Color palette for services */
+  .svc-0 { background: #0366d6; } .svc-1 { background: #28a745; }
+  .svc-2 { background: #6f42c1; } .svc-3 { background: #d73a49; }
+  .svc-4 { background: #e36209; } .svc-5 { background: #005cc5; }
+
+  @media (prefers-color-scheme: dark) {
+    .svc-0 { background: #58a6ff; } .svc-1 { background: #3fb950; }
+    .svc-2 { background: #bc8cff; } .svc-3 { background: #f85149; }
+    .svc-4 { background: #f0883e; } .svc-5 { background: #79c0ff; }
+  }
+
+  .empty-state { padding: 32px; text-align: center; color: var(--fg-muted); }
+</style>
+</head>
+<body>
+<div class="container">
+  <nav class="breadcrumb"><a href="./">← Back to report</a></nav>
+  <h1>Trace Viewer</h1>
+  <div class="subtitle" id="subtitle"></div>
+  <div class="stats" id="stats"></div>
+  <div class="filters" id="filters"></div>
+  <div id="traces"></div>
+</div>
+<script>
+var TRACE_DATA = {
+  "captured_at": "2026-02-20T22:50:25Z",
+  "services": {
+    "registry": {"data":[{"traceID":"25dad616423152649be90dac1c47becd","spans":[{"traceID":"25dad616423152649be90dac1c47becd","spanID":"5c40180ddba6d926","operationName":"PublishPackage","references":[],"startTime":1771627811978951,"duration":211,"tags":[{"key":"package.name","type":"string","value":"k8s-e2e-test-pkg"},{"key":"package.namespace","type":"string","value":""},{"key":"package.version","type":"string","value":"1.0.0"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"registry","tags":[{"key":"otel.library.name","type":"string","value":"registry-handler"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null}],"total":0,"limit":0,"offset":0,"errors":null},
+    "builder": {"data":[{"traceID":"37e9407b5bae28ba7991b7216ddf74db","spans":[{"traceID":"37e9407b5bae28ba7991b7216ddf74db","spanID":"cbfd0cea254cc53a","operationName":"builder","references":[],"startTime":1771627801490667,"duration":53,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.5"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":41726},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627801490707,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"61baa0a91c25f3671ec7d3de0ad412dc","spans":[{"traceID":"61baa0a91c25f3671ec7d3de0ad412dc","spanID":"2a67c94aa2abd6d1","operationName":"builder","references":[],"startTime":1771627809901395,"duration":52,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"builder"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.12"},{"key":"net.sock.peer.port","type":"int64","value":60662},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"http.target","type":"string","value":"/v1/graphs"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":19},{"key":"http.status_code","type":"int64","value":404},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627809901430,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":19}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"9569f9187777fe144ed3bfca9e53b97f","spans":[{"traceID":"9569f9187777fe144ed3bfca9e53b97f","spanID":"c0b4695f014da648","operationName":"builder","references":[],"startTime":1771627811491017,"duration":59,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.5"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":52930},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627811491062,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spans":[{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"ab982dc776ae1bbb","operationName":"builder","references":[],"startTime":1771627812038692,"duration":542,"tags":[{"key":"http.method","type":"string","value":"POST"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"localhost"},{"key":"net.host.port","type":"int64","value":18082},{"key":"net.sock.peer.addr","type":"string","value":"127.0.0.1"},{"key":"net.sock.peer.port","type":"int64","value":60518},{"key":"user_agent.original","type":"string","value":"curl/8.5.0"},{"key":"http.target","type":"string","value":"/v1/builds"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.request_content_length","type":"int64","value":139},{"key":"http.response_content_length","type":"int64","value":225},{"key":"http.status_code","type":"int64","value":201},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627812038726,"fields":[{"key":"event","type":"string","value":"read"},{"key":"http.read_bytes","type":"int64","value":139}]},{"timestamp":1771627812038914,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":225}]}],"processID":"p1","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"fdf8b5c0eefb0676","operationName":"resolve.execute","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"13448345bed311f1"}],"startTime":1771627812038942,"duration":2,"tags":[{"key":"root_package_name","type":"string","value":"k8s-e2e-test-pkg"},{"key":"root_package_version","type":"string","value":"1.0.0"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"13448345bed311f1","operationName":"step.resolve","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"a3d851ab0674aa22"}],"startTime":1771627812038937,"duration":20,"tags":[{"key":"build.id","type":"string","value":"bld-1771627812038-1"},{"key":"step","type":"string","value":"resolve"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"c2be8fc4f706566b","operationName":"compose.execute","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"1b7e1d29ca116fdf"}],"startTime":1771627812038961,"duration":0,"tags":[{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"1b7e1d29ca116fdf","operationName":"step.compose","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"a3d851ab0674aa22"}],"startTime":1771627812038960,"duration":3,"tags":[{"key":"build.id","type":"string","value":"bld-1771627812038-1"},{"key":"step","type":"string","value":"compose"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"b0333f832c5c31fc","operationName":"validate.execute","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"685d18af8bc052a4"}],"startTime":1771627812038966,"duration":0,"tags":[{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"685d18af8bc052a4","operationName":"step.validate","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"a3d851ab0674aa22"}],"startTime":1771627812038965,"duration":3,"tags":[{"key":"build.id","type":"string","value":"bld-1771627812038-1"},{"key":"step","type":"string","value":"validate"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"ca0d7975a3979b8d","operationName":"bundle.execute","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"b86e56260ae01ce7"}],"startTime":1771627812038971,"duration":11,"tags":[{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"b86e56260ae01ce7","operationName":"step.bundle","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"a3d851ab0674aa22"}],"startTime":1771627812038969,"duration":14,"tags":[{"key":"build.id","type":"string","value":"bld-1771627812038-1"},{"key":"step","type":"string","value":"bundle"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null},{"traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"a3d851ab0674aa22","operationName":"BuildEngine.Run","references":[{"refType":"CHILD_OF","traceID":"81edae7187d583eac1b09f431d44e2c8","spanID":"ab982dc776ae1bbb"}],"startTime":1771627812038903,"duration":111,"tags":[{"key":"build.id","type":"string","value":"bld-1771627812038-1"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p2":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"builder/engine"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"71f636002563ddf328729eca4efdd3f4","spans":[{"traceID":"71f636002563ddf328729eca4efdd3f4","spanID":"50ef02661e98acbf","operationName":"builder","references":[],"startTime":1771627803857917,"duration":37,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.5"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":41736},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627803857942,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"656c2d124c48f1568b7715029b7db7ee","spans":[{"traceID":"656c2d124c48f1568b7715029b7db7ee","spanID":"6f41903d84ef7297","operationName":"builder","references":[],"startTime":1771627811936147,"duration":28,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"localhost"},{"key":"net.host.port","type":"int64","value":18082},{"key":"net.sock.peer.addr","type":"string","value":"127.0.0.1"},{"key":"net.sock.peer.port","type":"int64","value":60508},{"key":"user_agent.original","type":"string","value":"curl/8.5.0"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627811936166,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"7d120000295fa5fcdfa6964ced2736df","spans":[{"traceID":"7d120000295fa5fcdfa6964ced2736df","spanID":"043526338c5dfe8f","operationName":"builder","references":[],"startTime":1771627812084785,"duration":48,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"localhost"},{"key":"net.host.port","type":"int64","value":18082},{"key":"net.sock.peer.addr","type":"string","value":"127.0.0.1"},{"key":"net.sock.peer.port","type":"int64","value":60528},{"key":"user_agent.original","type":"string","value":"curl/8.5.0"},{"key":"http.target","type":"string","value":"/v1/builds/bld-1771627812038-1"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":683},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627812084826,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":683}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"2d65d64bb08b085099f41ff88d4f0a5d","spans":[{"traceID":"2d65d64bb08b085099f41ff88d4f0a5d","spanID":"5c8ebfe08fa84286","operationName":"builder","references":[],"startTime":1771627818857159,"duration":25,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.5"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":44796},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627818857177,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"d532e941afa114d87661cf9979d25712","spans":[{"traceID":"d532e941afa114d87661cf9979d25712","spanID":"4c5056f11dd15dbd","operationName":"builder","references":[],"startTime":1771627819896673,"duration":43,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"builder"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.12"},{"key":"net.sock.peer.port","type":"int64","value":46366},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"http.target","type":"string","value":"/v1/graphs"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":19},{"key":"http.status_code","type":"int64","value":404},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627819896705,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":19}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"4a7ea98c13017b46ad458ed76db159ee","spans":[{"traceID":"4a7ea98c13017b46ad458ed76db159ee","spanID":"93fc379664b56fff","operationName":"builder","references":[],"startTime":1771627804896942,"duration":34,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"builder"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.12"},{"key":"net.sock.peer.port","type":"int64","value":45140},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"http.target","type":"string","value":"/v1/graphs"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":19},{"key":"http.status_code","type":"int64","value":404},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627804896966,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":19}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"937e63c920faa6e8ca596e5f7ea959df","spans":[{"traceID":"937e63c920faa6e8ca596e5f7ea959df","spanID":"510b3c5ea9e8deeb","operationName":"builder","references":[],"startTime":1771627814897695,"duration":34,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"builder"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.12"},{"key":"net.sock.peer.port","type":"int64","value":60664},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"http.target","type":"string","value":"/v1/graphs"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":19},{"key":"http.status_code","type":"int64","value":404},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627814897721,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":19}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null},{"traceID":"c519edefa7191d0c084219b5d8b2f1ac","spans":[{"traceID":"c519edefa7191d0c084219b5d8b2f1ac","spanID":"4bd48401996313f6","operationName":"builder","references":[],"startTime":1771627821490982,"duration":46,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.5"},{"key":"net.host.port","type":"int64","value":8082},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":44798},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627821491007,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}},"warnings":null}],"total":0,"limit":0,"offset":0,"errors":null},
+    "envmanager": {"data":[{"traceID":"11678b150190bb13e84b74dc97e38858","spans":[{"traceID":"11678b150190bb13e84b74dc97e38858","spanID":"2a04b2334ca98d56","operationName":"envmanager","references":[],"startTime":1771627811996228,"duration":303,"tags":[{"key":"http.method","type":"string","value":"POST"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"localhost"},{"key":"net.host.port","type":"int64","value":18083},{"key":"net.sock.peer.addr","type":"string","value":"127.0.0.1"},{"key":"net.sock.peer.port","type":"int64","value":48512},{"key":"user_agent.original","type":"string","value":"curl/8.5.0"},{"key":"http.target","type":"string","value":"/v1/environments"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.request_content_length","type":"int64","value":165},{"key":"http.response_content_length","type":"int64","value":280},{"key":"http.status_code","type":"int64","value":201},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627811996276,"fields":[{"key":"event","type":"string","value":"read"},{"key":"http.read_bytes","type":"int64","value":165}]},{"timestamp":1771627811996518,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":280}]}],"processID":"p1","warnings":null},{"traceID":"11678b150190bb13e84b74dc97e38858","spanID":"23479ca1d18bf57d","operationName":"Orchestrator.CreateEnvironment","references":[{"refType":"CHILD_OF","traceID":"11678b150190bb13e84b74dc97e38858","spanID":"2a04b2334ca98d56"}],"startTime":1771627811996395,"duration":39,"tags":[{"key":"env.name","type":"string","value":"k8s-e2e-env"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p2","warnings":null}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]},"p2":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"envmanager/orchestrator"}]}},"warnings":null},{"traceID":"63ca65cd7ae3cfacf1be6cfec3aecd20","spans":[{"traceID":"63ca65cd7ae3cfacf1be6cfec3aecd20","spanID":"be493ae5d99c7096","operationName":"envmanager","references":[],"startTime":1771627818918700,"duration":24,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.7"},{"key":"net.host.port","type":"int64","value":8083},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":40150},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627818918716,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]}},"warnings":null},{"traceID":"41daa7270e116f7d9cf782b6aed2d721","spans":[{"traceID":"41daa7270e116f7d9cf782b6aed2d721","spanID":"e86c5a6f7ad8663e","operationName":"envmanager","references":[],"startTime":1771627811490655,"duration":293,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.7"},{"key":"net.host.port","type":"int64","value":8083},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":42676},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627811490678,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]}},"warnings":null},{"traceID":"b8a9cca4413c788be5aaf03e7bb2300a","spans":[{"traceID":"b8a9cca4413c788be5aaf03e7bb2300a","spanID":"8711e3a0fa3fba3e","operationName":"envmanager","references":[],"startTime":1771627811946386,"duration":60,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"localhost"},{"key":"net.host.port","type":"int64","value":18083},{"key":"net.sock.peer.addr","type":"string","value":"127.0.0.1"},{"key":"net.sock.peer.port","type":"int64","value":48502},{"key":"user_agent.original","type":"string","value":"curl/8.5.0"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627811946410,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]}},"warnings":null},{"traceID":"75fef411a59011669f5e8ff2e9c04e74","spans":[{"traceID":"75fef411a59011669f5e8ff2e9c04e74","spanID":"c4e099009d79e9fd","operationName":"envmanager","references":[],"startTime":1771627803918567,"duration":54,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.7"},{"key":"net.host.port","type":"int64","value":8083},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":45800},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627803918608,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]}},"warnings":null},{"traceID":"959695b90da80bb459b0c614bd915381","spans":[{"traceID":"959695b90da80bb459b0c614bd915381","spanID":"a968a5646da8848e","operationName":"envmanager","references":[],"startTime":1771627821490903,"duration":34,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.7"},{"key":"net.host.port","type":"int64","value":8083},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":40160},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627821490925,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]}},"warnings":null},{"traceID":"19fda37037f187153172121f53538649","spans":[{"traceID":"19fda37037f187153172121f53538649","spanID":"92da64426edbc88b","operationName":"envmanager","references":[],"startTime":1771627801491528,"duration":93,"tags":[{"key":"http.method","type":"string","value":"GET"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"10.244.0.7"},{"key":"net.host.port","type":"int64","value":8083},{"key":"net.sock.peer.addr","type":"string","value":"10.244.0.1"},{"key":"net.sock.peer.port","type":"int64","value":45792},{"key":"user_agent.original","type":"string","value":"kube-probe/1.35"},{"key":"http.target","type":"string","value":"/healthz"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.response_content_length","type":"int64","value":15},{"key":"http.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771627801491571,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":15}]}],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]}},"warnings":null}],"total":0,"limit":0,"offset":0,"errors":null},
+    "operator": {"data":[],"total":0,"limit":0,"offset":0,"errors":null},
+    "gateway": {"data":[{"traceID":"f799b6d64000bdd3fcf386e8d8eddea6","spans":[{"traceID":"f799b6d64000bdd3fcf386e8d8eddea6","spanID":"3df7226a040f792f","operationName":"proxy_handler","references":[],"startTime":1771627821727899,"duration":289,"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":36},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"method","type":"string","value":"GET"},{"key":"path","type":"string","value":"/api/e2e/hello"},{"key":"busy_ns","type":"int64","value":70822},{"key":"idle_ns","type":"int64","value":218840},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p1","warnings":null},{"traceID":"f799b6d64000bdd3fcf386e8d8eddea6","spanID":"70412cc8b700d577","operationName":"proxy_upstream","references":[{"refType":"CHILD_OF","traceID":"f799b6d64000bdd3fcf386e8d8eddea6","spanID":"3df7226a040f792f"}],"startTime":1771627821727913,"duration":264,"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":87},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"upstream","type":"string","value":"http://svc-k8s-e2e-test-pkg:8080/hello?test=e2e"},{"key":"busy_ns","type":"int64","value":22111},{"key":"idle_ns","type":"int64","value":243616},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"gateway","tags":[{"key":"otel.library.name","type":"string","value":"gateway"},{"key":"telemetry.sdk.language","type":"string","value":"rust"},{"key":"telemetry.sdk.name","type":"string","value":"opentelemetry"},{"key":"telemetry.sdk.version","type":"string","value":"0.23.0"}]}},"warnings":null},{"traceID":"49c9c385a943c0dbd02a8b7d847a6cf4","spans":[{"traceID":"49c9c385a943c0dbd02a8b7d847a6cf4","spanID":"0d9f5cc6b7149024","operationName":"proxy_upstream","references":[{"refType":"CHILD_OF","traceID":"49c9c385a943c0dbd02a8b7d847a6cf4","spanID":"196735e31dba6fd9"}],"startTime":1771627821710537,"duration":1075,"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":87},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"upstream","type":"string","value":"http://svc-k8s-e2e-test-pkg:8080/healthz"},{"key":"busy_ns","type":"int64","value":276707},{"key":"idle_ns","type":"int64","value":800930},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p1","warnings":null},{"traceID":"49c9c385a943c0dbd02a8b7d847a6cf4","spanID":"196735e31dba6fd9","operationName":"proxy_handler","references":[],"startTime":1771627821710504,"duration":1125,"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":36},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"method","type":"string","value":"GET"},{"key":"path","type":"string","value":"/api/e2e/healthz"},{"key":"busy_ns","type":"int64","value":347370},{"key":"idle_ns","type":"int64","value":779470},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[],"processID":"p1","warnings":null}],"processes":{"p1":{"serviceName":"gateway","tags":[{"key":"otel.library.name","type":"string","value":"gateway"},{"key":"telemetry.sdk.language","type":"string","value":"rust"},{"key":"telemetry.sdk.name","type":"string","value":"opentelemetry"},{"key":"telemetry.sdk.version","type":"string","value":"0.23.0"}]}},"warnings":null}],"total":0,"limit":0,"offset":0,"errors":null}
+  }
+}
+;
+
+(function() {
+  var services = TRACE_DATA.services || {};
+  var capturedAt = TRACE_DATA.captured_at || 'unknown';
+
+  document.getElementById('subtitle').textContent = 'Captured at ' + capturedAt;
+
+  // Collect all traces with their service name.
+  var allTraces = [];
+  var svcNames = Object.keys(services).sort();
+  var svcColorMap = {};
+  svcNames.forEach(function(name, i) { svcColorMap[name] = 'svc-' + (i % 6); });
+
+  svcNames.forEach(function(svcName) {
+    var svcData = services[svcName];
+    var traces = (svcData && svcData.data) || [];
+    traces.forEach(function(t) {
+      allTraces.push({ svcName: svcName, trace: t });
+    });
+  });
+
+  // Stats.
+  var totalSpans = allTraces.reduce(function(sum, t) {
+    return sum + (t.trace.spans || []).length;
+  }, 0);
+
+  var statsEl = document.getElementById('stats');
+  statsEl.innerHTML =
+    '<div class="stat"><div class="stat-value">' + svcNames.length + '</div><div class="stat-label">Services</div></div>' +
+    '<div class="stat"><div class="stat-value">' + allTraces.length + '</div><div class="stat-label">Traces</div></div>' +
+    '<div class="stat"><div class="stat-value">' + totalSpans + '</div><div class="stat-label">Spans</div></div>';
+
+  if (allTraces.length === 0) {
+    document.getElementById('traces').innerHTML = '<div class="empty-state">No traces captured. The OTLP collector may not have been reachable.</div>';
+    return;
+  }
+
+  // Filter buttons.
+  var activeFilters = new Set(svcNames);
+  var filtersEl = document.getElementById('filters');
+
+  function renderFilters() {
+    filtersEl.innerHTML = '';
+    var allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn' + (activeFilters.size === svcNames.length ? ' active' : '');
+    allBtn.textContent = 'All';
+    allBtn.onclick = function() {
+      if (activeFilters.size === svcNames.length) {
+        activeFilters.clear();
+      } else {
+        svcNames.forEach(function(n) { activeFilters.add(n); });
+      }
+      renderFilters();
+      renderTraces();
+    };
+    filtersEl.appendChild(allBtn);
+
+    svcNames.forEach(function(name) {
+      var btn = document.createElement('button');
+      btn.className = 'filter-btn' + (activeFilters.has(name) ? ' active' : '');
+      btn.textContent = name;
+      btn.onclick = function() {
+        if (activeFilters.has(name)) activeFilters.delete(name);
+        else activeFilters.add(name);
+        renderFilters();
+        renderTraces();
+      };
+      filtersEl.appendChild(btn);
+    });
+  }
+
+  function formatDuration(us) {
+    if (us < 1000) return us + 'μs';
+    if (us < 1000000) return (us / 1000).toFixed(1) + 'ms';
+    return (us / 1000000).toFixed(2) + 's';
+  }
+
+  function renderTraces() {
+    var container = document.getElementById('traces');
+    container.innerHTML = '';
+
+    var filtered = allTraces.filter(function(t) { return activeFilters.has(t.svcName); });
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="empty-state">No traces match the selected filters.</div>';
+      return;
+    }
+
+    filtered.forEach(function(item, idx) {
+      var t = item.trace;
+      var spans = t.spans || [];
+      var processes = t.processes || {};
+      if (spans.length === 0) return;
+
+      // Find root span and total duration.
+      var spanIds = {};
+      spans.forEach(function(s) { spanIds[s.spanID] = true; });
+
+      var rootSpan = null;
+      spans.forEach(function(s) {
+        var refs = s.references || [];
+        var hasParentInTrace = refs.some(function(r) {
+          return r.refType === 'CHILD_OF' && spanIds[r.spanID];
+        });
+        if (!hasParentInTrace) {
+          if (!rootSpan || s.startTime < rootSpan.startTime) rootSpan = s;
+        }
+      });
+      if (!rootSpan) rootSpan = spans[0];
+
+      var traceStart = Math.min.apply(null, spans.map(function(s) { return s.startTime; }));
+      var traceEnd = Math.max.apply(null, spans.map(function(s) { return s.startTime + s.duration; }));
+      var totalDuration = traceEnd - traceStart;
+
+      var proc = processes[rootSpan.processID] || {};
+      var svcName = proc.serviceName || item.svcName;
+
+      var traceEl = document.createElement('div');
+      traceEl.className = 'trace';
+
+      var header = document.createElement('div');
+      header.className = 'trace-header';
+      header.innerHTML =
+        '<span class="trace-toggle"></span>' +
+        '<span class="trace-svc ' + (svcColorMap[svcName] || 'svc-0') + '">' + svcName + '</span>' +
+        '<span class="trace-name">' + rootSpan.operationName + '</span>' +
+        '<span class="trace-meta">' + spans.length + ' spans · ' + formatDuration(totalDuration) + '</span>';
+      header.onclick = function() { traceEl.classList.toggle('open'); };
+
+      var body = document.createElement('div');
+      body.className = 'trace-body';
+
+      // Build span tree.
+      var childMap = {};
+      spans.forEach(function(s) {
+        var refs = s.references || [];
+        refs.forEach(function(r) {
+          if (r.refType === 'CHILD_OF' && spanIds[r.spanID]) {
+            if (!childMap[r.spanID]) childMap[r.spanID] = [];
+            childMap[r.spanID].push(s);
+          }
+        });
+      });
+
+      // DFS to flatten with depth.
+      var flatSpans = [];
+      function dfs(span, depth) {
+        flatSpans.push({ span: span, depth: depth });
+        var children = childMap[span.spanID] || [];
+        children.sort(function(a, b) { return a.startTime - b.startTime; });
+        children.forEach(function(c) { dfs(c, depth + 1); });
+      }
+      dfs(rootSpan, 0);
+
+      // Also add any orphan spans not reached by DFS.
+      var visited = {};
+      flatSpans.forEach(function(f) { visited[f.span.spanID] = true; });
+      spans.forEach(function(s) {
+        if (!visited[s.spanID]) flatSpans.push({ span: s, depth: 0 });
+      });
+
+      var wf = document.createElement('div');
+      wf.className = 'waterfall';
+
+      flatSpans.forEach(function(item) {
+        var s = item.span;
+        var depth = item.depth;
+        var sProc = processes[s.processID] || {};
+        var sSvc = sProc.serviceName || '?';
+        var hasError = (s.tags || []).some(function(tag) {
+          return tag.key === 'error' && tag.value === true;
+        });
+
+        var row = document.createElement('div');
+        row.className = 'wf-row';
+
+        var indent = '';
+        for (var d = 0; d < depth; d++) indent += '  ';
+
+        var label = document.createElement('div');
+        label.className = 'wf-label';
+        label.innerHTML = '<span class="indent">' + indent + '</span>' + sSvc + '/' + s.operationName;
+        label.title = sSvc + '/' + s.operationName;
+
+        var barArea = document.createElement('div');
+        barArea.className = 'wf-bar-area';
+
+        var bar = document.createElement('div');
+        var leftPct = totalDuration > 0 ? ((s.startTime - traceStart) / totalDuration * 100) : 0;
+        var widthPct = totalDuration > 0 ? (s.duration / totalDuration * 100) : 100;
+        bar.className = 'wf-bar ' + (svcColorMap[sSvc] || 'svc-0') + (hasError ? ' error' : '');
+        bar.style.left = leftPct + '%';
+        bar.style.width = Math.max(widthPct, 0.5) + '%';
+        bar.title = formatDuration(s.duration);
+        barArea.appendChild(bar);
+
+        var dur = document.createElement('div');
+        dur.className = 'wf-duration';
+        dur.textContent = formatDuration(s.duration);
+
+        row.appendChild(label);
+        row.appendChild(barArea);
+        row.appendChild(dur);
+        wf.appendChild(row);
+      });
+
+      body.appendChild(wf);
+      traceEl.appendChild(header);
+      traceEl.appendChild(body);
+      container.appendChild(traceEl);
+    });
+  }
+
+  renderFilters();
+  renderTraces();
+
+  // Auto-expand first trace.
+  var first = document.querySelector('.trace');
+  if (first) first.classList.add('open');
+})();
+</script>
+</body>
+</html>

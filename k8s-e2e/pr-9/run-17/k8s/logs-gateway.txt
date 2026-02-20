@@ -1,0 +1,5 @@
+[2m2026-02-20T22:49:49.672093Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m starting gateway [3mport[0m[2m=[0m8080 [3mconfig_url[0m[2m=[0mSome("http://turbo-engine-operator:8084/v1/gateway-config")
+[2m2026-02-20T22:49:49.976346Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m failed to load config — starting with empty routing table [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config)
+[2m2026-02-20T22:49:50.194142Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m gateway listening [3maddr[0m[2m=[0m0.0.0.0:8080
+[2m2026-02-20T22:50:05.177208Z[0m [33m WARN[0m [2mgateway::config[0m[2m:[0m failed to reload config — keeping previous version [3merr[0m[2m=[0mconfiguration error: failed to decode config response: error decoding response body
+[2m2026-02-20T22:50:20.177790Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m1
