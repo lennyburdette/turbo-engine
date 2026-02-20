@@ -166,7 +166,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          ./hack/scripts/publish-ci-report.sh || echo "::warning title=Report Publish::Failed to publish report to ci-reports branch"
+          ./hack/scripts/publish-ci-report.sh || echo "::error title=Report Publish::publish-ci-report.sh exited with code $?"
 
       # -----------------------------------------------------------------------
       # Post summary to step summary and PR comment

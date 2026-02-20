@@ -51,22 +51,24 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 cd "$WORK_DIR"
 
-# Build the clone URL. In CI, inject the token for HTTPS auth since
-# actions/checkout only configures credentials for the main working copy.
+# Set up git auth. actions/checkout only configures credentials for the main
+# working copy; this temp directory needs its own.  url.*.insteadOf rewrites
+# all HTTPS github.com URLs to include the token, covering clone + push.
 CLONE_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
 if [ -n "${GH_TOKEN:-}" ]; then
-  CLONE_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+  git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+  echo "Configured git credential rewrite for github.com"
 fi
 
 # Clone just the ci-reports branch (shallow, single-branch).
-if git clone --depth 1 --branch ci-reports "$CLONE_URL" repo 2>/dev/null; then
+if git clone --depth 1 --branch ci-reports "$CLONE_URL" repo 2>&1; then
   cd repo
 else
   # Branch doesn't exist yet — create it as an orphan.
   echo "ci-reports branch does not exist, creating it..."
   mkdir repo && cd repo
   git init
-  git remote add origin "$CLONE_URL"
+  git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
   git checkout --orphan ci-reports
 
   # Bootstrap Jekyll config and root index.
@@ -215,8 +217,10 @@ done
 git add -A
 git commit -m "CI report: ${REPORT_TYPE} PR #${PR_NUMBER} run #${RUN_NUMBER}" --allow-empty
 
-# Push with retry (network can be flaky in CI).
-MAX_RETRIES=4
+# Push with retry.  Two concurrent workflows (E2E + K8s E2E) may race to
+# push to ci-reports.  On each retry, fetch + rebase so we incorporate the
+# other workflow's commit before re-pushing.
+MAX_RETRIES=5
 for i in $(seq 1 $MAX_RETRIES); do
   if git push origin ci-reports 2>&1; then
     echo "Pushed to ci-reports branch successfully."
@@ -224,10 +228,13 @@ for i in $(seq 1 $MAX_RETRIES); do
   else
     if [ "$i" -lt "$MAX_RETRIES" ]; then
       WAIT=$((2 ** i))
-      echo "Push failed, retrying in ${WAIT}s... (attempt ${i}/${MAX_RETRIES})"
+      echo "Push failed (attempt ${i}/${MAX_RETRIES}), rebasing and retrying in ${WAIT}s..."
       sleep "$WAIT"
+      # Fetch latest ci-reports and rebase our commit on top.
+      git fetch origin ci-reports 2>&1 || true
+      git rebase origin/ci-reports 2>&1 || git rebase --abort 2>/dev/null || true
     else
-      echo "::warning title=Report Publish Failed::Failed to push to ci-reports branch after ${MAX_RETRIES} attempts"
+      echo "::error title=Report Publish Failed::Failed to push to ci-reports branch after ${MAX_RETRIES} attempts"
       exit 0  # Non-fatal — don't fail the workflow over this.
     fi
   fi
