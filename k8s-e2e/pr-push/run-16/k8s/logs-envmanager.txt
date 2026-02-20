@@ -1,0 +1,2 @@
+{"time":"2026-02-20T22:36:07.180161846Z","level":"INFO","msg":"starting server","addr":":8083"}
+{"time":"2026-02-20T22:36:29.832201344Z","level":"INFO","msg":"environment created","id":"deb9fa195b56843c7f5083a9fdb454a0","name":"k8s-e2e-env"}
