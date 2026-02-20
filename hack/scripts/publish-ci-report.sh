@@ -15,6 +15,7 @@
 #   GITHUB_REPOSITORY — e.g. lennyburdette/turbo-engine
 #   PAGES_BASE_URL — Override for Pages URL (auto-detected if unset)
 set -euo pipefail
+trap 'echo "::error title=publish-ci-report.sh::Script failed at line $LINENO (exit code $?)"' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -51,15 +52,28 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 cd "$WORK_DIR"
 
+# Set up git auth. actions/checkout only configures credentials for the main
+# working copy; this temp directory needs its own.  Use a credential helper
+# that returns the token — this avoids embedding the token in the git config
+# file (which url.insteadOf would do) and works reliably across git versions.
+CLONE_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+if [ -n "${GH_TOKEN:-}" ]; then
+  git config --global credential.helper '!f() { echo "username=x-access-token"; echo "password='"${GH_TOKEN}"'"; }; f'
+  echo "Configured git credential helper for CI"
+fi
+
+echo "Cloning ci-reports branch from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}..."
+
 # Clone just the ci-reports branch (shallow, single-branch).
-if git clone --depth 1 --branch ci-reports "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" repo 2>/dev/null; then
+if git clone --depth 1 --branch ci-reports "$CLONE_URL" repo 2>&1; then
   cd repo
+  echo "Cloned ci-reports branch successfully."
 else
   # Branch doesn't exist yet — create it as an orphan.
-  echo "ci-reports branch does not exist, creating it..."
+  echo "ci-reports branch does not exist (or clone failed), creating it..."
   mkdir repo && cd repo
   git init
-  git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+  git remote add origin "$CLONE_URL"
   git checkout --orphan ci-reports
 
   # Bootstrap Jekyll config and root index.
@@ -123,7 +137,7 @@ if [ -d "${REPORT_PATH}/screenshots" ]; then
     echo ""
     echo "## Screenshots"
     echo ""
-    for img in "${REPORT_PATH}/screenshots/"*.{png,jpg,html} 2>/dev/null; do
+    for img in "${REPORT_PATH}/screenshots/"*.png "${REPORT_PATH}/screenshots/"*.jpg "${REPORT_PATH}/screenshots/"*.html; do
       [ -f "$img" ] || continue
       fname=$(basename "$img")
       if [[ "$fname" == *.html ]]; then
@@ -208,8 +222,10 @@ done
 git add -A
 git commit -m "CI report: ${REPORT_TYPE} PR #${PR_NUMBER} run #${RUN_NUMBER}" --allow-empty
 
-# Push with retry (network can be flaky in CI).
-MAX_RETRIES=4
+# Push with retry.  Two concurrent workflows (E2E + K8s E2E) may race to
+# push to ci-reports.  On each retry, fetch + rebase so we incorporate the
+# other workflow's commit before re-pushing.
+MAX_RETRIES=5
 for i in $(seq 1 $MAX_RETRIES); do
   if git push origin ci-reports 2>&1; then
     echo "Pushed to ci-reports branch successfully."
@@ -217,10 +233,13 @@ for i in $(seq 1 $MAX_RETRIES); do
   else
     if [ "$i" -lt "$MAX_RETRIES" ]; then
       WAIT=$((2 ** i))
-      echo "Push failed, retrying in ${WAIT}s... (attempt ${i}/${MAX_RETRIES})"
+      echo "Push failed (attempt ${i}/${MAX_RETRIES}), rebasing and retrying in ${WAIT}s..."
       sleep "$WAIT"
+      # Fetch latest ci-reports and rebase our commit on top.
+      git fetch origin ci-reports 2>&1 || true
+      git rebase origin/ci-reports 2>&1 || git rebase --abort 2>/dev/null || true
     else
-      echo "::warning title=Report Publish Failed::Failed to push to ci-reports branch after ${MAX_RETRIES} attempts"
+      echo "::error title=Report Publish Failed::Failed to push to ci-reports branch after ${MAX_RETRIES} attempts"
       exit 0  # Non-fatal — don't fail the workflow over this.
     fi
   fi
