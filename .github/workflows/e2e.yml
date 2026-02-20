@@ -102,6 +102,38 @@ jobs:
           HEALTH_TIMEOUT: "180"
 
       # -----------------------------------------------------------------------
+      # Diagnostics on failure (always capture container state)
+      # -----------------------------------------------------------------------
+      - name: Container diagnostics
+        if: failure()
+        run: |
+          echo "### Container Status" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          docker compose -f infra/docker/docker-compose.yml ps -a >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### Port Connectivity" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          for port in 8080 8081 8082 8083 8084 3000; do
+            if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${port}/healthz" 2>/dev/null; then
+              echo "  Port $port: HTTP $(curl -s -o /dev/null -w '%{http_code}' http://localhost:${port}/healthz 2>/dev/null)" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "  Port $port: UNREACHABLE" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### Service Logs (last 30 lines each)" >> "$GITHUB_STEP_SUMMARY"
+          for svc in registry builder operator envmanager gateway console otel-collector jaeger prometheus; do
+            echo "#### $svc" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            docker compose -f infra/docker/docker-compose.yml logs --tail=30 --no-color "$svc" >> "$GITHUB_STEP_SUMMARY" 2>&1 || echo "(no logs)" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      # -----------------------------------------------------------------------
       # Run smoke tests
       # -----------------------------------------------------------------------
       - name: Run smoke tests
