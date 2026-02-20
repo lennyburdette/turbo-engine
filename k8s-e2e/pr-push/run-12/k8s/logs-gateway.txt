@@ -1,0 +1,3 @@
+[2m2026-02-20T20:34:46.492974Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m starting gateway [3mport[0m[2m=[0m8080 [3mconfig_url[0m[2m=[0mNone
+[2m2026-02-20T20:34:46.492993Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m no config-url provided — starting with empty routing table
+[2m2026-02-20T20:34:46.739019Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m gateway listening [3maddr[0m[2m=[0m0.0.0.0:8080

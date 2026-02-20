@@ -1,0 +1,86 @@
+{
+  "actions": [
+    {
+      "time": "2026-02-20T20:35:09.469805388Z",
+      "msg": "reconcile request received",
+      "environment_id": "9103f7f1b5448a463677bbc85b438f95",
+      "action": "",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": ""
+    },
+    {
+      "time": "2026-02-20T20:35:09.46983271Z",
+      "msg": "starting reconciliation",
+      "environment_id": "9103f7f1b5448a463677bbc85b438f95",
+      "action": "",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": ""
+    },
+    {
+      "time": "2026-02-20T20:35:09.469848359Z",
+      "msg": "reconciliation action",
+      "environment_id": "9103f7f1b5448a463677bbc85b438f95",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-k8s-e2e-test-pkg",
+      "details": "image=artifact:e2e-test-hash replicas=1"
+    },
+    {
+      "time": "2026-02-20T20:35:09.469862245Z",
+      "msg": "reconciliation action",
+      "environment_id": "9103f7f1b5448a463677bbc85b438f95",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-k8s-e2e-test-pkg",
+      "details": "selector=k8s-e2e-test-pkg"
+    },
+    {
+      "time": "2026-02-20T20:35:09.469868958Z",
+      "msg": "reconciliation action",
+      "environment_id": "9103f7f1b5448a463677bbc85b438f95",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-k8s-e2e-test-pkg",
+      "details": "env_vars=0"
+    },
+    {
+      "time": "2026-02-20T20:35:09.469876812Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-k8s-e2e-test-pkg",
+      "details": "image=artifact:e2e-test-hash replicas=1"
+    },
+    {
+      "time": "2026-02-20T20:35:09.481899422Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-k8s-e2e-test-pkg",
+      "details": "selector=k8s-e2e-test-pkg"
+    },
+    {
+      "time": "2026-02-20T20:35:09.490170786Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-k8s-e2e-test-pkg",
+      "details": "env_vars=0"
+    },
+    {
+      "time": "2026-02-20T20:35:09.497357364Z",
+      "msg": "reconciliation complete",
+      "environment_id": "9103f7f1b5448a463677bbc85b438f95",
+      "action": "",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": ""
+    }
+  ],
+  "count": 9
+}
