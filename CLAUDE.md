@@ -282,6 +282,25 @@ hack/claude/turbo-gh watch                     # poll until in-progress runs fin
 
 **The annotations command is the fastest way to understand a failure.** The E2E workflow emits diagnostics as `::warning` and `::error` annotations, which are readable via the check-runs API. This is much faster than downloading full log archives.
 
+### Reading CI reports
+
+E2E workflows publish full reports (logs, traces, screenshots) to the `ci-reports` branch, which is served via GitHub Pages. This is the best way for Claude Code to read E2E results since GitHub Actions artifacts aren't downloadable from this environment.
+
+```sh
+# Fetch the reports branch and read the latest report
+git fetch origin ci-reports
+git show origin/ci-reports:k8s-e2e/pr-3/run-5/REPORT.md   # K8s E2E report
+git show origin/ci-reports:e2e/pr-3/run-5/REPORT.md        # Docker Compose report
+git show origin/ci-reports:k8s-e2e/pr-3/run-5/k8s-e2e-results.json  # structured results
+
+# List available reports
+git ls-tree --name-only -r origin/ci-reports | head -30
+
+# Browse reports at: https://<owner>.github.io/<repo>/
+```
+
+The PR comment links directly to the GitHub Pages URL for the run's report.
+
 **Key lessons for this repo's CI:**
 
 - **Docker Compose flag order matters.** `--progress=plain` is a global compose flag: `docker compose --progress=plain build`, NOT `docker compose build --progress=plain`.

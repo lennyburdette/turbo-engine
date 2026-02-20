@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -150,6 +150,25 @@ jobs:
           retention-days: 14
 
       # -----------------------------------------------------------------------
+      # Publish report to ci-reports branch (for GitHub Pages + Claude)
+      # -----------------------------------------------------------------------
+      - name: Publish report to ci-reports branch
+        id: publish_report
+        if: always()
+        env:
+          REPORT_TYPE: e2e
+          PR_NUMBER: ${{ github.event.pull_request.number || 'push' }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ./hack/scripts/publish-ci-report.sh || echo "::warning title=Report Publish::Failed to publish report to ci-reports branch"
+
+      # -----------------------------------------------------------------------
       # Post summary to step summary and PR comment
       # -----------------------------------------------------------------------
       - name: Build E2E summary
@@ -205,7 +224,12 @@ jobs:
           fi
 
           echo "" >> "$SUMMARY_FILE"
-          echo "📦 Full CI report available in the [**ci-report** artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." >> "$SUMMARY_FILE"
+          REPORT_URL="${{ steps.publish_report.outputs.report_url }}"
+          if [ -n "$REPORT_URL" ]; then
+            echo "Full report: [**Browse on GitHub Pages**](${REPORT_URL}) | [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> "$SUMMARY_FILE"
+          else
+            echo "Full CI report available in the [**ci-report** artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." >> "$SUMMARY_FILE"
+          fi
 
           # Write to step summary
           cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
@@ -220,6 +244,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           REPO: ${{ github.repository }}
+          REPORT_URL: ${{ steps.publish_report.outputs.report_url }}
         run: |
           SUMMARY_FILE="${{ steps.summary.outputs.file }}"
           if [ ! -f "$SUMMARY_FILE" ]; then
@@ -235,7 +260,11 @@ jobs:
             cat "$SUMMARY_FILE"
             echo ""
             echo "---"
-            echo "*Posted by the E2E workflow — [view run](${RUN_URL})*"
+            if [ -n "$REPORT_URL" ]; then
+              echo "**[View full report with screenshots](${REPORT_URL})** | [workflow run](${RUN_URL})"
+            else
+              echo "*Posted by the E2E workflow — [view run](${RUN_URL})*"
+            fi
           } > /tmp/pr-comment-body.txt
 
           # Find existing bot comment (if any) and update it, otherwise create new
