@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -156,6 +157,9 @@ func initTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {
 		return tp, nil
 	}
 
+	// WithEndpoint expects host:port, not a URL with a scheme.
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(endpoint),
 		otlptracegrpc.WithInsecure(),
