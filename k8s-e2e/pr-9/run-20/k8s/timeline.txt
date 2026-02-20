@@ -1,0 +1,24 @@
+00:00  Waiting for control plane deployments to roll out
+00:01  Control plane pods ready
+00:01  Setting up port-forwards
+00:07  Port-forwards established and healthy
+00:07  Publishing test package to registry
+00:07  Published k8s-e2e-test-pkg@1.0.0
+00:07  Creating test environment
+00:07  Created environment 7ab21e38118102017deaa3e5972d7bdf
+00:07  Triggering build
+00:07  Build bld-1771631834424-1 triggered
+00:07  Polling build status
+00:07  Build bld-1771631834424-1 succeeded
+00:07  Triggering operator reconciliation
+00:12  Operator reconciliation complete — phase=Running
+00:12  Verifying operator-created K8s resources
+00:12  K8s resources verified (Deployment, Service, ConfigMap)
+00:13  API service pod running
+00:13  Testing echo server directly via port-forward
+00:15  Echo server responding directly
+00:15  Checking gateway routing config
+00:17  Gateway routing config active
+00:17  Testing end-to-end traffic through gateway
+00:17  End-to-end traffic test passed
+00:17  Tests complete: 13 passed, 0 failed
