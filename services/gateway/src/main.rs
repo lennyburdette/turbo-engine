@@ -169,13 +169,36 @@ async fn load_initial_config(args: &Args) -> (IngressConfig, Option<ConfigSource
     match &args.config_url {
         Some(url) => {
             let source = ConfigSource::from_str_auto(url);
+
+            // Retry a few times with backoff so we survive startup races
+            // (e.g. gateway starts before operator in K8s).
+            let backoffs = [1, 2, 4];
+            for (attempt, &delay_secs) in backoffs.iter().enumerate() {
+                match config::load_config(&source).await {
+                    Ok(cfg) => {
+                        info!(routes = cfg.routing.routes.len(), "loaded initial config");
+                        return (cfg, Some(source));
+                    }
+                    Err(err) => {
+                        warn!(
+                            %err,
+                            attempt = attempt + 1,
+                            max_attempts = backoffs.len() + 1,
+                            "config not available yet, retrying"
+                        );
+                        tokio::time::sleep(Duration::from_secs(delay_secs)).await;
+                    }
+                }
+            }
+
+            // Final attempt.
             match config::load_config(&source).await {
                 Ok(cfg) => {
                     info!(routes = cfg.routing.routes.len(), "loaded initial config");
                     (cfg, Some(source))
                 }
                 Err(err) => {
-                    warn!(%err, "failed to load config — starting with empty routing table");
+                    warn!(%err, "failed to load config after retries — starting with empty routing table");
                     (IngressConfig::default(), Some(source))
                 }
             }
