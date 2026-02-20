@@ -15,12 +15,18 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -ldflags="-s -w" -o /bin/registry ./cmd/registry
 
 # --- Runtime stage ---
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM alpine:3.20
 
-COPY --from=builder /bin/registry /registry
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S registry && adduser -S registry -G registry
+
+COPY --from=builder /bin/registry /usr/local/bin/registry
+
+USER registry
 
 EXPOSE 8081
 
-USER nonroot:nonroot
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+    CMD ["wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/healthz"]
 
-ENTRYPOINT ["/registry"]
+ENTRYPOINT ["registry"]
