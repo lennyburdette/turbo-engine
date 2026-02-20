@@ -1,0 +1,2 @@
+{"time":"2026-02-20T21:31:41.577462717Z","level":"INFO","msg":"starting registry service","port":"8081"}
+{"time":"2026-02-20T21:31:59.778821551Z","level":"INFO","msg":"published package","id":"pkg_1","name":"k8s-e2e-test-pkg","version":"1.0.0"}

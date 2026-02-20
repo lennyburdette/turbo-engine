@@ -1,0 +1,38 @@
+Trace Summary (captured 2026-02-20T21:32:09Z)
+============================================================
+
+builder: 10 traces, 19 spans
+  [98fdb79f95f6] builder/builder 0.0ms (1 spans)
+  [8d1ffec01ad0] builder/builder 0.2ms (10 spans)
+    builder/BuildEngine.Run 0.1ms
+    builder/step.resolve 0.0ms
+    builder/resolve.execute 0.0ms
+    builder/step.compose 0.0ms
+    builder/compose.execute 0.0ms
+    builder/step.validate 0.0ms
+    builder/validate.execute 0.0ms
+    builder/step.bundle 0.0ms
+    builder/bundle.execute 0.0ms
+  [79bc7bd2363b] builder/builder 0.1ms (1 spans)
+  [8c843fdab747] builder/builder 0.0ms (1 spans)
+  [df89eb001558] builder/builder 0.0ms (1 spans)
+  [9db2768fdb3d] builder/builder 0.1ms (1 spans)
+  [6f7416f762a4] builder/builder 0.0ms (1 spans)
+  [5b982ebf28d0] builder/builder 0.1ms (1 spans)
+  [658ee9e89f3c] builder/builder 0.1ms (1 spans)
+  [e803d330c50d] builder/builder 0.0ms (1 spans)
+
+envmanager: 5 traces, 6 spans
+  [1b4a3ae19142] envmanager/envmanager 0.0ms (1 spans)
+  [0fdc3ee36a7b] envmanager/envmanager 0.0ms (1 spans)
+  [4764452f1cf2] envmanager/envmanager 0.2ms (2 spans)
+    envmanager/Orchestrator.CreateEnvironment 0.0ms
+  [bc73cfcd9a7f] envmanager/envmanager 0.1ms (1 spans)
+  [afd5b956c75d] envmanager/envmanager 0.1ms (1 spans)
+
+gateway: no traces
+operator: no traces
+registry: 1 traces, 1 spans
+  [f279973901b5] registry/PublishPackage 0.2ms (1 spans)
+
+Total: 16 traces, 26 spans across 5 services
