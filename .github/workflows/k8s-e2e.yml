@@ -154,6 +154,9 @@ jobs:
       - name: Capture screenshots
         if: always()
         run: |
+          # Install Playwright with Chromium for real PNG screenshots.
+          npx playwright install --with-deps chromium 2>&1 | tail -5 || true
+
           # Port-forward console for screenshots
           kubectl -n turbo-engine-e2e port-forward svc/console 13000:3000 &>/dev/null &
           PF_PID=$!

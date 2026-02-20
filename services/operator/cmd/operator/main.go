@@ -229,7 +229,10 @@ func pollOnce(ctx context.Context, logger *slog.Logger, rec *reconciler.Reconcil
 
 // initTracer sets up the OTEL trace exporter and provider.
 func initTracer(ctx context.Context) (func(context.Context) error, error) {
+	// WithEndpoint expects host:port, not a URL with a scheme.
 	otelEndpoint := getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317")
+	otelEndpoint = strings.TrimPrefix(otelEndpoint, "https://")
+	otelEndpoint = strings.TrimPrefix(otelEndpoint, "http://")
 
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(otelEndpoint),

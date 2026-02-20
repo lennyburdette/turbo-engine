@@ -103,15 +103,22 @@ for line in open('${OPERATOR_LOG}'):
     except (json.JSONDecodeError, ValueError):
         continue
     msg = entry.get('msg', '')
-    if 'action' in msg.lower() or 'reconcil' in msg.lower():
+    # Only include entries that are actual resource actions (have an action field)
+    # or reconciliation lifecycle events (request received, complete).
+    action_val = entry.get('action', entry.get('type', ''))
+    is_action = action_val in ('Create', 'Update', 'Delete')
+    is_lifecycle = msg in ('reconcile request received', 'reconciliation complete',
+                           'starting reconciliation')
+    if is_action or is_lifecycle:
         actions.append({
             'time': entry.get('time', ''),
             'msg': msg,
             'environment_id': entry.get('environment_id', ''),
-            'action': entry.get('action', entry.get('type', '')),
+            'action': action_val if is_action else msg,
             'resource_kind': entry.get('resource_kind', entry.get('kind', '')),
             'resource_name': entry.get('resource_name', entry.get('name', '')),
             'details': entry.get('details', ''),
+            'phase': entry.get('phase', ''),
         })
 
 json.dump({'actions': actions, 'count': len(actions)}, sys.stdout, indent=2)

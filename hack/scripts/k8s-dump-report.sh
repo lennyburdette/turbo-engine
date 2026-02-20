@@ -68,6 +68,16 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Generate trace viewer (HTML + text summary) before the report so the
+# report can inline the textual summary.
+# ---------------------------------------------------------------------------
+TRACE_VIEWER="${SCRIPT_DIR}/generate-trace-viewer.sh"
+if [[ -f "$TRACE_VIEWER" && -f "$TRACES_FILE" ]]; then
+  info "Generating trace viewer..."
+  bash "$TRACE_VIEWER" || warn "Trace viewer generation failed (non-fatal)"
+fi
+
+# ---------------------------------------------------------------------------
 # Build the report
 # ---------------------------------------------------------------------------
 info "Generating report: ${REPORT_FILE}"
@@ -176,11 +186,18 @@ if [[ -f "$ACTIONS_FILE" ]]; then
     printf "|------|--------|------|----------|----------|\n"
 
     python3 -c "
-import json
+import json, re
 data = json.load(open('${ACTIONS_FILE}'))
 for a in data['actions'][:30]:
-    t = a.get('time','')[-8:] if a.get('time') else ''
-    print(f'| {t} | {a.get(\"action\",\"\")} | {a.get(\"resource_kind\",\"\")} | {a.get(\"resource_name\",\"\")} | {a.get(\"details\",\"\")} |')
+    # Parse ISO 8601 timestamp to HH:MM:SS.mmm
+    raw = a.get('time', '')
+    m = re.search(r'T(\d{2}:\d{2}:\d{2})', raw)
+    t = m.group(1) if m else raw[:19]
+    action = a.get('action', '')
+    kind = a.get('resource_kind', '')
+    name = a.get('resource_name', '')
+    details = a.get('details', '') or a.get('phase', '')
+    print(f'| {t} | {action} | {kind} | {name} | {details} |')
 " 2>/dev/null || echo "_(failed to parse actions)_"
     echo ""
   fi
@@ -213,7 +230,18 @@ print(len(traces))
   done
 
   total_size=$(wc -c < "$TRACES_FILE" 2>/dev/null || echo "0")
-  printf "\n_Full trace data: \`ci-report/traces.json\` (%s bytes)_\n\n" "$total_size"
+  printf "\n[**Open trace viewer →**](./traces.html)\n\n"
+
+  # Inline the textual trace summary if available (for Claude to read).
+  if [[ -f "${REPORT_DIR}/traces.txt" ]]; then
+    printf "<details><summary>Textual trace summary (for automated analysis)</summary>\n\n"
+    printf '```\n'
+    cat "${REPORT_DIR}/traces.txt"
+    printf '```\n\n'
+    printf "</details>\n\n"
+  fi
+
+  printf "_Full trace data: \`ci-report/traces.json\` (%s bytes)_\n\n" "$total_size"
 else
   echo "_No trace data. Jaeger may not have been reachable._"
   echo ""
