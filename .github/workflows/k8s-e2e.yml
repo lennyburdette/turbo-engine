@@ -59,6 +59,12 @@ jobs:
           docker build --progress=plain -t turbo-engine/console:e2e ui/console
           echo "::endgroup::"
 
+      - name: Build echo server image (E2E mock upstream)
+        run: |
+          echo "::group::Build echo-server"
+          docker build --progress=plain -t turbo-engine/echo-server:e2e hack/e2e/echo-server
+          echo "::endgroup::"
+
       # ---------------------------------------------------------------
       # Verify images
       # ---------------------------------------------------------------
@@ -67,7 +73,7 @@ jobs:
           IMAGES=$(docker images 'turbo-engine/*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}")
           echo "$IMAGES"
           echo "::warning title=Docker Images::${IMAGES//$'\n'/%0A}"
-          for svc in registry builder operator envmanager gateway console; do
+          for svc in registry builder operator envmanager gateway console echo-server; do
             docker image inspect "turbo-engine/${svc}:e2e" > /dev/null 2>&1 || {
               echo "::error::Missing image turbo-engine/${svc}:e2e"
               exit 1
@@ -87,7 +93,7 @@ jobs:
       # ---------------------------------------------------------------
       - name: Load images into kind
         run: |
-          for svc in registry builder envmanager operator gateway console; do
+          for svc in registry builder envmanager operator gateway console echo-server; do
             echo "Loading turbo-engine/${svc}:e2e..."
             kind load docker-image "turbo-engine/${svc}:e2e" --name turbo-engine-e2e
           done

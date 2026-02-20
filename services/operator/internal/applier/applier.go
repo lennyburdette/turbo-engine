@@ -18,9 +18,17 @@ import (
 	"github.com/lennyburdette/turbo-engine/services/operator/internal/reconciler"
 )
 
-// stubImage is used for operator-created API service deployments.
-// These are not real applications — they prove the operator can manage resources.
-const stubImage = "registry.k8s.io/pause:3.9"
+// defaultImage is used when the component spec doesn't include an explicit image.
+const defaultImage = "registry.k8s.io/pause:3.9"
+
+// componentImage returns the container image for a deployed component.
+// Uses the runtime image if specified, otherwise falls back to the default.
+func componentImage(comp model.DeployedComponent) string {
+	if comp.Runtime.Image != "" {
+		return comp.Runtime.Image
+	}
+	return defaultImage
+}
 
 // labels builds standard labels for operator-managed resources.
 func labels(environmentID, componentName string) map[string]string {
@@ -160,7 +168,7 @@ func (a *KubernetesApplier) createDeployment(ctx context.Context, ns, envID, nam
 					Containers: []corev1.Container{
 						{
 							Name:  comp.PackageName,
-							Image: stubImage,
+							Image: componentImage(comp),
 						},
 					},
 				},

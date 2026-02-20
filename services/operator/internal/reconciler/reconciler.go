@@ -161,6 +161,19 @@ func (r *Reconciler) GetAllStatuses() map[string]model.APIGraphStatus {
 	return result
 }
 
+// GetAllSpecs returns the APIGraphSpec for every tracked environment.
+// Used by the gateway-config endpoint to build routing rules.
+func (r *Reconciler) GetAllSpecs() map[string]model.APIGraphSpec {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make(map[string]model.APIGraphSpec, len(r.states))
+	for envID, state := range r.states {
+		result[envID] = state.Spec
+	}
+	return result
+}
+
 // computeActions diffs desired spec against the existing in-memory state
 // and returns the set of actions needed.
 func (r *Reconciler) computeActions(ctx context.Context, spec model.APIGraphSpec, existing *deployedState) []Action {

@@ -51,10 +51,11 @@ type DeployedComponent struct {
 
 // ComponentRuntime holds runtime configuration for a deployed component.
 type ComponentRuntime struct {
-	Replicas    int32             `json:"replicas"`
+	Replicas    int32                `json:"replicas"`
+	Image       string               `json:"image,omitempty"`
 	Resources   ResourceRequirements `json:"resources"`
-	Env         map[string]string `json:"env,omitempty"`
-	Annotations map[string]string `json:"annotations,omitempty"`
+	Env         map[string]string    `json:"env,omitempty"`
+	Annotations map[string]string    `json:"annotations,omitempty"`
 }
 
 // ResourceRequirements defines CPU and memory limits/requests.

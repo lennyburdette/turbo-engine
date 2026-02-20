@@ -5,6 +5,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -53,12 +54,32 @@ type AllStatusesResponse struct {
 	Environments map[string]model.APIGraphStatus `json:"environments"`
 }
 
+// GatewayRoute mirrors the gateway's Route struct for JSON serialization.
+type GatewayRoute struct {
+	PathPrefix  string `json:"path_prefix"`
+	UpstreamURL string `json:"upstream_url"`
+	StripPrefix bool   `json:"strip_prefix"`
+	TimeoutMs   int    `json:"timeout_ms,omitempty"`
+}
+
+// GatewayConfig mirrors the gateway's IngressConfig struct.
+type GatewayConfig struct {
+	Routing          GatewayRoutingTable `json:"routing"`
+	PollIntervalSecs int                 `json:"poll_interval_secs"`
+}
+
+// GatewayRoutingTable mirrors the gateway's RoutingTable struct.
+type GatewayRoutingTable struct {
+	Routes []GatewayRoute `json:"routes"`
+}
+
 // RegisterRoutes registers all handler routes on the given mux.
 // Uses Go 1.22+ method-and-pattern routing.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/reconcile", h.handleReconcile)
 	mux.HandleFunc("GET /v1/status/{environmentId}", h.handleGetStatus)
 	mux.HandleFunc("GET /v1/status", h.handleGetAllStatuses)
+	mux.HandleFunc("GET /v1/gateway-config", h.handleGatewayConfig)
 }
 
 // handleReconcile triggers reconciliation for a given APIGraphSpec.
@@ -151,6 +172,40 @@ func (h *Handler) handleGetAllStatuses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.writeJSON(w, http.StatusOK, resp)
+}
+
+// handleGatewayConfig builds a gateway-compatible routing config from all
+// reconciled environments' ingress specs. The gateway polls this endpoint
+// to discover routes to operator-deployed services.
+func (h *Handler) handleGatewayConfig(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracer.Start(r.Context(), "handleGatewayConfig")
+	defer span.End()
+
+	specs := h.reconciler.GetAllSpecs()
+
+	var routes []GatewayRoute
+	for _, spec := range specs {
+		for _, route := range spec.Ingress.Routes {
+			// Map the target component to its K8s service DNS name.
+			upstreamURL := fmt.Sprintf("http://svc-%s:%d", route.TargetComponent, route.TargetPort)
+
+			routes = append(routes, GatewayRoute{
+				PathPrefix:  route.Path,
+				UpstreamURL: upstreamURL,
+				StripPrefix: true,
+				TimeoutMs:   30000,
+			})
+		}
+	}
+
+	h.logger.InfoContext(ctx, "gateway config request", "routes", len(routes))
+
+	config := GatewayConfig{
+		Routing:          GatewayRoutingTable{Routes: routes},
+		PollIntervalSecs: 5,
+	}
+
+	h.writeJSON(w, http.StatusOK, config)
 }
 
 // writeJSON writes a JSON response.

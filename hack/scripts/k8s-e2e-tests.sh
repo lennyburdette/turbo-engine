@@ -291,7 +291,13 @@ timeline "Triggering operator reconciliation"
 
 T=$(current_ms)
 
+# Image for the echo server — built as turbo-engine/echo-server:e2e in CI
+# and loaded into kind. Uses the default pause image as fallback.
+ECHO_IMAGE="${E2E_ECHO_IMAGE:-turbo-engine/echo-server:e2e}"
+
 # Send a reconcile request with the environment and build info.
+# Includes ingress routes so the gateway can forward traffic to the
+# echo server and we can test the full request path.
 RECONCILE_RESP=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:${OPERATOR_PORT}/v1/reconcile" \
   -H "Content-Type: application/json" \
   -d "{
@@ -307,13 +313,24 @@ RECONCILE_RESP=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:${OPERATO
           \"artifactHash\": \"e2e-test-hash\",
           \"runtime\": {
             \"replicas\": 1,
+            \"image\": \"${ECHO_IMAGE}\",
             \"resources\": {
               \"cpuRequest\": \"50m\",
               \"memoryRequest\": \"64Mi\"
             }
           }
         }
-      ]
+      ],
+      \"ingress\": {
+        \"host\": \"localhost\",
+        \"routes\": [
+          {
+            \"path\": \"/api/e2e\",
+            \"targetComponent\": \"k8s-e2e-test-pkg\",
+            \"targetPort\": 8080
+          }
+        ]
+      }
     }
   }" 2>/dev/null || echo -e '\n000')
 
@@ -416,7 +433,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 10: Verify pod is running (pause container)
+# Step 10: Verify pod is running (echo server)
 # ---------------------------------------------------------------------------
 T=$(current_ms)
 
@@ -430,6 +447,100 @@ if $RESOURCES_OK; then
   fi
 else
   record_result "verify-pod-running" "fail" "Skipped — resources not created" "$T"
+fi
+
+# ---------------------------------------------------------------------------
+# Step 11: Verify echo server responds directly (port-forward to the service)
+# ---------------------------------------------------------------------------
+timeline "Testing echo server directly via port-forward"
+T=$(current_ms)
+
+ECHO_PORT=18090
+if $RESOURCES_OK; then
+  kubectl -n "$NAMESPACE" port-forward "svc/svc-k8s-e2e-test-pkg" "${ECHO_PORT}:8080" &>/dev/null &
+  PF_PIDS+=($!)
+  sleep 2
+
+  ECHO_RESP=$(curl -s -w '\n%{http_code}' "http://localhost:${ECHO_PORT}/healthz" 2>/dev/null || echo -e '\n000')
+  ECHO_CODE=$(echo "$ECHO_RESP" | tail -1)
+
+  if [[ "$ECHO_CODE" == "200" ]]; then
+    record_result "echo-server-direct" "pass" "Echo server responded (HTTP ${ECHO_CODE})" "$T"
+    timeline "Echo server responding directly"
+  else
+    record_result "echo-server-direct" "fail" "Echo server HTTP ${ECHO_CODE}" "$T"
+    timeline "Echo server direct test FAILED (HTTP ${ECHO_CODE})"
+  fi
+else
+  record_result "echo-server-direct" "fail" "Skipped — resources not created" "$T"
+fi
+
+# ---------------------------------------------------------------------------
+# Step 12: Verify gateway has routing config from operator
+# ---------------------------------------------------------------------------
+timeline "Checking gateway routing config"
+T=$(current_ms)
+
+# Port-forward gateway
+GATEWAY_PORT=18080
+kubectl -n "$NAMESPACE" port-forward svc/gateway "${GATEWAY_PORT}:8080" &>/dev/null &
+PF_PIDS+=($!)
+sleep 2
+
+GW_HEALTH=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${GATEWAY_PORT}/healthz" 2>/dev/null || echo "000")
+
+if [[ "$GW_HEALTH" == "200" ]]; then
+  # Wait for the gateway to pick up routing config from the operator.
+  # The gateway polls every 5 seconds (set in the config response).
+  ROUTE_READY=false
+  for i in $(seq 1 6); do
+    # Send a request to the gateway on the configured path.
+    GW_RESP=$(curl -s -w '\n%{http_code}' "http://localhost:${GATEWAY_PORT}/api/e2e/healthz" 2>/dev/null || echo -e '\n000')
+    GW_CODE=$(echo "$GW_RESP" | tail -1)
+    if [[ "$GW_CODE" == "200" ]]; then
+      ROUTE_READY=true
+      break
+    fi
+    sleep 5
+  done
+
+  if $ROUTE_READY; then
+    record_result "gateway-routing" "pass" "Gateway routes /api/e2e → echo server (HTTP ${GW_CODE})" "$T"
+    timeline "Gateway routing config active"
+  else
+    record_result "gateway-routing" "fail" "Gateway route not ready after 30s (HTTP ${GW_CODE})" "$T"
+    timeline "Gateway routing FAILED"
+  fi
+else
+  record_result "gateway-routing" "fail" "Gateway not healthy (HTTP ${GW_HEALTH})" "$T"
+  timeline "Gateway health check FAILED"
+fi
+
+# ---------------------------------------------------------------------------
+# Step 13: End-to-end traffic test — client → gateway → echo server
+# ---------------------------------------------------------------------------
+timeline "Testing end-to-end traffic through gateway"
+T=$(current_ms)
+
+if [[ "${ROUTE_READY:-false}" == "true" ]]; then
+  # Send a request through the gateway and verify the echo response.
+  E2E_RESP=$(curl -s "http://localhost:${GATEWAY_PORT}/api/e2e/hello?test=e2e" 2>/dev/null || echo '{}')
+
+  # The echo server returns JSON with the request details.
+  E2E_SERVICE=$(echo "$E2E_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('service',''))" 2>/dev/null || echo "")
+  E2E_PATH=$(echo "$E2E_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('path',''))" 2>/dev/null || echo "")
+
+  if [[ "$E2E_SERVICE" == "turbo-engine-echo" ]]; then
+    record_result "e2e-traffic" "pass" "Request routed through gateway to echo server (path=${E2E_PATH})" "$T"
+    timeline "End-to-end traffic test passed"
+  else
+    record_result "e2e-traffic" "fail" "Unexpected response: service=${E2E_SERVICE}" "$T"
+    timeline "End-to-end traffic test FAILED (service=${E2E_SERVICE})"
+    info "Response body: ${E2E_RESP}"
+  fi
+else
+  record_result "e2e-traffic" "fail" "Skipped — gateway routing not ready" "$T"
+  timeline "End-to-end traffic test SKIPPED"
 fi
 
 # ---------------------------------------------------------------------------
