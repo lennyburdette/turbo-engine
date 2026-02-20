@@ -1,0 +1,125 @@
+{
+  "actions": [
+    {
+      "time": "2026-02-20T23:07:41.473150938Z",
+      "msg": "reconcile request received",
+      "environment_id": "3b76989f2bc04ab398f7316d12c971e2",
+      "action": "reconcile request received",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": "",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.473204118Z",
+      "msg": "starting reconciliation",
+      "environment_id": "3b76989f2bc04ab398f7316d12c971e2",
+      "action": "starting reconciliation",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": "",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.473219752Z",
+      "msg": "reconciliation action",
+      "environment_id": "3b76989f2bc04ab398f7316d12c971e2",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-k8s-e2e-test-pkg",
+      "details": "image=artifact:e2e-test-hash replicas=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.473229787Z",
+      "msg": "reconciliation action",
+      "environment_id": "3b76989f2bc04ab398f7316d12c971e2",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-k8s-e2e-test-pkg",
+      "details": "selector=k8s-e2e-test-pkg",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.473233612Z",
+      "msg": "reconciliation action",
+      "environment_id": "3b76989f2bc04ab398f7316d12c971e2",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-k8s-e2e-test-pkg",
+      "details": "env_vars=0",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.473236827Z",
+      "msg": "reconciliation action",
+      "environment_id": "3b76989f2bc04ab398f7316d12c971e2",
+      "action": "Create",
+      "resource_kind": "Ingress",
+      "resource_name": "localhost-ingress",
+      "details": "host=localhost routes=1 tls=false",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.473241544Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-k8s-e2e-test-pkg",
+      "details": "image=artifact:e2e-test-hash replicas=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.483965739Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-k8s-e2e-test-pkg",
+      "details": "selector=k8s-e2e-test-pkg",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.492513982Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-k8s-e2e-test-pkg",
+      "details": "env_vars=0",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.498983386Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Ingress",
+      "resource_name": "localhost-ingress",
+      "details": "host=localhost routes=1 tls=false",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.499222145Z",
+      "msg": "ingress action handled via gateway-config endpoint",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "",
+      "resource_name": "localhost-ingress",
+      "details": "",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-20T23:07:41.499497169Z",
+      "msg": "reconciliation complete",
+      "environment_id": "3b76989f2bc04ab398f7316d12c971e2",
+      "action": "reconciliation complete",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": "",
+      "phase": "Running"
+    }
+  ],
+  "count": 12
+}
