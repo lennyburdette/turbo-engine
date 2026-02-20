@@ -69,11 +69,32 @@ jobs:
         env:
           DOCKER_BUILDKIT: "1"
 
-      - name: Verify images
-        run: docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -20
+      - name: Verify images and compose config
+        run: |
+          echo "### Docker Images" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -20 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Compose Config (images)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          docker compose -f infra/docker/docker-compose.yml config --images 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Start platform
-        run: docker compose -f infra/docker/docker-compose.yml up -d --no-build
+        run: |
+          docker compose -f infra/docker/docker-compose.yml up -d --no-build 2>&1 | tee /tmp/compose-up.log || {
+            echo "### Start platform failed" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/compose-up.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Container status:**" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            docker compose -f infra/docker/docker-compose.yml ps -a >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
 
       - name: Wait for services to be healthy
         run: ./hack/scripts/wait-for-healthy.sh 180
