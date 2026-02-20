@@ -52,18 +52,28 @@ type deployedComponentState struct {
 	ConfigMapOK  bool
 }
 
-// Reconciler manages the desired-vs-actual reconciliation loop.
-type Reconciler struct {
-	mu     sync.RWMutex
-	states map[string]*deployedState // keyed by environment ID
-	logger *slog.Logger
+// Applier applies reconciliation actions to a target environment.
+// The reconciler computes what needs to change; the applier executes it.
+type Applier interface {
+	Apply(ctx context.Context, namespace, environmentID string, actions []Action, spec model.APIGraphSpec) error
 }
 
-// New creates a new Reconciler.
-func New(logger *slog.Logger) *Reconciler {
+// Reconciler manages the desired-vs-actual reconciliation loop.
+type Reconciler struct {
+	mu        sync.RWMutex
+	states    map[string]*deployedState // keyed by environment ID
+	logger    *slog.Logger
+	applier   Applier
+	namespace string
+}
+
+// New creates a new Reconciler. If applier is nil, actions are only logged.
+func New(logger *slog.Logger, applier Applier, namespace string) *Reconciler {
 	return &Reconciler{
-		states: make(map[string]*deployedState),
-		logger: logger.With("component", "reconciler"),
+		states:    make(map[string]*deployedState),
+		logger:    logger.With("component", "reconciler"),
+		applier:   applier,
+		namespace: namespace,
 	}
 }
 
@@ -92,8 +102,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, spec model.APIGraphSpec) ([]
 	existing := r.states[spec.EnvironmentID]
 	actions := r.computeActions(ctx, spec, existing)
 
-	// "Apply" the actions (for now, just log them).
-	r.applyActions(ctx, spec.EnvironmentID, actions)
+	// Log all actions for observability.
+	r.logActions(ctx, spec.EnvironmentID, actions)
+
+	// Apply actions via the applier (K8s client or noop).
+	if r.applier != nil && len(actions) > 0 {
+		if err := r.applier.Apply(ctx, r.namespace, spec.EnvironmentID, actions, spec); err != nil {
+			r.logger.ErrorContext(ctx, "failed to apply actions",
+				"environment_id", spec.EnvironmentID,
+				"error", err,
+			)
+			// Continue anyway — update in-memory state so we can retry next cycle.
+		}
+	}
 
 	// Update in-memory state to reflect the desired spec.
 	newState := r.buildState(spec)
@@ -281,11 +302,10 @@ func (r *Reconciler) createActionsForIngress(ingress model.IngressSpec) []Action
 	}
 }
 
-// applyActions logs each action. In a real operator, this would call the
-// Kubernetes API to create/update/delete resources.
-func (r *Reconciler) applyActions(ctx context.Context, environmentID string, actions []Action) {
+// logActions logs each action for observability.
+func (r *Reconciler) logActions(ctx context.Context, environmentID string, actions []Action) {
 	for _, a := range actions {
-		r.logger.InfoContext(ctx, "applying action",
+		r.logger.InfoContext(ctx, "reconciliation action",
 			"environment_id", environmentID,
 			"action", a.Type,
 			"resource_kind", a.ResourceKind,

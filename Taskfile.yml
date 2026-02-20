@@ -124,6 +124,35 @@ tasks:
     cmds:
       - hack/scripts/dump-ci-report.sh
 
+  # --- K8s E2E testing ---
+  k8s:e2e:
+    desc: Run K8s E2E tests locally (requires kind and kubectl)
+    cmds:
+      - kind create cluster --name turbo-engine-e2e || true
+      - |
+        for svc in registry builder envmanager operator gateway; do
+          docker build --progress=plain -t turbo-engine/${svc}:e2e services/${svc} &&
+          kind load docker-image turbo-engine/${svc}:e2e --name turbo-engine-e2e
+        done
+      - docker build --progress=plain -t turbo-engine/console:e2e ui/console && kind load docker-image turbo-engine/console:e2e --name turbo-engine-e2e
+      - kubectl create namespace turbo-engine-e2e || true
+      - kubectl apply -k infra/k8s/overlays/ci
+      - kubectl -n turbo-engine-e2e rollout status deployment --timeout=180s
+      - hack/scripts/k8s-e2e-tests.sh
+      - hack/scripts/k8s-collect-debug.sh
+      - hack/scripts/k8s-dump-report.sh
+    ignore_error: true
+
+  k8s:e2e:cleanup:
+    desc: Tear down the kind cluster
+    cmds:
+      - kind delete cluster --name turbo-engine-e2e
+
+  k8s:investigate:
+    desc: Quick K8s cluster health check (for Claude Code)
+    cmds:
+      - hack/claude/k8s-investigate.sh
+
   # --- Example systems ---
   example:petstore:
     desc: Deploy the petstore example system

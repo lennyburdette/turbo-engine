@@ -7,7 +7,14 @@ namespace: turbo-engine
 
 resources:
   - apigraph-crd.yaml
+  - otel-collector.yaml
+  - jaeger.yaml
+  - registry-deployment.yaml
+  - builder-deployment.yaml
+  - envmanager-deployment.yaml
   - operator-deployment.yaml
+  - gateway-deployment.yaml
+  - console-deployment.yaml
 
 commonLabels:
   app.kubernetes.io/part-of: turbo-engine
