@@ -52,8 +52,8 @@ func main() {
 	// OpenTelemetry tracing.
 	shutdownTracer, err := initTracer(ctx)
 	if err != nil {
-		logger.Error("failed to initialise tracer", "error", err)
-		os.Exit(1)
+		logger.Warn("failed to initialise tracer, continuing without tracing", "error", err)
+		shutdownTracer = func(context.Context) error { return nil }
 	}
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -18,7 +18,7 @@ service BuilderService {
   rpc GetBuild(GetBuildRequest) returns (GetBuildResponse);
 
   // Stream build logs in real time.
-  rpc StreamBuildLogs(StreamBuildLogsRequest) returns (stream BuildLogEntry);
+  rpc StreamBuildLogs(StreamBuildLogsRequest) returns (stream StreamBuildLogsResponse);
 }
 
 enum BuildStatus {
@@ -73,7 +73,7 @@ message StreamBuildLogsRequest {
   string build_id = 1;
 }
 
-message BuildLogEntry {
+message StreamBuildLogsResponse {
   google.protobuf.Timestamp timestamp = 1;
   string level = 2; // INFO, WARN, ERROR
   string message = 3;

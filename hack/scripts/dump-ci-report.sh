@@ -12,7 +12,9 @@
 #
 # Usage:
 #   ./hack/scripts/dump-ci-report.sh
-set -euo pipefail
+set -uo pipefail
+# Note: set -e is intentionally omitted so the report is always generated fully,
+# even when services are not running (e.g., after a build failure in CI).
 
 # ---------------------------------------------------------------------------
 # Configuration

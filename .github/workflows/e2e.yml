@@ -23,24 +23,78 @@ jobs:
       - uses: actions/checkout@v4
 
       # -----------------------------------------------------------------------
-      # Build all Docker images
+      # Build Docker images individually (matches working Build workflow)
       # -----------------------------------------------------------------------
-      - name: Build Docker images
-        run: docker compose -f infra/docker/docker-compose.yml build
-        env:
-          DOCKER_BUILDKIT: "1"
-          COMPOSE_DOCKER_CLI_BUILD: "1"
+      - name: Build Go service images
+        run: |
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build registry
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build builder
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build operator
+          docker compose --progress=plain -f infra/docker/docker-compose.yml build envmanager
 
-      # -----------------------------------------------------------------------
-      # Start the platform
-      # -----------------------------------------------------------------------
+      - name: Build gateway image
+        run: docker compose --progress=plain -f infra/docker/docker-compose.yml build gateway
+
+      - name: Build console image
+        run: docker compose --progress=plain -f infra/docker/docker-compose.yml build console
+
+      - name: Verify images
+        run: |
+          IMAGES=$(docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | head -15)
+          echo "$IMAGES"
+          echo "::warning title=Docker Images::${IMAGES//$'\n'/%0A}"
+          COMPOSE_IMAGES=$(docker compose -f infra/docker/docker-compose.yml config --images 2>&1)
+          echo "$COMPOSE_IMAGES"
+          echo "::warning title=Compose Expected Images::${COMPOSE_IMAGES//$'\n'/%0A}"
+
+      - name: Pull infra images
+        run: docker compose -f infra/docker/docker-compose.yml pull --ignore-buildable
+
       - name: Start platform
-        run: docker compose -f infra/docker/docker-compose.yml up -d
+        run: docker compose -f infra/docker/docker-compose.yml up -d --no-build
 
       - name: Wait for services to be healthy
         run: ./hack/scripts/wait-for-healthy.sh 180
         env:
           HEALTH_TIMEOUT: "180"
+
+      # -----------------------------------------------------------------------
+      # Diagnostics on failure (always capture container state)
+      # -----------------------------------------------------------------------
+      - name: Container diagnostics
+        if: failure()
+        run: |
+          # Write diagnostics to file (uploaded as artifact) AND use annotations (readable via API)
+          DIAG_FILE="${GITHUB_WORKSPACE}/ci-report/diagnostics.txt"
+          mkdir -p "${GITHUB_WORKSPACE}/ci-report"
+
+          echo "=== CONTAINER STATUS ===" | tee "$DIAG_FILE"
+          docker compose -f infra/docker/docker-compose.yml ps -a 2>&1 | tee -a "$DIAG_FILE" || true
+          echo "" | tee -a "$DIAG_FILE"
+
+          echo "=== PORT CONNECTIVITY ===" | tee -a "$DIAG_FILE"
+          for port in 8080 8081 8082 8083 8084 3000; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/healthz" 2>/dev/null || echo "000")
+            echo "  Port $port: HTTP $code" | tee -a "$DIAG_FILE"
+          done
+          echo "" | tee -a "$DIAG_FILE"
+
+          echo "=== SERVICE LOGS ===" | tee -a "$DIAG_FILE"
+          for svc in otel-collector registry builder operator envmanager gateway console; do
+            echo "--- $svc ---" | tee -a "$DIAG_FILE"
+            docker compose -f infra/docker/docker-compose.yml logs --tail=20 --no-color "$svc" 2>&1 | tee -a "$DIAG_FILE" || echo "(no logs)" | tee -a "$DIAG_FILE"
+          done
+
+          # Emit key diagnostics as annotations (accessible via API)
+          CONTAINER_STATUS=$(docker compose -f infra/docker/docker-compose.yml ps -a 2>&1 | head -15 || true)
+          echo "::warning title=Container Status::${CONTAINER_STATUS//$'\n'/%0A}"
+
+          PORT_STATUS=""
+          for port in 8080 8081 8082 8083 8084 3000; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/healthz" 2>/dev/null || echo "000")
+            PORT_STATUS="${PORT_STATUS}Port ${port}: HTTP ${code}%0A"
+          done
+          echo "::warning title=Port Connectivity::${PORT_STATUS}"
 
       # -----------------------------------------------------------------------
       # Run smoke tests

@@ -3,12 +3,7 @@ mod error;
 mod middleware;
 mod proxy;
 
-use axum::{
-    middleware as axum_mw,
-    response::Json,
-    routing::get,
-    Router,
-};
+use axum::{middleware as axum_mw, response::Json, routing::get, Router};
 use clap::Parser;
 use opentelemetry::trace::TracerProvider as _;
 use opentelemetry_sdk::trace::TracerProvider;
@@ -32,7 +27,10 @@ use crate::proxy::AppState;
 // ---------------------------------------------------------------------------
 
 #[derive(Parser, Debug)]
-#[command(name = "gateway", about = "turbo-engine API gateway / ingress controller")]
+#[command(
+    name = "gateway",
+    about = "turbo-engine API gateway / ingress controller"
+)]
 struct Args {
     /// Port to listen on.
     #[arg(long, default_value = "8080", env = "PORT")]
@@ -48,7 +46,11 @@ struct Args {
     config_url: Option<String>,
 
     /// OTLP exporter endpoint (gRPC).
-    #[arg(long, default_value = "http://localhost:4317", env = "OTEL_EXPORTER_OTLP_ENDPOINT")]
+    #[arg(
+        long,
+        default_value = "http://localhost:4317",
+        env = "OTEL_EXPORTER_OTLP_ENDPOINT"
+    )]
     otlp_endpoint: String,
 }
 
@@ -76,9 +78,10 @@ async fn main() {
     });
 
     // --- Rate limiter --------------------------------------------------------
-    let rate_limiter = config.rate_limit.as_ref().map(|rl| {
-        RateLimiter::new(rl.requests_per_second, rl.burst)
-    });
+    let rate_limiter = config
+        .rate_limit
+        .as_ref()
+        .map(|rl| RateLimiter::new(rl.requests_per_second, rl.burst));
 
     // --- HTTP client for proxying --------------------------------------------
     let http_client = reqwest::Client::builder()
@@ -181,9 +184,7 @@ async fn load_initial_config(args: &Args) -> (IngressConfig, Option<ConfigSource
             info!("no config-url provided — starting with empty routing table");
             (
                 IngressConfig {
-                    routing: RoutingTable {
-                        routes: Vec::new(),
-                    },
+                    routing: RoutingTable { routes: Vec::new() },
                     ..Default::default()
                 },
                 None,
@@ -239,8 +240,7 @@ fn init_tracing(otlp_endpoint: &str) {
     // reachable) we fall back to stdout-only tracing.
     let otel_layer = match try_init_otel(otlp_endpoint) {
         Ok(layer) => {
-            let boxed: Box<dyn Layer<tracing_subscriber::Registry> + Send + Sync> =
-                Box::new(layer);
+            let boxed: Box<dyn Layer<tracing_subscriber::Registry> + Send + Sync> = Box::new(layer);
             Some(boxed)
         }
         Err(err) => {

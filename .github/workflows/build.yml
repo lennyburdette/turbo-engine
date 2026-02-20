@@ -15,7 +15,7 @@ concurrency:
 
 env:
   GO_VERSION: "1.23"
-  RUST_VERSION: "1.83"
+  RUST_VERSION: "1.93"
   NODE_VERSION: "20"
   PNPM_VERSION: "9"
 
@@ -50,6 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libssl-dev
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -97,8 +100,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build all Docker images
-        run: docker compose -f infra/docker/docker-compose.yml build
+      - name: Docker diagnostics
+        run: |
+          echo "### Docker Environment" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          docker version >> "$GITHUB_STEP_SUMMARY" 2>&1
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build registry image
+        run: |
+          docker build --progress=plain -t turbo-engine/registry services/registry 2>&1 | tee /tmp/build.log || {
+            echo "### Registry build failed" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -50 /tmp/build.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
         env:
           DOCKER_BUILDKIT: "1"
-          COMPOSE_DOCKER_CLI_BUILD: "1"
+
+      - name: Build remaining Go service images
+        run: |
+          docker build --progress=plain -t turbo-engine/builder services/builder
+          docker build --progress=plain -t turbo-engine/operator services/operator
+          docker build --progress=plain -t turbo-engine/envmanager services/envmanager
+        env:
+          DOCKER_BUILDKIT: "1"
+
+      - name: Build gateway image
+        run: docker build -t turbo-engine/gateway services/gateway
+        env:
+          DOCKER_BUILDKIT: "1"
+
+      - name: Build console image
+        run: docker build -t turbo-engine/console ui/console
+        env:
+          DOCKER_BUILDKIT: "1"

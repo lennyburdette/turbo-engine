@@ -349,7 +349,7 @@ info "Writing results to ${RESULTS_FILE}..."
   printf '    "failed": %d\n' "$TESTS_FAILED"
   printf '  },\n'
   printf '  "tests": [\n'
-  local first=true
+  first=true
   for entry in "${RESULTS_JSON[@]}"; do
     if $first; then
       first=false

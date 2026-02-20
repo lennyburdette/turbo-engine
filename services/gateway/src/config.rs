@@ -147,9 +147,7 @@ impl Default for CorsConfig {
 impl Default for IngressConfig {
     fn default() -> Self {
         Self {
-            routing: RoutingTable {
-                routes: Vec::new(),
-            },
+            routing: RoutingTable { routes: Vec::new() },
             cors: CorsConfig::default(),
             rate_limit: None,
             poll_interval_secs: default_poll_interval_secs(),
@@ -241,7 +239,7 @@ async fn load_from_file(path: &str) -> Result<IngressConfig, GatewayError> {
     // Support both JSON and YAML-like JSON.
     let config: IngressConfig = if Path::new(path)
         .extension()
-        .map_or(false, |ext| ext == "yaml" || ext == "yml")
+        .is_some_and(|ext| ext == "yaml" || ext == "yml")
     {
         // For simplicity we only support JSON; YAML can be added with the
         // serde_yaml crate later.  For now, treat .yaml as JSON.

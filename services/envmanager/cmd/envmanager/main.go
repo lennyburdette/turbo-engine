@@ -47,8 +47,8 @@ func main() {
 
 	tp, err := initTracer(ctx)
 	if err != nil {
-		logger.Error("failed to initialize tracer", slog.String("error", err.Error()))
-		os.Exit(1)
+		logger.Warn("failed to initialize tracer, continuing without tracing", slog.String("error", err.Error()))
+		tp = sdktrace.NewTracerProvider()
 	}
 	defer func() {
 		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
