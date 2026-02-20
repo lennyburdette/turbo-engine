@@ -13,6 +13,10 @@ concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   e2e:
     name: End-to-end integration tests
@@ -146,43 +150,109 @@ jobs:
           retention-days: 14
 
       # -----------------------------------------------------------------------
-      # Post summary to PR
+      # Post summary to step summary and PR comment
       # -----------------------------------------------------------------------
-      - name: Post smoke test summary
+      - name: Build E2E summary
+        id: summary
         if: always()
         run: |
+          SUMMARY_FILE=$(mktemp)
+
+          # Header with overall result
           if [ -f ci-report/smoke-results.json ]; then
             total=$(grep -o '"total":\s*[0-9]*' ci-report/smoke-results.json | grep -o '[0-9]*' || echo "?")
             passed=$(grep -o '"passed":\s*[0-9]*' ci-report/smoke-results.json | grep -o '[0-9]*' || echo "?")
             failed=$(grep -o '"failed":\s*[0-9]*' ci-report/smoke-results.json | grep -o '[0-9]*' || echo "?")
 
             if [ "$failed" = "0" ]; then
-              echo "### E2E Smoke Tests: All ${total} passed" >> "$GITHUB_STEP_SUMMARY"
+              echo "### ✅ E2E Smoke Tests: All ${total} passed" >> "$SUMMARY_FILE"
             else
-              echo "### E2E Smoke Tests: ${failed} failed (${passed}/${total} passed)" >> "$GITHUB_STEP_SUMMARY"
+              echo "### ❌ E2E Smoke Tests: ${failed} failed (${passed}/${total} passed)" >> "$SUMMARY_FILE"
             fi
 
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Test | Status | Duration |" >> "$GITHUB_STEP_SUMMARY"
-            echo "|------|--------|----------|" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$SUMMARY_FILE"
+            echo "| Test | Status | Detail | Duration |" >> "$SUMMARY_FILE"
+            echo "|------|--------|--------|----------|" >> "$SUMMARY_FILE"
 
-            # Parse each test result from the JSON
             while IFS= read -r line; do
               name=$(echo "$line" | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
               status=$(echo "$line" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+              detail=$(echo "$line" | grep -o '"detail":"[^"]*"' | cut -d'"' -f4)
               duration=$(echo "$line" | grep -o '"duration_ms":[0-9]*' | cut -d: -f2)
               if [ -n "$name" ]; then
                 icon="✅"
                 [ "$status" = "fail" ] && icon="❌"
-                echo "| ${name} | ${icon} ${status} | ${duration:-0}ms |" >> "$GITHUB_STEP_SUMMARY"
+                echo "| \`${name}\` | ${icon} ${status} | ${detail} | ${duration:-0}ms |" >> "$SUMMARY_FILE"
               fi
             done < <(grep -o '{[^}]*}' ci-report/smoke-results.json | grep '"name"')
           else
-            echo "### E2E Smoke Tests: No results (tests may not have run)" >> "$GITHUB_STEP_SUMMARY"
+            echo "### ⚠️ E2E Smoke Tests: No results" >> "$SUMMARY_FILE"
+            echo "" >> "$SUMMARY_FILE"
+            echo "Smoke tests may not have run. Check the workflow logs for build or startup failures." >> "$SUMMARY_FILE"
           fi
 
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Full CI report available in the **ci-report** artifact." >> "$GITHUB_STEP_SUMMARY"
+          # Service health table
+          if [ -f ci-report/REPORT.md ]; then
+            echo "" >> "$SUMMARY_FILE"
+            echo "<details>" >> "$SUMMARY_FILE"
+            echo "<summary>Service health & trace summary</summary>" >> "$SUMMARY_FILE"
+            echo "" >> "$SUMMARY_FILE"
+            # Extract sections 1 (health) and 3 (traces) from REPORT.md
+            sed -n '/## 1\. Service Health/,/^---$/p' ci-report/REPORT.md | head -n -1 >> "$SUMMARY_FILE"
+            echo "" >> "$SUMMARY_FILE"
+            sed -n '/## 3\. Trace Summary/,/^---$/p' ci-report/REPORT.md | head -n -1 >> "$SUMMARY_FILE"
+            echo "</details>" >> "$SUMMARY_FILE"
+          fi
+
+          echo "" >> "$SUMMARY_FILE"
+          echo "📦 Full CI report available in the [**ci-report** artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." >> "$SUMMARY_FILE"
+
+          # Write to step summary
+          cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+
+          # Save path for the PR comment step
+          echo "file=${SUMMARY_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          SUMMARY_FILE="${{ steps.summary.outputs.file }}"
+          if [ ! -f "$SUMMARY_FILE" ]; then
+            echo "No summary file found, skipping PR comment"
+            exit 0
+          fi
+
+          MARKER="<!-- turbo-engine-e2e-bot -->"
+
+          # Build the comment body with a hidden marker for upsert
+          {
+            echo "$MARKER"
+            cat "$SUMMARY_FILE"
+            echo ""
+            echo "---"
+            echo "*Posted by the E2E workflow — [view run](${RUN_URL})*"
+          } > /tmp/pr-comment-body.txt
+
+          # Find existing bot comment (if any) and update it, otherwise create new
+          EXISTING_COMMENT_ID=$(gh api \
+            "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --paginate --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" \
+            | head -1 || true)
+
+          if [ -n "$EXISTING_COMMENT_ID" ]; then
+            gh api \
+              "repos/${REPO}/issues/comments/${EXISTING_COMMENT_ID}" \
+              -X PATCH -F body=@/tmp/pr-comment-body.txt
+            echo "Updated existing comment ${EXISTING_COMMENT_ID}"
+          else
+            gh pr comment "$PR_NUMBER" --body-file /tmp/pr-comment-body.txt
+            echo "Created new comment on PR #${PR_NUMBER}"
+          fi
 
       # -----------------------------------------------------------------------
       # Teardown
