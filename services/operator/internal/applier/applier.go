@@ -113,6 +113,11 @@ func (a *KubernetesApplier) Apply(ctx context.Context, namespace, environmentID 
 			err = a.updateConfigMap(ctx, namespace, environmentID, action.ResourceName, spec)
 		case action.ResourceKind == "ConfigMap" && action.Type == reconciler.ActionDelete:
 			err = a.deleteConfigMap(ctx, namespace, action.ResourceName)
+		case action.ResourceKind == "Ingress":
+			// Ingress routing is handled by the gateway polling /v1/gateway-config
+			// rather than by creating K8s Ingress resources, so this is a no-op.
+			a.logger.InfoContext(ctx, "ingress action handled via gateway-config endpoint",
+				"type", action.Type, "name", action.ResourceName)
 		default:
 			a.logger.WarnContext(ctx, "unhandled action", "type", action.Type, "kind", action.ResourceKind)
 		}

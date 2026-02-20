@@ -160,7 +160,9 @@ jobs:
       - name: Capture screenshots
         if: always()
         run: |
-          # Install Playwright with Chromium for real PNG screenshots.
+          # Install Playwright npm package + Chromium browser.
+          # npm install makes require('playwright') work from node scripts.
+          npm install --no-save playwright 2>&1 | tail -5 || true
           npx playwright install --with-deps chromium 2>&1 | tail -5 || true
 
           # Port-forward console for screenshots

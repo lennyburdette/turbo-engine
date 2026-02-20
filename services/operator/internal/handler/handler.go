@@ -183,7 +183,7 @@ func (h *Handler) handleGatewayConfig(w http.ResponseWriter, r *http.Request) {
 
 	specs := h.reconciler.GetAllSpecs()
 
-	var routes []GatewayRoute
+	routes := make([]GatewayRoute, 0)
 	for _, spec := range specs {
 		for _, route := range spec.Ingress.Routes {
 			// Map the target component to its K8s service DNS name.
