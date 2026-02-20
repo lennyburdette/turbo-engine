@@ -29,6 +29,160 @@ GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-}"
 
 CI_REPORT_DIR="${ROOT_DIR}/ci-report"
 
+# Write (or overwrite) Jekyll config, layout, and CSS.  Called on every run
+# so improvements propagate to existing ci-reports branches.
+write_site_scaffolding() {
+  # Jekyll config — no remote theme, just plain HTML layout.
+  cat > _config.yml <<'JEKYLL_EOF'
+title: Turbo Engine CI Reports
+description: E2E test results, traces, logs, and screenshots
+exclude:
+  - "*.json"
+JEKYLL_EOF
+
+  # Custom layout — self-contained HTML with viewport meta and mobile CSS.
+  # No dependency on a remote Jekyll theme.
+  mkdir -p _layouts
+  cat > _layouts/default.html <<'LAYOUT_EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  <style>
+    :root {
+      --bg: #fff;
+      --fg: #24292e;
+      --fg-muted: #586069;
+      --border: #e1e4e8;
+      --bg-code: #f6f8fa;
+      --link: #0366d6;
+      --pass: #22863a;
+      --fail: #cb2431;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #c9d1d9;
+        --fg-muted: #8b949e;
+        --border: #30363d;
+        --bg-code: #161b22;
+        --link: #58a6ff;
+        --pass: #3fb950;
+        --fail: #f85149;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+                   Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--fg);
+      background: var(--bg);
+      margin: 0;
+      padding: 16px;
+      max-width: 100vw;
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      overflow-x: hidden;
+    }
+
+    h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    h2 { font-size: 1.25em; margin-top: 1.5em; }
+    h3 { font-size: 1.1em; }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Code blocks: horizontally scrollable, never expand the page */
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      font-size: 13px;
+      line-height: 1.4;
+      max-width: 100%;
+    }
+    code {
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.9em;
+    }
+    p code, li code, td code {
+      background: var(--bg-code);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* Tables: scrollable wrapper, never expand the page */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 12px 0;
+      max-width: 100%;
+    }
+    table {
+      border-collapse: collapse;
+      min-width: 100%;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    th { background: var(--bg-code); font-weight: 600; }
+
+    /* Details/summary */
+    details { margin: 8px 0; }
+    summary { cursor: pointer; font-weight: 600; }
+
+    /* Status badges */
+    hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+    /* Breadcrumb nav */
+    .breadcrumb {
+      font-size: 13px;
+      color: var(--fg-muted);
+      margin-bottom: 8px;
+    }
+    .breadcrumb a { color: var(--fg-muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="breadcrumb">
+      <a href="{{ '/' | relative_url }}">CI Reports</a>
+    </nav>
+    {{ content }}
+  </div>
+  <script>
+    // Wrap all tables in a scrollable div so they don't blow out the viewport.
+    document.querySelectorAll('table').forEach(function(table) {
+      if (table.parentElement.classList.contains('table-wrapper')) return;
+      var wrapper = document.createElement('div');
+      wrapper.className = 'table-wrapper';
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    });
+  </script>
+</body>
+</html>
+LAYOUT_EOF
+}
+
 if [ ! -d "$CI_REPORT_DIR" ]; then
   echo "No ci-report/ directory found. Nothing to publish."
   exit 0
@@ -76,15 +230,7 @@ else
   git remote add origin "$CLONE_URL"
   git checkout --orphan ci-reports
 
-  # Bootstrap Jekyll config and root index.
-  cat > _config.yml <<'JEKYLL_EOF'
-title: Turbo Engine CI Reports
-description: E2E test results, traces, logs, and screenshots
-theme: jekyll-theme-minimal
-exclude:
-  - "*.json"
-JEKYLL_EOF
-
+  # Bootstrap root index.
   cat > index.md <<'INDEX_EOF'
 ---
 layout: default
@@ -100,8 +246,12 @@ Browse E2E test results by type:
 INDEX_EOF
 
   git add -A
-  git commit -m "Initialize ci-reports branch with Jekyll config"
+  git commit -m "Initialize ci-reports branch"
 fi
+
+# Always write/update the Jekyll config and layout files so existing
+# ci-reports branches pick up improvements.
+write_site_scaffolding
 
 # Create the report directory.
 mkdir -p "${REPORT_PATH}"
