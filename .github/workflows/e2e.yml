@@ -27,10 +27,19 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Build Go service images
         run: |
-          docker compose -f infra/docker/docker-compose.yml build registry
-          docker compose -f infra/docker/docker-compose.yml build builder
-          docker compose -f infra/docker/docker-compose.yml build operator
-          docker compose -f infra/docker/docker-compose.yml build envmanager
+          set +e
+          failed=0
+          for svc in registry builder operator envmanager; do
+            echo "::group::Building $svc"
+            if ! docker compose -f infra/docker/docker-compose.yml build "$svc" 2>&1; then
+              echo "::error::Docker build failed for $svc"
+              echo "### Docker build failed: $svc" >> "$GITHUB_STEP_SUMMARY"
+              failed=1
+              break
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
         env:
           DOCKER_BUILDKIT: "1"
           COMPOSE_DOCKER_CLI_BUILD: "1"

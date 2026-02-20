@@ -102,10 +102,18 @@ jobs:
 
       - name: Build Go service images
         run: |
-          docker build -t turbo-engine/registry services/registry
-          docker build -t turbo-engine/builder services/builder
-          docker build -t turbo-engine/operator services/operator
-          docker build -t turbo-engine/envmanager services/envmanager
+          set +e
+          failed=0
+          for svc in registry builder operator envmanager; do
+            echo "::group::Building $svc"
+            if ! docker build -t "turbo-engine/$svc" "services/$svc" 2>&1; then
+              echo "::error::Docker build failed for $svc"
+              echo "### ❌ Docker build failed: $svc" >> "$GITHUB_STEP_SUMMARY"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
         env:
           DOCKER_BUILDKIT: "1"
 
