@@ -15,6 +15,7 @@
 #   GITHUB_REPOSITORY — e.g. lennyburdette/turbo-engine
 #   PAGES_BASE_URL — Override for Pages URL (auto-detected if unset)
 set -euo pipefail
+trap 'echo "::error title=publish-ci-report.sh::Script failed at line $LINENO (exit code $?)"' ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -52,23 +53,27 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 cd "$WORK_DIR"
 
 # Set up git auth. actions/checkout only configures credentials for the main
-# working copy; this temp directory needs its own.  url.*.insteadOf rewrites
-# all HTTPS github.com URLs to include the token, covering clone + push.
+# working copy; this temp directory needs its own.  Use a credential helper
+# that returns the token — this avoids embedding the token in the git config
+# file (which url.insteadOf would do) and works reliably across git versions.
 CLONE_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
 if [ -n "${GH_TOKEN:-}" ]; then
-  git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-  echo "Configured git credential rewrite for github.com"
+  git config --global credential.helper '!f() { echo "username=x-access-token"; echo "password='"${GH_TOKEN}"'"; }; f'
+  echo "Configured git credential helper for CI"
 fi
+
+echo "Cloning ci-reports branch from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}..."
 
 # Clone just the ci-reports branch (shallow, single-branch).
 if git clone --depth 1 --branch ci-reports "$CLONE_URL" repo 2>&1; then
   cd repo
+  echo "Cloned ci-reports branch successfully."
 else
   # Branch doesn't exist yet — create it as an orphan.
-  echo "ci-reports branch does not exist, creating it..."
+  echo "ci-reports branch does not exist (or clone failed), creating it..."
   mkdir repo && cd repo
   git init
-  git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+  git remote add origin "$CLONE_URL"
   git checkout --orphan ci-reports
 
   # Bootstrap Jekyll config and root index.
