@@ -23,44 +23,37 @@ jobs:
       - uses: actions/checkout@v4
 
       # -----------------------------------------------------------------------
-      # Build Docker images (per-service for clearer error isolation)
+      # Build Docker images (standalone docker build, then compose up --build)
       # -----------------------------------------------------------------------
       - name: Build Go service images
         run: |
-          set +e
-          failed=0
-          for svc in registry builder operator envmanager; do
-            echo "::group::Building $svc"
-            if ! docker compose -f infra/docker/docker-compose.yml build "$svc" 2>&1; then
-              echo "::error::Docker build failed for $svc"
-              echo "### Docker build failed: $svc" >> "$GITHUB_STEP_SUMMARY"
-              failed=1
-              break
-            fi
-            echo "::endgroup::"
-          done
-          exit $failed
+          docker build --progress=plain -t turbo-engine/registry services/registry
+          docker build --progress=plain -t turbo-engine/builder services/builder
+          docker build --progress=plain -t turbo-engine/operator services/operator
+          docker build --progress=plain -t turbo-engine/envmanager services/envmanager
         env:
           DOCKER_BUILDKIT: "1"
-          COMPOSE_DOCKER_CLI_BUILD: "1"
 
       - name: Build gateway image
-        run: docker compose -f infra/docker/docker-compose.yml build gateway
+        run: docker build --progress=plain -t turbo-engine/gateway services/gateway
         env:
           DOCKER_BUILDKIT: "1"
-          COMPOSE_DOCKER_CLI_BUILD: "1"
 
       - name: Build console image
-        run: docker compose -f infra/docker/docker-compose.yml build console
+        run: docker build --progress=plain -t turbo-engine/console ui/console
+        env:
+          DOCKER_BUILDKIT: "1"
+
+      # -----------------------------------------------------------------------
+      # Start the platform (compose build uses its own image naming, so let
+      # compose rebuild using its cache — the layers are already cached from
+      # the standalone builds above).
+      # -----------------------------------------------------------------------
+      - name: Start platform
+        run: docker compose -f infra/docker/docker-compose.yml up -d --build
         env:
           DOCKER_BUILDKIT: "1"
           COMPOSE_DOCKER_CLI_BUILD: "1"
-
-      # -----------------------------------------------------------------------
-      # Start the platform
-      # -----------------------------------------------------------------------
-      - name: Start platform
-        run: docker compose -f infra/docker/docker-compose.yml up -d
 
       - name: Wait for services to be healthy
         run: ./hack/scripts/wait-for-healthy.sh 180
