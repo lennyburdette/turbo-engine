@@ -38,7 +38,7 @@ jobs:
 
       - name: Build registry image
         run: |
-          docker build --progress=plain -t turbo-engine/registry services/registry 2>&1 | tee /tmp/build.log || {
+          docker build --progress=plain --load -t turbo-engine/registry services/registry 2>&1 | tee /tmp/build.log || {
             echo "### Registry build output (last 80 lines)" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             tail -80 /tmp/build.log >> "$GITHUB_STEP_SUMMARY"
@@ -50,19 +50,19 @@ jobs:
 
       - name: Build remaining Go service images
         run: |
-          docker build --progress=plain -t turbo-engine/builder services/builder
-          docker build --progress=plain -t turbo-engine/operator services/operator
-          docker build --progress=plain -t turbo-engine/envmanager services/envmanager
+          docker build --progress=plain --load -t turbo-engine/builder services/builder
+          docker build --progress=plain --load -t turbo-engine/operator services/operator
+          docker build --progress=plain --load -t turbo-engine/envmanager services/envmanager
         env:
           DOCKER_BUILDKIT: "1"
 
       - name: Build gateway image
-        run: docker build --progress=plain -t turbo-engine/gateway services/gateway
+        run: docker build --progress=plain --load -t turbo-engine/gateway services/gateway
         env:
           DOCKER_BUILDKIT: "1"
 
       - name: Build console image
-        run: docker build --progress=plain -t turbo-engine/console ui/console
+        run: docker build --progress=plain --load -t turbo-engine/console ui/console
         env:
           DOCKER_BUILDKIT: "1"
 
@@ -70,6 +70,9 @@ jobs:
       # Tag images for compose (project name "docker" -> docker-<service>)
       # and start the platform without rebuilding.
       # -----------------------------------------------------------------------
+      - name: Verify images loaded
+        run: docker images turbo-engine/*
+
       - name: Tag images for compose
         run: |
           docker tag turbo-engine/registry docker-registry
