@@ -51,15 +51,22 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 cd "$WORK_DIR"
 
+# Build the clone URL. In CI, inject the token for HTTPS auth since
+# actions/checkout only configures credentials for the main working copy.
+CLONE_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+if [ -n "${GH_TOKEN:-}" ]; then
+  CLONE_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+fi
+
 # Clone just the ci-reports branch (shallow, single-branch).
-if git clone --depth 1 --branch ci-reports "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" repo 2>/dev/null; then
+if git clone --depth 1 --branch ci-reports "$CLONE_URL" repo 2>/dev/null; then
   cd repo
 else
   # Branch doesn't exist yet — create it as an orphan.
   echo "ci-reports branch does not exist, creating it..."
   mkdir repo && cd repo
   git init
-  git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+  git remote add origin "$CLONE_URL"
   git checkout --orphan ci-reports
 
   # Bootstrap Jekyll config and root index.
