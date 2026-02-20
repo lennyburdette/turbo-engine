@@ -81,20 +81,11 @@ jobs:
           docker compose -f infra/docker/docker-compose.yml config --images 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Pull infra images
+        run: docker compose -f infra/docker/docker-compose.yml pull --ignore-buildable
+
       - name: Start platform
-        run: |
-          docker compose -f infra/docker/docker-compose.yml up -d --no-build 2>&1 | tee /tmp/compose-up.log || {
-            echo "### Start platform failed" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            cat /tmp/compose-up.log >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "**Container status:**" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            docker compose -f infra/docker/docker-compose.yml ps -a >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          }
+        run: docker compose -f infra/docker/docker-compose.yml up -d --no-build
 
       - name: Wait for services to be healthy
         run: ./hack/scripts/wait-for-healthy.sh 180
