@@ -131,3 +131,21 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 3
       terminationGracePeriodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: turbo-engine-operator
+  namespace: turbo-engine
+  labels:
+    app.kubernetes.io/name: operator
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: operator
+  ports:
+    - name: http
+      port: 8084
+      targetPort: http
+      protocol: TCP

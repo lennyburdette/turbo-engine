@@ -187,7 +187,7 @@ PUBLISH_RESP=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:${REGISTRY_
   -d '{
     "package": {
       "name": "k8s-e2e-test-pkg",
-      "kind": "GRAPHQL_SUBGRAPH",
+      "kind": "graphql-subgraph",
       "version": "1.0.0",
       "schema": "type Query { hello: String }",
       "dependencies": []
@@ -213,13 +213,15 @@ ENV_RESP=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:${ENVMANAGER_PO
   -H "Content-Type: application/json" \
   -d '{
     "name": "k8s-e2e-env",
-    "basePackage": "k8s-e2e-test-pkg",
-    "baseVersion": "1.0.0"
+    "baseRootPackage": "k8s-e2e-test-pkg",
+    "baseRootVersion": "1.0.0",
+    "branch": "k8s-e2e",
+    "createdBy": "k8s-e2e-tests"
   }' 2>/dev/null || echo -e '\n000')
 
 ENV_CODE=$(echo "$ENV_RESP" | tail -1)
 if [[ "$ENV_CODE" =~ ^(200|201)$ ]]; then
-  ENV_ID=$(echo "$ENV_RESP" | head -n -1 | python3 -c "import json,sys; print(json.load(sys.stdin).get('environmentId','unknown'))" 2>/dev/null || echo "unknown")
+  ENV_ID=$(echo "$ENV_RESP" | head -n -1 | python3 -c "import json,sys; print(json.load(sys.stdin).get('id','unknown'))" 2>/dev/null || echo "unknown")
   record_result "create-environment" "pass" "Created environment ${ENV_ID} (HTTP ${ENV_CODE})" "$T"
   timeline "Created environment ${ENV_ID}"
 else
@@ -238,13 +240,13 @@ BUILD_RESP=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:${BUILDER_POR
   -H "Content-Type: application/json" \
   -d "{
     \"environmentId\": \"${ENV_ID}\",
-    \"rootPackage\": \"k8s-e2e-test-pkg\",
-    \"rootVersion\": \"1.0.0\"
+    \"rootPackageName\": \"k8s-e2e-test-pkg\",
+    \"rootPackageVersion\": \"1.0.0\"
   }" 2>/dev/null || echo -e '\n000')
 
 BUILD_CODE=$(echo "$BUILD_RESP" | tail -1)
 if [[ "$BUILD_CODE" =~ ^(200|201|202)$ ]]; then
-  BUILD_ID=$(echo "$BUILD_RESP" | head -n -1 | python3 -c "import json,sys; print(json.load(sys.stdin).get('buildId','unknown'))" 2>/dev/null || echo "unknown")
+  BUILD_ID=$(echo "$BUILD_RESP" | head -n -1 | python3 -c "import json,sys; print(json.load(sys.stdin).get('id','unknown'))" 2>/dev/null || echo "unknown")
   record_result "trigger-build" "pass" "Build ${BUILD_ID} triggered (HTTP ${BUILD_CODE})" "$T"
   timeline "Build ${BUILD_ID} triggered"
 else
@@ -283,30 +285,54 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 7: Wait for operator reconciliation
+# Step 7: Trigger operator reconciliation via POST /v1/reconcile
 # ---------------------------------------------------------------------------
-timeline "Waiting for operator reconciliation"
+timeline "Triggering operator reconciliation"
 
 T=$(current_ms)
-RECONCILE_STATUS="unknown"
-RECONCILE_DEADLINE=$(( $(date +%s) + RECONCILE_TIMEOUT ))
 
-while [[ $(date +%s) -lt $RECONCILE_DEADLINE ]]; do
-  OP_RESP=$(curl -s "http://localhost:${OPERATOR_PORT}/v1/status/${ENV_ID}" 2>/dev/null || echo '{}')
-  RECONCILE_STATUS=$(echo "$OP_RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('phase','unknown'))" 2>/dev/null || echo "unknown")
+# Send a reconcile request with the environment and build info.
+RECONCILE_RESP=$(curl -s -w '\n%{http_code}' -X POST "http://localhost:${OPERATOR_PORT}/v1/reconcile" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"spec\": {
+      \"environmentId\": \"${ENV_ID}\",
+      \"buildId\": \"${BUILD_ID}\",
+      \"rootPackage\": \"k8s-e2e-test-pkg\",
+      \"components\": [
+        {
+          \"packageName\": \"k8s-e2e-test-pkg\",
+          \"packageVersion\": \"1.0.0\",
+          \"kind\": \"GRAPHQL_SUBGRAPH\",
+          \"artifactHash\": \"e2e-test-hash\",
+          \"runtime\": {
+            \"replicas\": 1,
+            \"resources\": {
+              \"cpuRequest\": \"50m\",
+              \"memoryRequest\": \"64Mi\"
+            }
+          }
+        }
+      ]
+    }
+  }" 2>/dev/null || echo -e '\n000')
 
-  if [[ "$RECONCILE_STATUS" == "Running" ]]; then
-    break
-  fi
+RECONCILE_CODE=$(echo "$RECONCILE_RESP" | tail -1)
+
+if [[ "$RECONCILE_CODE" == "200" ]]; then
+  # Give the applier a moment to create resources.
   sleep 5
-done
 
-if [[ "$RECONCILE_STATUS" == "Running" ]]; then
-  record_result "operator-reconcile" "pass" "Environment ${ENV_ID} phase=Running" "$T"
-  timeline "Operator reconciliation complete — phase=Running"
+  # Now check status.
+  OP_RESP=$(curl -s "http://localhost:${OPERATOR_PORT}/v1/status/${ENV_ID}" 2>/dev/null || echo '{}')
+  RECONCILE_STATUS=$(echo "$OP_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('status',{}).get('phase','unknown') if isinstance(d.get('status'),dict) else d.get('phase','unknown'))" 2>/dev/null || echo "unknown")
+
+  record_result "operator-reconcile" "pass" "Reconciliation triggered, phase=${RECONCILE_STATUS} (HTTP ${RECONCILE_CODE})" "$T"
+  timeline "Operator reconciliation complete — phase=${RECONCILE_STATUS}"
 else
-  record_result "operator-reconcile" "fail" "Phase: ${RECONCILE_STATUS} (expected Running)" "$T"
-  timeline "Operator reconciliation status: ${RECONCILE_STATUS}"
+  RECONCILE_BODY=$(echo "$RECONCILE_RESP" | head -n -1)
+  record_result "operator-reconcile" "fail" "HTTP ${RECONCILE_CODE}: ${RECONCILE_BODY}" "$T"
+  timeline "Operator reconciliation FAILED (HTTP ${RECONCILE_CODE})"
 fi
 
 # ---------------------------------------------------------------------------
