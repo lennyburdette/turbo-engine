@@ -162,18 +162,52 @@ for j in data['jobs']:
 
 cmd_annotations() {
   local run_id="$1"
-  # Get check suites, then check runs for annotations
+  # Get jobs, show failed steps, then fetch annotation content via check-runs API
   api "${API}/actions/runs/${run_id}/jobs?per_page=50" | python3 -c "
 import json, sys, urllib.request
+
 data = json.load(sys.stdin)
+api_base = '${API}'.rsplit('/repos/', 1)[0] + '/repos/${REPO}'
+
 for j in data['jobs']:
-    if j.get('conclusion') not in ('failure', 'cancelled'):
-        continue
-    print(f'=== {j[\"name\"]} ===')
-    for step in j.get('steps', []):
-        if step.get('conclusion') == 'failure':
-            print(f'  FAILED: {step[\"name\"]} (number: {step[\"number\"]})')
-    print()
+    job_id = j['id']
+    job_name = j['name']
+    conclusion = j.get('conclusion', '-')
+
+    # Show failed steps
+    failed_steps = [s for s in j.get('steps', []) if s.get('conclusion') == 'failure']
+    if failed_steps:
+        print(f'=== {job_name} ({conclusion}) ===')
+        for step in failed_steps:
+            print(f'  FAILED STEP: {step[\"name\"]}')
+        print()
+
+    # Fetch annotations for this job (works for any conclusion)
+    try:
+        req = urllib.request.Request(
+            f'{api_base}/check-runs/{job_id}/annotations',
+            headers={'Accept': 'application/vnd.github.v3+json'})
+        resp = urllib.request.urlopen(req, timeout=10)
+        annotations = json.loads(resp.read())
+    except Exception:
+        annotations = []
+
+    if annotations:
+        if not failed_steps:
+            print(f'=== {job_name} ({conclusion}) ===')
+        for a in annotations:
+            level = a.get('annotation_level', 'notice')
+            title = a.get('title', '')
+            message = a.get('message', '').replace('%0A', '\n')
+            marker = {'failure': 'ERROR', 'warning': 'WARN', 'notice': 'NOTE'}.get(level, level.upper())
+            header = f'[{marker}]'
+            if title:
+                header += f' {title}'
+            print(header)
+            # Indent message body for readability
+            for line in message.split('\n'):
+                print(f'  {line}')
+            print()
 "
 }
 

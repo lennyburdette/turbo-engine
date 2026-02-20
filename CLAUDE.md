@@ -267,3 +267,29 @@ turbo-engine publish .  # publish the root supergraph
 3. Add to `infra/docker/docker-compose.yml`
 4. Add to `hack/scripts/wait-for-healthy.sh`
 5. Add Taskfile include in root `Taskfile.yml`
+
+### Debugging GitHub Actions workflows
+
+Use `hack/claude/turbo-gh` to inspect CI without leaving the terminal:
+
+```sh
+hack/claude/turbo-gh status                    # quick overview of latest runs
+hack/claude/turbo-gh runs --branch main        # list runs for a branch
+hack/claude/turbo-gh jobs <run-id>             # see steps + which failed
+hack/claude/turbo-gh annotations <run-id>      # get error/warning messages (most useful)
+hack/claude/turbo-gh watch                     # poll until in-progress runs finish
+```
+
+**The annotations command is the fastest way to understand a failure.** The E2E workflow emits diagnostics as `::warning` and `::error` annotations, which are readable via the check-runs API. This is much faster than downloading full log archives.
+
+**Key lessons for this repo's CI:**
+
+- **Docker Compose flag order matters.** `--progress=plain` is a global compose flag: `docker compose --progress=plain build`, NOT `docker compose build --progress=plain`.
+- **Use `docker compose build` for E2E, not standalone `docker build`.** Compose manages image naming and storage so `docker compose up --no-build` can find the images. Standalone `docker build` with BuildKit may cache images in a location the daemon can't find.
+- **Always `docker compose pull --ignore-buildable` before `up --no-build`.** Third-party images (Jaeger, Prometheus, otel-collector) won't be pulled otherwise.
+- **Keep `go.sum` in sync.** If you add or change Go imports, run `go mod tidy` in the service directory before committing. Docker builds will fail with "missing go.sum entry" if the file is stale.
+- **Docker healthchecks need tools in the image.** If a Dockerfile uses `alpine`, `wget` is available. If it uses `debian-slim`, install `wget` or `curl` explicitly. Distroless images can't run shell healthchecks at all — use alpine instead when compose healthchecks are needed.
+- **Services must tolerate missing OTLP collectors.** In CI, the otel-collector may not be ready when services start. Services should log a warning and fall back to a no-op tracer, not crash.
+- **`local` keyword is only valid inside bash functions.** Using `local` in a top-level compound command (`{ ... }`) with `set -e` causes an immediate exit. Use plain variable assignment instead.
+- **`depends_on: condition: service_healthy` requires a working healthcheck.** Third-party images may not have the tools your healthcheck command needs. Use `service_started` for images you don't control.
+- **Emit diagnostics as annotations in CI.** Use `echo "::error title=Build Failed::${MSG}"` in workflow steps. These are readable via `turbo-gh annotations` and persist after the run completes, unlike log output which requires downloading archives.
