@@ -16,7 +16,7 @@ import (
 func setupTestHandler(t *testing.T) (*Handler, *http.ServeMux) {
 	t.Helper()
 	logger := slog.Default()
-	r := reconciler.New(logger)
+	r := reconciler.New(logger, nil, "test-ns")
 	h := New(r, logger)
 	mux := http.NewServeMux()
 	h.RegisterRoutes(mux)

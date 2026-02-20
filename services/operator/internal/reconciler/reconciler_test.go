@@ -9,7 +9,7 @@ import (
 )
 
 func newTestReconciler() *Reconciler {
-	return New(slog.Default())
+	return New(slog.Default(), nil, "test-ns")
 }
 
 func makeSpec(envID, buildID string, components []model.DeployedComponent) model.APIGraphSpec {

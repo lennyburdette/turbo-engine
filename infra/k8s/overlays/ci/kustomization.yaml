@@ -1,0 +1,162 @@
+# CI overlay for running E2E tests in a kind cluster.
+# - Uses the turbo-engine-e2e namespace
+# - Overrides image tags to :e2e (pre-loaded into kind)
+# - Sets imagePullPolicy: Never (images are not in a registry)
+# - Reduces resource limits for CI runners
+# - Enables debug logging and fast polling
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: turbo-engine-e2e
+
+resources:
+  - ../../base
+
+images:
+  - name: turbo-engine/registry
+    newTag: e2e
+  - name: turbo-engine/builder
+    newTag: e2e
+  - name: turbo-engine/envmanager
+    newTag: e2e
+  - name: turbo-engine/operator
+    newTag: e2e
+  - name: turbo-engine/gateway
+    newTag: e2e
+  - name: turbo-engine/console
+    newTag: e2e
+
+patches:
+  # --- Operator: K8s mode, fast polling, debug logging ---
+  - target:
+      kind: Deployment
+      name: turbo-engine-operator
+    patch: |
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: OPERATOR_MODE
+          value: "k8s"
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: OPERATOR_NAMESPACE
+          value: "turbo-engine-e2e"
+      - op: replace
+        path: /spec/template/spec/containers/0/env/4
+        value:
+          name: POLL_INTERVAL
+          value: "5s"
+      - op: replace
+        path: /spec/template/spec/containers/0/env/1
+        value:
+          name: LOG_LEVEL
+          value: "debug"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+
+  # --- All other services: debug logging, reduced resources, imagePullPolicy ---
+  - target:
+      kind: Deployment
+      name: registry
+    patch: &debug-patch |
+      - op: replace
+        path: /spec/template/spec/containers/0/env/1
+        value:
+          name: LOG_LEVEL
+          value: "debug"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+
+  - target:
+      kind: Deployment
+      name: builder
+    patch: *debug-patch
+
+  - target:
+      kind: Deployment
+      name: envmanager
+    patch: *debug-patch
+
+  - target:
+      kind: Deployment
+      name: gateway
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+
+  - target:
+      kind: Deployment
+      name: console
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+
+  # --- Telemetry: reduced resources (no imagePullPolicy override — these are public images) ---
+  - target:
+      kind: Deployment
+      name: otel-collector
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+
+  - target:
+      kind: Deployment
+      name: jaeger
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi

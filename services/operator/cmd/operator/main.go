@@ -25,6 +25,10 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	"github.com/lennyburdette/turbo-engine/services/operator/internal/applier"
 	"github.com/lennyburdette/turbo-engine/services/operator/internal/handler"
 	"github.com/lennyburdette/turbo-engine/services/operator/internal/model"
 	"github.com/lennyburdette/turbo-engine/services/operator/internal/reconciler"
@@ -62,8 +66,32 @@ func main() {
 		}()
 	}
 
+	// Create the applier based on OPERATOR_MODE.
+	operatorMode := getEnv("OPERATOR_MODE", "dev")
+	namespace := getEnv("OPERATOR_NAMESPACE", "turbo-engine-e2e")
+	var app reconciler.Applier
+
+	switch operatorMode {
+	case "k8s":
+		logger.Info("operator mode: k8s — will create real Kubernetes resources")
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			logger.Error("failed to get in-cluster config", "error", err)
+			os.Exit(1)
+		}
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			logger.Error("failed to create Kubernetes client", "error", err)
+			os.Exit(1)
+		}
+		app = applier.NewKubernetesApplier(clientset, logger)
+	default:
+		logger.Info("operator mode: dev — actions will be logged only")
+		app = applier.NewNoopApplier(logger)
+	}
+
 	// Create the reconciler.
-	rec := reconciler.New(logger)
+	rec := reconciler.New(logger, app, namespace)
 
 	// Create HTTP handler and mux.
 	h := handler.New(rec, logger)

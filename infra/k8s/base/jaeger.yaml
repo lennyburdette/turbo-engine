@@ -1,0 +1,78 @@
+# Jaeger all-in-one — trace storage and query UI.
+# Uses in-memory storage (no persistence needed for CI/dev).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: turbo-engine
+  labels:
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: telemetry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jaeger
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jaeger
+        app.kubernetes.io/component: telemetry
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:1.54
+          ports:
+            - name: query
+              containerPort: 16686
+              protocol: TCP
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: health
+              containerPort: 14269
+              protocol: TCP
+          env:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 3
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: turbo-engine
+  labels:
+    app.kubernetes.io/name: jaeger
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: jaeger
+  ports:
+    - name: query
+      port: 16686
+      targetPort: query
+      protocol: TCP
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+      protocol: TCP

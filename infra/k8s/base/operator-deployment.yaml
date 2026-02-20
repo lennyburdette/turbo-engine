@@ -101,8 +101,12 @@ spec:
               value: "info"
             - name: LOG_FORMAT
               value: "json"
+            - name: BUILDER_URL
+              value: "http://builder:8082"
+            - name: POLL_INTERVAL
+              value: "30s"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://otel-collector.turbo-engine.svc.cluster.local:4317"
+              value: "http://otel-collector:4317"
             - name: OTEL_SERVICE_NAME
               value: "operator"
           resources:

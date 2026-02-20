@@ -1,0 +1,280 @@
+# Kubernetes end-to-end tests.
+# Deploys the full platform into a kind cluster, publishes packages, and
+# verifies the operator creates the expected K8s resources.
+name: K8s E2E
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: k8s-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  k8s-e2e:
+    name: Kubernetes end-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # Build Docker images (one-at-a-time to avoid OOM)
+      # ---------------------------------------------------------------
+      - name: Build Go service images
+        run: |
+          echo "::group::Build registry"
+          docker build --progress=plain -t turbo-engine/registry:e2e services/registry
+          echo "::endgroup::"
+
+          echo "::group::Build builder"
+          docker build --progress=plain -t turbo-engine/builder:e2e services/builder
+          echo "::endgroup::"
+
+          echo "::group::Build operator"
+          docker build --progress=plain -t turbo-engine/operator:e2e services/operator
+          echo "::endgroup::"
+
+          echo "::group::Build envmanager"
+          docker build --progress=plain -t turbo-engine/envmanager:e2e services/envmanager
+          echo "::endgroup::"
+
+      - name: Build gateway image (Rust — takes longer)
+        run: |
+          echo "::group::Build gateway"
+          docker build --progress=plain -t turbo-engine/gateway:e2e services/gateway
+          echo "::endgroup::"
+
+      - name: Build console image
+        run: |
+          echo "::group::Build console"
+          docker build --progress=plain -t turbo-engine/console:e2e ui/console
+          echo "::endgroup::"
+
+      # ---------------------------------------------------------------
+      # Verify images
+      # ---------------------------------------------------------------
+      - name: Verify images
+        run: |
+          IMAGES=$(docker images 'turbo-engine/*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}")
+          echo "$IMAGES"
+          echo "::warning title=Docker Images::${IMAGES//$'\n'/%0A}"
+          for svc in registry builder operator envmanager gateway console; do
+            docker image inspect "turbo-engine/${svc}:e2e" > /dev/null 2>&1 || {
+              echo "::error::Missing image turbo-engine/${svc}:e2e"
+              exit 1
+            }
+          done
+
+      # ---------------------------------------------------------------
+      # Create kind cluster
+      # ---------------------------------------------------------------
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: turbo-engine-e2e
+
+      # ---------------------------------------------------------------
+      # Load images into kind
+      # ---------------------------------------------------------------
+      - name: Load images into kind
+        run: |
+          for svc in registry builder envmanager operator gateway console; do
+            echo "Loading turbo-engine/${svc}:e2e..."
+            kind load docker-image "turbo-engine/${svc}:e2e" --name turbo-engine-e2e
+          done
+
+      - name: Verify images in kind
+        run: |
+          docker exec turbo-engine-e2e-control-plane crictl images | grep turbo-engine || true
+
+      # ---------------------------------------------------------------
+      # Deploy CRD + control plane + telemetry
+      # ---------------------------------------------------------------
+      - name: Create namespace
+        run: kubectl create namespace turbo-engine-e2e || true
+
+      - name: Deploy platform to kind
+        run: |
+          kubectl apply -k infra/k8s/overlays/ci
+          echo ""
+          echo "Waiting for deployments to roll out..."
+          kubectl -n turbo-engine-e2e rollout status deployment --timeout=180s
+
+      - name: Deployment diagnostics
+        if: failure()
+        run: |
+          mkdir -p ci-report/k8s
+
+          echo "=== POD STATUS ==="
+          kubectl get pods -n turbo-engine-e2e -o wide 2>&1 | tee ci-report/k8s-diagnostics.txt
+
+          echo ""
+          echo "=== EVENTS ==="
+          kubectl get events -n turbo-engine-e2e --sort-by=.lastTimestamp 2>&1 | tee -a ci-report/k8s-diagnostics.txt
+
+          echo ""
+          echo "=== DESCRIBE FAILING PODS ==="
+          kubectl describe pods -n turbo-engine-e2e 2>&1 | tee -a ci-report/k8s-diagnostics.txt
+
+          POD_STATUS=$(kubectl get pods -n turbo-engine-e2e -o wide 2>&1 | head -15)
+          echo "::warning title=K8s Pod Status::${POD_STATUS//$'\n'/%0A}"
+
+      # ---------------------------------------------------------------
+      # Run E2E tests
+      # ---------------------------------------------------------------
+      - name: Run K8s E2E tests
+        run: ./hack/scripts/k8s-e2e-tests.sh
+
+      # ---------------------------------------------------------------
+      # Collect debug artifacts (always)
+      # ---------------------------------------------------------------
+      - name: Collect debug info
+        if: always()
+        run: ./hack/scripts/k8s-collect-debug.sh
+
+      - name: Capture traces
+        if: always()
+        run: |
+          # Port-forward Jaeger for trace capture
+          kubectl -n turbo-engine-e2e port-forward svc/jaeger 16686:16686 &>/dev/null &
+          PF_PID=$!
+          sleep 3
+          JAEGER_PORT=16686 ./hack/scripts/k8s-dump-report.sh || true
+          kill $PF_PID 2>/dev/null || true
+
+      - name: Capture screenshots
+        if: always()
+        run: |
+          # Port-forward console for screenshots
+          kubectl -n turbo-engine-e2e port-forward svc/console 13000:3000 &>/dev/null &
+          PF_PID=$!
+          sleep 3
+          CONSOLE_URL=http://localhost:13000 ./hack/scripts/capture-screenshots.sh || true
+          kill $PF_PID 2>/dev/null || true
+
+      # ---------------------------------------------------------------
+      # Upload artifacts
+      # ---------------------------------------------------------------
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-e2e-report
+          path: ci-report/
+          retention-days: 14
+
+      # ---------------------------------------------------------------
+      # Summary + PR comment
+      # ---------------------------------------------------------------
+      - name: Build K8s E2E summary
+        id: summary
+        if: always()
+        run: |
+          SUMMARY_FILE=$(mktemp)
+
+          if [ -f ci-report/k8s-e2e-results.json ]; then
+            total=$(grep -o '"total":\s*[0-9]*' ci-report/k8s-e2e-results.json | grep -o '[0-9]*' || echo "?")
+            passed=$(grep -o '"passed":\s*[0-9]*' ci-report/k8s-e2e-results.json | grep -o '[0-9]*' || echo "?")
+            failed=$(grep -o '"failed":\s*[0-9]*' ci-report/k8s-e2e-results.json | grep -o '[0-9]*' || echo "?")
+
+            if [ "$failed" = "0" ]; then
+              echo "### K8s E2E: All ${total} tests passed" >> "$SUMMARY_FILE"
+            else
+              echo "### K8s E2E: ${failed} failed (${passed}/${total} passed)" >> "$SUMMARY_FILE"
+            fi
+
+            echo "" >> "$SUMMARY_FILE"
+            echo "| Test | Status | Detail | Duration |" >> "$SUMMARY_FILE"
+            echo "|------|--------|--------|----------|" >> "$SUMMARY_FILE"
+
+            while IFS= read -r line; do
+              name=$(echo "$line" | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+              status=$(echo "$line" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+              detail=$(echo "$line" | grep -o '"detail":"[^"]*"' | cut -d'"' -f4)
+              duration=$(echo "$line" | grep -o '"duration_ms":[0-9]*' | cut -d: -f2)
+              if [ -n "$name" ]; then
+                icon="PASS"
+                [ "$status" = "fail" ] && icon="FAIL"
+                echo "| \`${name}\` | ${icon} | ${detail} | ${duration:-0}ms |" >> "$SUMMARY_FILE"
+              fi
+            done < <(grep -o '{[^}]*}' ci-report/k8s-e2e-results.json | grep '"name"')
+          else
+            echo "### K8s E2E: No results" >> "$SUMMARY_FILE"
+            echo "Tests may not have run. Check deployment diagnostics." >> "$SUMMARY_FILE"
+          fi
+
+          # K8s resource state
+          if [ -f ci-report/k8s/resources.txt ]; then
+            echo "" >> "$SUMMARY_FILE"
+            echo "<details><summary>K8s resource state</summary>" >> "$SUMMARY_FILE"
+            echo "" >> "$SUMMARY_FILE"
+            echo '```' >> "$SUMMARY_FILE"
+            head -50 ci-report/k8s/resources.txt >> "$SUMMARY_FILE"
+            echo '```' >> "$SUMMARY_FILE"
+            echo "</details>" >> "$SUMMARY_FILE"
+          fi
+
+          # Timeline
+          if [ -f ci-report/k8s/timeline.txt ]; then
+            echo "" >> "$SUMMARY_FILE"
+            echo "<details><summary>Timeline</summary>" >> "$SUMMARY_FILE"
+            echo "" >> "$SUMMARY_FILE"
+            echo '```' >> "$SUMMARY_FILE"
+            cat ci-report/k8s/timeline.txt >> "$SUMMARY_FILE"
+            echo '```' >> "$SUMMARY_FILE"
+            echo "</details>" >> "$SUMMARY_FILE"
+          fi
+
+          echo "" >> "$SUMMARY_FILE"
+          echo "Full debug output in the [**k8s-e2e-report** artifact](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})." >> "$SUMMARY_FILE"
+
+          cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+          echo "file=${SUMMARY_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment on PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          SUMMARY_FILE="${{ steps.summary.outputs.file }}"
+          if [ ! -f "$SUMMARY_FILE" ]; then exit 0; fi
+
+          MARKER="<!-- turbo-engine-k8s-e2e-bot -->"
+          {
+            echo "$MARKER"
+            cat "$SUMMARY_FILE"
+            echo ""
+            echo "---"
+            echo "*Posted by the K8s E2E workflow — [view run](${RUN_URL})*"
+          } > /tmp/pr-comment-body.txt
+
+          EXISTING_COMMENT_ID=$(gh api \
+            "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            --paginate --jq ".[] | select(.body | startswith(\"${MARKER}\")) | .id" \
+            | head -1 || true)
+
+          if [ -n "$EXISTING_COMMENT_ID" ]; then
+            gh api "repos/${REPO}/issues/comments/${EXISTING_COMMENT_ID}" \
+              -X PATCH -F body=@/tmp/pr-comment-body.txt
+          else
+            gh pr comment "$PR_NUMBER" --body-file /tmp/pr-comment-body.txt
+          fi
+
+      # ---------------------------------------------------------------
+      # Cleanup
+      # ---------------------------------------------------------------
+      - name: Delete kind cluster
+        if: always()
+        run: kind delete cluster --name turbo-engine-e2e
