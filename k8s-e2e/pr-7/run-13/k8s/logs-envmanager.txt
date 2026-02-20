@@ -1,0 +1,4 @@
+{"time":"2026-02-20T20:39:25.229402354Z","level":"INFO","msg":"starting server","addr":":8083"}
+{"time":"2026-02-20T20:39:40.23668168Z","level":"INFO","msg":"traces export: failed to exit idle mode: invalid target address http://otel-collector:4317, error info: address http://otel-collector:4317:443: too many colons in address"}
+{"time":"2026-02-20T20:39:48.195014261Z","level":"INFO","msg":"environment created","id":"bfc1b55f023aff4cb030296bbe7df535","name":"k8s-e2e-env"}
+{"time":"2026-02-20T20:39:50.237693329Z","level":"INFO","msg":"traces export: failed to exit idle mode: invalid target address http://otel-collector:4317, error info: address http://otel-collector:4317:443: too many colons in address"}

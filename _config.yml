@@ -1,5 +1,4 @@
 title: Turbo Engine CI Reports
 description: E2E test results, traces, logs, and screenshots
-theme: jekyll-theme-minimal
 exclude:
   - "*.json"

@@ -1,0 +1,20 @@
+{"time":"2026-02-20T20:39:25.407226092Z","level":"INFO","msg":"starting operator service","version":"0.1.0","log_level":"debug"}
+{"time":"2026-02-20T20:39:25.407409755Z","level":"WARN","msg":"failed to initialize tracer, continuing without tracing","error":"creating resource: conflicting Schema URL: https://opentelemetry.io/schemas/1.26.0 and https://opentelemetry.io/schemas/1.24.0"}
+{"time":"2026-02-20T20:39:25.407425093Z","level":"INFO","msg":"operator mode: k8s — will create real Kubernetes resources"}
+{"time":"2026-02-20T20:39:25.407879491Z","level":"INFO","msg":"listening","addr":":8084"}
+{"time":"2026-02-20T20:39:25.407877851Z","level":"INFO","msg":"starting builder poll loop","component":"poller","builder_url":"http://builder:8082","interval":5000000000}
+{"time":"2026-02-20T20:39:30.409433243Z","level":"DEBUG","msg":"failed to poll builder (will retry)","component":"poller","builder_url":"http://builder:8082","error":"Get \"http://builder:8082/v1/graphs\": dial tcp 10.96.173.4:8082: connect: connection refused"}
+{"time":"2026-02-20T20:39:35.413334007Z","level":"DEBUG","msg":"failed to poll builder (will retry)","component":"poller","builder_url":"http://builder:8082","error":"Get \"http://builder:8082/v1/graphs\": dial tcp 10.96.173.4:8082: connect: connection refused"}
+{"time":"2026-02-20T20:39:40.40933834Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-20T20:39:45.413640069Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-20T20:39:48.316991611Z","level":"INFO","msg":"reconcile request received","component":"handler","environment_id":"bfc1b55f023aff4cb030296bbe7df535","build_id":"bld-1771619988235-1"}
+{"time":"2026-02-20T20:39:48.317012379Z","level":"INFO","msg":"starting reconciliation","component":"reconciler","environment_id":"bfc1b55f023aff4cb030296bbe7df535","build_id":"bld-1771619988235-1","components":1}
+{"time":"2026-02-20T20:39:48.317026335Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"bfc1b55f023aff4cb030296bbe7df535","action":"Create","resource_kind":"Deployment","resource_name":"deploy-k8s-e2e-test-pkg","details":"image=artifact:e2e-test-hash replicas=1"}
+{"time":"2026-02-20T20:39:48.317040662Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"bfc1b55f023aff4cb030296bbe7df535","action":"Create","resource_kind":"Service","resource_name":"svc-k8s-e2e-test-pkg","details":"selector=k8s-e2e-test-pkg"}
+{"time":"2026-02-20T20:39:48.317046393Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"bfc1b55f023aff4cb030296bbe7df535","action":"Create","resource_kind":"ConfigMap","resource_name":"cm-k8s-e2e-test-pkg","details":"env_vars=0"}
+{"time":"2026-02-20T20:39:48.317053616Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Deployment","name":"deploy-k8s-e2e-test-pkg","details":"image=artifact:e2e-test-hash replicas=1"}
+{"time":"2026-02-20T20:39:48.327524861Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Service","name":"svc-k8s-e2e-test-pkg","details":"selector=k8s-e2e-test-pkg"}
+{"time":"2026-02-20T20:39:48.33552826Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"ConfigMap","name":"cm-k8s-e2e-test-pkg","details":"env_vars=0"}
+{"time":"2026-02-20T20:39:48.343600073Z","level":"INFO","msg":"reconciliation complete","component":"reconciler","environment_id":"bfc1b55f023aff4cb030296bbe7df535","phase":"Running","actions":3}
+{"time":"2026-02-20T20:39:50.410881283Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-20T20:39:53.361169576Z","level":"INFO","msg":"status request","component":"handler","environment_id":"bfc1b55f023aff4cb030296bbe7df535"}
