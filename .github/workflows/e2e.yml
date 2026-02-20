@@ -67,15 +67,20 @@ jobs:
           DOCKER_BUILDKIT: "1"
 
       # -----------------------------------------------------------------------
-      # Start the platform (compose build uses its own image naming, so let
-      # compose rebuild using its cache — the layers are already cached from
-      # the standalone builds above).
+      # Tag images for compose (project name "docker" -> docker-<service>)
+      # and start the platform without rebuilding.
       # -----------------------------------------------------------------------
+      - name: Tag images for compose
+        run: |
+          docker tag turbo-engine/registry docker-registry
+          docker tag turbo-engine/builder docker-builder
+          docker tag turbo-engine/operator docker-operator
+          docker tag turbo-engine/envmanager docker-envmanager
+          docker tag turbo-engine/gateway docker-gateway
+          docker tag turbo-engine/console docker-console
+
       - name: Start platform
-        run: docker compose -f infra/docker/docker-compose.yml up -d --build
-        env:
-          DOCKER_BUILDKIT: "1"
-          COMPOSE_DOCKER_CLI_BUILD: "1"
+        run: docker compose -f infra/docker/docker-compose.yml up -d --no-build
 
       - name: Wait for services to be healthy
         run: ./hack/scripts/wait-for-healthy.sh 180
