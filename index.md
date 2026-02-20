@@ -5,7 +5,13 @@ title: CI Reports
 
 # CI Reports
 
-Browse E2E test results by type:
+## Recent runs
 
-- [**K8s E2E**](./k8s-e2e/) -- Kubernetes end-to-end tests
-- [**E2E**](./e2e/) -- Docker Compose end-to-end tests
+| Type | PR | Run | Link |
+|------|-----|-----|------|
+| k8s-e2e | pr-6 | run-11 | [View](./k8s-e2e/pr-6/run-11/) |
+
+## Browse by type
+
+- [**K8s E2E**](./k8s-e2e/) — Kubernetes end-to-end tests
+- [**E2E**](./e2e/) — Docker Compose end-to-end tests
