@@ -107,31 +107,37 @@ jobs:
       - name: Container diagnostics
         if: failure()
         run: |
-          echo "### Container Status" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          docker compose -f infra/docker/docker-compose.yml ps -a >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          # Write diagnostics to file (uploaded as artifact) AND use annotations (readable via API)
+          DIAG_FILE="${GITHUB_WORKSPACE}/ci-report/diagnostics.txt"
+          mkdir -p "${GITHUB_WORKSPACE}/ci-report"
 
-          echo "### Port Connectivity" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "=== CONTAINER STATUS ===" | tee "$DIAG_FILE"
+          docker compose -f infra/docker/docker-compose.yml ps -a 2>&1 | tee -a "$DIAG_FILE" || true
+          echo "" | tee -a "$DIAG_FILE"
+
+          echo "=== PORT CONNECTIVITY ===" | tee -a "$DIAG_FILE"
           for port in 8080 8081 8082 8083 8084 3000; do
-            if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${port}/healthz" 2>/dev/null; then
-              echo "  Port $port: HTTP $(curl -s -o /dev/null -w '%{http_code}' http://localhost:${port}/healthz 2>/dev/null)" >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "  Port $port: UNREACHABLE" >> "$GITHUB_STEP_SUMMARY"
-            fi
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/healthz" 2>/dev/null || echo "000")
+            echo "  Port $port: HTTP $code" | tee -a "$DIAG_FILE"
           done
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "" | tee -a "$DIAG_FILE"
 
-          echo "### Service Logs (last 30 lines each)" >> "$GITHUB_STEP_SUMMARY"
-          for svc in registry builder operator envmanager gateway console otel-collector jaeger prometheus; do
-            echo "#### $svc" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            docker compose -f infra/docker/docker-compose.yml logs --tail=30 --no-color "$svc" >> "$GITHUB_STEP_SUMMARY" 2>&1 || echo "(no logs)" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "=== SERVICE LOGS ===" | tee -a "$DIAG_FILE"
+          for svc in otel-collector registry builder operator envmanager gateway console; do
+            echo "--- $svc ---" | tee -a "$DIAG_FILE"
+            docker compose -f infra/docker/docker-compose.yml logs --tail=20 --no-color "$svc" 2>&1 | tee -a "$DIAG_FILE" || echo "(no logs)" | tee -a "$DIAG_FILE"
           done
+
+          # Emit key diagnostics as annotations (accessible via API)
+          CONTAINER_STATUS=$(docker compose -f infra/docker/docker-compose.yml ps -a 2>&1 | head -15 || true)
+          echo "::warning title=Container Status::${CONTAINER_STATUS//$'\n'/%0A}"
+
+          PORT_STATUS=""
+          for port in 8080 8081 8082 8083 8084 3000; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/healthz" 2>/dev/null || echo "000")
+            PORT_STATUS="${PORT_STATUS}Port ${port}: HTTP ${code}%0A"
+          done
+          echo "::warning title=Port Connectivity::${PORT_STATUS}"
 
       # -----------------------------------------------------------------------
       # Run smoke tests
