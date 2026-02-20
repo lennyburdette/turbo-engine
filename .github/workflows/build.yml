@@ -100,8 +100,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build all Docker images
-        run: docker compose -f infra/docker/docker-compose.yml build
+      - name: Build Go service images
+        run: |
+          docker build -t turbo-engine/registry services/registry
+          docker build -t turbo-engine/builder services/builder
+          docker build -t turbo-engine/operator services/operator
+          docker build -t turbo-engine/envmanager services/envmanager
         env:
           DOCKER_BUILDKIT: "1"
-          COMPOSE_DOCKER_CLI_BUILD: "1"
+
+      - name: Build gateway image
+        run: docker build -t turbo-engine/gateway services/gateway
+        env:
+          DOCKER_BUILDKIT: "1"
+
+      - name: Build console image
+        run: docker build -t turbo-engine/console ui/console
+        env:
+          DOCKER_BUILDKIT: "1"

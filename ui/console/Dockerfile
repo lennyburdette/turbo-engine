@@ -3,8 +3,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install pnpm.
-RUN corepack enable && corepack prepare pnpm@9 --activate
+# Install pnpm (npm install is more reliable than corepack across Node versions).
+RUN npm install -g pnpm@9
 
 # Copy package files for dependency caching.
 COPY package.json pnpm-lock.yaml* ./
