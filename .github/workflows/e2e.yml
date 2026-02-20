@@ -27,22 +27,16 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Build Go service images
         run: |
-          docker build --progress=plain --load -t docker-registry services/registry
-          docker build --progress=plain --load -t docker-builder services/builder
-          docker build --progress=plain --load -t docker-operator services/operator
-          docker build --progress=plain --load -t docker-envmanager services/envmanager
-        env:
-          DOCKER_BUILDKIT: "1"
+          docker compose -f infra/docker/docker-compose.yml build --progress=plain registry
+          docker compose -f infra/docker/docker-compose.yml build --progress=plain builder
+          docker compose -f infra/docker/docker-compose.yml build --progress=plain operator
+          docker compose -f infra/docker/docker-compose.yml build --progress=plain envmanager
 
       - name: Build gateway image
-        run: docker build --progress=plain --load -t docker-gateway services/gateway
-        env:
-          DOCKER_BUILDKIT: "1"
+        run: docker compose -f infra/docker/docker-compose.yml build --progress=plain gateway
 
       - name: Build console image
-        run: docker build --progress=plain --load -t docker-console ui/console
-        env:
-          DOCKER_BUILDKIT: "1"
+        run: docker compose -f infra/docker/docker-compose.yml build --progress=plain console
 
       - name: Verify images
         run: |
