@@ -164,6 +164,46 @@ for pr_dir in "${TYPE_DIR}"/pr-*/; do
   done
 done
 
+# Regenerate root index.md with recent runs across all types.
+cat > index.md <<'ROOT_HEADER'
+---
+layout: default
+title: CI Reports
+---
+
+# CI Reports
+
+## Recent runs
+
+| Type | PR | Run | Link |
+|------|-----|-----|------|
+ROOT_HEADER
+
+# Collect all runs, sort by run number descending, take the 20 most recent.
+for type_dir in k8s-e2e e2e; do
+  [ -d "$type_dir" ] || continue
+  for pr_dir in "$type_dir"/pr-*/; do
+    [ -d "$pr_dir" ] || continue
+    pr_name=$(basename "$pr_dir")
+    for run_dir in "$pr_dir"/run-*/; do
+      [ -d "$run_dir" ] || continue
+      run_name=$(basename "$run_dir")
+      run_num=${run_name#run-}
+      echo "${run_num}|${type_dir}|${pr_name}|${run_name}"
+    done
+  done
+done | sort -t'|' -k1 -rn | head -20 | while IFS='|' read -r _ type pr run; do
+  echo "| ${type} | ${pr} | ${run} | [View](./${type}/${pr}/${run}/) |" >> index.md
+done
+
+{
+  echo ""
+  echo "## Browse by type"
+  echo ""
+  echo "- [**K8s E2E**](./k8s-e2e/) — Kubernetes end-to-end tests"
+  echo "- [**E2E**](./e2e/) — Docker Compose end-to-end tests"
+} >> index.md
+
 # Commit and push.
 git add -A
 git commit -m "CI report: ${REPORT_TYPE} PR #${PR_NUMBER} run #${RUN_NUMBER}" --allow-empty

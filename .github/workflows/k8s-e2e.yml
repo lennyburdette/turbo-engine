@@ -271,6 +271,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           REPO: ${{ github.repository }}
+          REPORT_URL: ${{ steps.publish_report.outputs.report_url }}
         run: |
           SUMMARY_FILE="${{ steps.summary.outputs.file }}"
           if [ ! -f "$SUMMARY_FILE" ]; then exit 0; fi
@@ -281,7 +282,11 @@ jobs:
             cat "$SUMMARY_FILE"
             echo ""
             echo "---"
-            echo "*Posted by the K8s E2E workflow — [view run](${RUN_URL})*"
+            if [ -n "$REPORT_URL" ]; then
+              echo "**[View full report with screenshots](${REPORT_URL})** | [workflow run](${RUN_URL})"
+            else
+              echo "*Posted by the K8s E2E workflow — [view run](${RUN_URL})*"
+            fi
           } > /tmp/pr-comment-body.txt
 
           EXISTING_COMMENT_ID=$(gh api \
