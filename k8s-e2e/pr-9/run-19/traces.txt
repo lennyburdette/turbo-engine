@@ -1,0 +1,41 @@
+Trace Summary (captured 2026-02-20T23:26:06Z)
+============================================================
+
+builder: 10 traces, 19 spans
+  [da96f32831aa] builder/builder 0.1ms (1 spans)
+  [f6fd07799d77] builder/builder 0.0ms (1 spans)
+  [94c8b8d03e67] builder/builder 0.0ms (1 spans)
+  [9fe7b72058d1] builder/builder 0.1ms (1 spans)
+  [f35287eb62a4] builder/builder 0.3ms (10 spans)
+    builder/BuildEngine.Run 0.6ms
+    builder/step.resolve 0.0ms
+    builder/resolve.execute 0.0ms
+    builder/step.compose 0.0ms
+    builder/compose.execute 0.0ms
+    builder/step.validate 0.0ms
+    builder/validate.execute 0.0ms
+    builder/step.bundle 0.0ms
+    builder/bundle.execute 0.0ms
+  [659de016015e] builder/builder 0.0ms (1 spans)
+  [89b761768c99] builder/builder 0.0ms (1 spans)
+  [31ceb4df76a9] builder/builder 0.1ms (1 spans)
+  [6f9663c4bf0b] builder/builder 0.0ms (1 spans)
+  [b544db2ec634] builder/builder 0.0ms (1 spans)
+
+envmanager: 6 traces, 7 spans
+  [4665019edbc4] envmanager/envmanager 0.0ms (1 spans)
+  [c248cf8b5e00] envmanager/envmanager 0.1ms (1 spans)
+  [69d3204f29c5] envmanager/envmanager 0.0ms (1 spans)
+  [52636c32d924] envmanager/envmanager 0.0ms (1 spans)
+  [26f7a2ca96ba] envmanager/envmanager 0.1ms (1 spans)
+  [baa2f7e005f2] envmanager/envmanager 0.2ms (2 spans)
+    envmanager/Orchestrator.CreateEnvironment 0.0ms
+
+gateway: 1 traces, 1 spans
+  [48d5b81c3342] gateway/proxy_handler 0.0ms (1 spans)
+
+operator: no traces
+registry: 1 traces, 1 spans
+  [ae50cf802c8e] registry/PublishPackage 0.2ms (1 spans)
+
+Total: 18 traces, 28 spans across 5 services
