@@ -100,20 +100,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Go service images
+      - name: Docker diagnostics
         run: |
-          set +e
-          failed=0
-          for svc in registry builder operator envmanager; do
-            echo "::group::Building $svc"
-            if ! docker build -t "turbo-engine/$svc" "services/$svc" 2>&1; then
-              echo "::error::Docker build failed for $svc"
-              echo "### ❌ Docker build failed: $svc" >> "$GITHUB_STEP_SUMMARY"
-              failed=1
-            fi
-            echo "::endgroup::"
-          done
-          exit $failed
+          echo "### Docker Environment" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          docker version >> "$GITHUB_STEP_SUMMARY" 2>&1
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build registry image
+        run: |
+          docker build --progress=plain -t turbo-engine/registry services/registry 2>&1 | tee /tmp/build.log || {
+            echo "### Registry build failed" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -50 /tmp/build.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+        env:
+          DOCKER_BUILDKIT: "1"
+
+      - name: Build remaining Go service images
+        run: |
+          docker build --progress=plain -t turbo-engine/builder services/builder
+          docker build --progress=plain -t turbo-engine/operator services/operator
+          docker build --progress=plain -t turbo-engine/envmanager services/envmanager
         env:
           DOCKER_BUILDKIT: "1"
 
