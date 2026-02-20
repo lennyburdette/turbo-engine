@@ -137,7 +137,7 @@ if [ -d "${REPORT_PATH}/screenshots" ]; then
     echo ""
     echo "## Screenshots"
     echo ""
-    for img in "${REPORT_PATH}/screenshots/"*.{png,jpg,html} 2>/dev/null; do
+    for img in "${REPORT_PATH}/screenshots/"*.png "${REPORT_PATH}/screenshots/"*.jpg "${REPORT_PATH}/screenshots/"*.html; do
       [ -f "$img" ] || continue
       fname=$(basename "$img")
       if [[ "$fname" == *.html ]]; then
