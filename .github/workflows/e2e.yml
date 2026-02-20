@@ -27,7 +27,14 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Build Go service images
         run: |
-          docker compose -f infra/docker/docker-compose.yml build --progress=plain registry
+          # Validate compose config first
+          docker compose -f infra/docker/docker-compose.yml config --services
+          # Try building with full error capture
+          docker compose -f infra/docker/docker-compose.yml build --progress=plain registry 2>&1 || {
+            BUILD_ERR=$(docker compose -f infra/docker/docker-compose.yml build --progress=plain registry 2>&1 || true)
+            echo "::error title=Registry Build Failed::${BUILD_ERR//$'\n'/%0A}"
+            exit 1
+          }
           docker compose -f infra/docker/docker-compose.yml build --progress=plain builder
           docker compose -f infra/docker/docker-compose.yml build --progress=plain operator
           docker compose -f infra/docker/docker-compose.yml build --progress=plain envmanager
