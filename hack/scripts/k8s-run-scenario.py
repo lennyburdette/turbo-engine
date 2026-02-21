@@ -464,6 +464,46 @@ class ScenarioRunner:
         self._record("pods-running", all_ok, "All pods running" if all_ok else "Some pods not available", duration)
         return all_ok
 
+    def wait_for_gateway_routes(self) -> bool:
+        """Poll the gateway until ingress routes are active.
+
+        Uses the first gateway-bound request from the scenario as a probe.
+        A 404 means the gateway hasn't picked up the route yet; any other
+        status (including errors from the upstream) means routing is active.
+        """
+        # Find the first request that goes via gateway.
+        probe_req = None
+        for req in self.scenario.get("requests", []):
+            if req.get("via", "gateway") == "gateway":
+                probe_req = req
+                break
+        if probe_req is None:
+            return True  # No gateway requests in this scenario.
+
+        probe_path = probe_req["path"]
+        probe_method = probe_req.get("method", "GET")
+        probe_url = f"{self._base_url('gateway')}{probe_path}"
+
+        t0 = time.monotonic_ns() // 1_000_000
+        info(f"  Waiting for gateway route {probe_path} to become active...")
+
+        deadline = time.time() + 45
+        last_code = 0
+        while time.time() < deadline:
+            status, _ = http_request(probe_url, method=probe_method, timeout=5)
+            last_code = status
+            # 404 means the gateway hasn't loaded the route yet.
+            # Any other status (200, 500, 502, etc.) means the route exists.
+            if status != 404:
+                duration = time.monotonic_ns() // 1_000_000 - t0
+                self._record("gateway-routing", True, f"Gateway route {probe_path} active (HTTP {status})", duration)
+                return True
+            time.sleep(5)
+
+        duration = time.monotonic_ns() // 1_000_000 - t0
+        self._record("gateway-routing", False, f"Route {probe_path} not ready after 45s (HTTP {last_code})", duration)
+        return False
+
     def run_requests(self) -> None:
         """Execute the scenario's HTTP requests with assertions."""
         for req in self.scenario.get("requests", []):
@@ -551,6 +591,15 @@ class ScenarioRunner:
                 pods_ok = False
 
             if pods_ok:
+                # Wait for gateway routes before running requests that go via gateway.
+                has_gateway_requests = any(
+                    r.get("via", "gateway") == "gateway"
+                    for r in self.scenario.get("requests", [])
+                )
+                gateway_ok = True
+                if has_gateway_requests:
+                    gateway_ok = self.wait_for_gateway_routes()
+
                 self.run_requests()
             else:
                 for req in self.scenario.get("requests", []):
