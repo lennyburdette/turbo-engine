@@ -553,9 +553,10 @@ class ScenarioRunner:
         """Like http_request() but injects a traceparent and returns the trace_id."""
         hdrs = dict(headers) if headers else {}
         # Don't override an explicit traceparent (e.g. trace-propagation test).
-        if "traceparent" in hdrs:
+        existing_tp_key = next((k for k in hdrs if k.lower() == "traceparent"), None)
+        if existing_tp_key:
             # Extract the trace_id from the existing header.
-            parts = hdrs["traceparent"].split("-")
+            parts = hdrs[existing_tp_key].split("-")
             trace_id = parts[1] if len(parts) >= 3 else ""
         else:
             traceparent, trace_id = self._make_traceparent()
