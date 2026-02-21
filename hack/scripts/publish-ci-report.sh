@@ -281,73 +281,59 @@ if [ -f "${REPORT_PATH}/REPORT.md" ]; then
   cat "${REPORT_PATH}/REPORT.md" >> "${REPORT_PATH}/index.md"
 fi
 
-# If there are screenshots, add an image gallery section.
-if [ -d "${REPORT_PATH}/screenshots" ]; then
-  {
-    echo ""
-    echo "## Screenshots"
-    echo ""
+# Generate per-scenario index pages (so they render with the Jekyll layout).
+if [ -d "${REPORT_PATH}/scenarios" ]; then
+  for scenario_dir in "${REPORT_PATH}/scenarios"/*/; do
+    [ -d "$scenario_dir" ] || continue
+    scenario_name=$(basename "$scenario_dir")
+    scenario_report="${scenario_dir}report.md"
+    [ -f "$scenario_report" ] || continue
 
-    # Per-scenario screenshot subdirectories.
-    for scenario_dir in "${REPORT_PATH}/screenshots"/*/; do
-      [ -d "$scenario_dir" ] || continue
-      scenario_name=$(basename "$scenario_dir")
-      has_images=false
-      for f in "${scenario_dir}"*.png "${scenario_dir}"*.jpg; do
-        [ -f "$f" ] && has_images=true && break
+    cat > "${scenario_dir}index.md" <<SCENARIO_IDX_EOF
+---
+layout: default
+title: "Scenario: ${scenario_name}"
+---
+
+SCENARIO_IDX_EOF
+
+    cat "$scenario_report" >> "${scenario_dir}index.md"
+
+    # Inline screenshots into the scenario index.
+    ss_dir="${REPORT_PATH}/screenshots/${scenario_name}"
+    if [ -d "$ss_dir" ]; then
+      has_imgs=false
+      for f in "${ss_dir}"/*.png "${ss_dir}"/*.jpg; do
+        [ -f "$f" ] && has_imgs=true && break
       done
-      $has_images || continue
+      if $has_imgs; then
+        {
+          echo ""
+          echo "## Screenshots"
+          echo ""
+          for img in "${ss_dir}"/*.png "${ss_dir}"/*.jpg; do
+            [ -f "$img" ] || continue
+            fname=$(basename "$img")
+            name_no_ext="${fname%.*}"
+            echo "### ${name_no_ext}"
+            echo "![${fname}](../../screenshots/${scenario_name}/${fname})"
+            echo ""
 
-      echo "### Scenario: ${scenario_name}"
-      echo ""
-      for img in "${scenario_dir}"*.png "${scenario_dir}"*.jpg "${scenario_dir}"*.html; do
-        [ -f "$img" ] || continue
-        fname=$(basename "$img")
-        name_no_ext="${fname%.*}"
-        logfile="${scenario_dir}${name_no_ext}.log"
-        if [[ "$fname" == *.html ]]; then
-          echo "- [${fname}](./screenshots/${scenario_name}/${fname})"
-        else
-          echo "#### ${name_no_ext}"
-          echo "![${fname}](./screenshots/${scenario_name}/${fname})"
-          echo ""
-        fi
-        if [ -f "$logfile" ] && grep -q '[^[:space:]]' "$logfile" 2>/dev/null; then
-          echo "<details><summary>Browser console log (${name_no_ext})</summary>"
-          echo ""
-          echo '```'
-          cat "$logfile"
-          echo '```'
-          echo "</details>"
-          echo ""
-        fi
-      done
-    done
-
-    # Top-level screenshots (backwards compat).
-    for img in "${REPORT_PATH}/screenshots/"*.png "${REPORT_PATH}/screenshots/"*.jpg "${REPORT_PATH}/screenshots/"*.html; do
-      [ -f "$img" ] || continue
-      fname=$(basename "$img")
-      name_no_ext="${fname%.*}"
-      logfile="${REPORT_PATH}/screenshots/${name_no_ext}.log"
-      if [[ "$fname" == *.html ]]; then
-        echo "- [${fname}](./screenshots/${fname})"
-      else
-        echo "### ${name_no_ext}"
-        echo "![${fname}](./screenshots/${fname})"
-        echo ""
+            logfile="${ss_dir}/${name_no_ext}.log"
+            if [ -f "$logfile" ] && grep -q '[^[:space:]]' "$logfile" 2>/dev/null; then
+              echo "<details><summary>Browser console (${name_no_ext})</summary>"
+              echo ""
+              echo '```'
+              cat "$logfile"
+              echo '```'
+              echo "</details>"
+              echo ""
+            fi
+          done
+        } >> "${scenario_dir}index.md"
       fi
-      if [ -f "$logfile" ] && grep -q '[^[:space:]]' "$logfile" 2>/dev/null; then
-        echo "<details><summary>Browser console log (${name_no_ext})</summary>"
-        echo ""
-        echo '```'
-        cat "$logfile"
-        echo '```'
-        echo "</details>"
-        echo ""
-      fi
-    done
-  } >> "${REPORT_PATH}/index.md"
+    fi
+  done
 fi
 
 # Update the per-type index (e.g. k8s-e2e/index.md) listing all runs.

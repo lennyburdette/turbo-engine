@@ -753,10 +753,115 @@ class ScenarioRunner:
             # Capture screenshots after requests (so UIs reflect scenario state).
             self.capture_screenshots()
             self.capture_logs()
+            self.generate_report()
         finally:
             self.cleanup()
 
         return self._build_output()
+
+    def generate_report(self) -> None:
+        """Write a concise per-scenario report.md."""
+        report_dir = os.environ.get("REPORT_DIR", "ci-report")
+        scenario_dir = os.path.join(report_dir, "scenarios", self.name)
+        os.makedirs(scenario_dir, exist_ok=True)
+
+        lines: list[str] = []
+
+        # --- Banner ---
+        total = self.pass_count + self.fail_count
+        if self.fail_count == 0:
+            lines.append(f"# {self.name}: ALL {total} TESTS PASSED\n")
+        else:
+            lines.append(f"# {self.name}: {self.fail_count} FAILED ({self.pass_count}/{total} passed)\n")
+
+        desc = self.scenario.get("description", "")
+        if desc:
+            lines.append(f"> {desc}\n")
+        lines.append("")
+
+        # --- Test results table ---
+        lines.append("## Test Results\n")
+        lines.append("| Test | Result | Detail | Time |")
+        lines.append("|------|--------|--------|------|")
+        for r in self.results:
+            short_name = r["name"].split("/", 1)[-1]
+            icon = "PASS" if r["status"] == "pass" else "**FAIL**"
+            dur = f"{r['duration_ms']}ms" if r["duration_ms"] else "-"
+            lines.append(f"| {short_name} | {icon} | {r['detail']} | {dur} |")
+        lines.append("")
+
+        # --- Screenshots (inline images) ---
+        screenshot_dir = os.path.join(report_dir, "screenshots", self.name)
+        screenshots = self.scenario.get("screenshots", [])
+        has_screenshots = False
+        for ss in screenshots:
+            png = os.path.join(screenshot_dir, f"{ss['name']}.png")
+            if os.path.isfile(png):
+                has_screenshots = True
+                break
+
+        if has_screenshots:
+            lines.append("## Screenshots\n")
+            for ss in screenshots:
+                name = ss["name"]
+                png = os.path.join(screenshot_dir, f"{name}.png")
+                if not os.path.isfile(png):
+                    continue
+                desc_text = ss.get("description", name)
+                # Relative path from scenario report to screenshots dir
+                lines.append(f"### {desc_text}\n")
+                lines.append(f"![{name}](../screenshots/{self.name}/{name}.png)\n")
+
+                # Console log (collapsed)
+                logfile = os.path.join(screenshot_dir, f"{name}.log")
+                if os.path.isfile(logfile):
+                    with open(logfile) as lf:
+                        content = lf.read().strip()
+                    if content:
+                        linecount = content.count("\n") + 1
+                        lines.append(f"<details><summary>Browser console ({linecount} lines)</summary>\n")
+                        lines.append(f"```\n{content}\n```\n")
+                        lines.append("</details>\n")
+                lines.append("")
+
+        # --- Component logs (collapsed, only errors highlighted) ---
+        k8s_dir = os.path.join(report_dir, "k8s")
+        comp_logs: list[tuple[str, str]] = []
+        for comp in self.scenario.get("components", []):
+            name = comp["package_name"]
+            log_file = os.path.join(k8s_dir, f"{self.name}-{name}-logs.txt")
+            if os.path.isfile(log_file):
+                with open(log_file) as f:
+                    comp_logs.append((name, f.read().strip()))
+
+        if comp_logs:
+            has_errors = False
+            error_lines: list[str] = []
+            for comp_name, log_content in comp_logs:
+                for line in log_content.split("\n"):
+                    low = line.lower()
+                    if any(kw in low for kw in ['"error"', "panic", "fatal"]):
+                        if not has_errors:
+                            error_lines.append("## Errors\n")
+                            has_errors = True
+                        error_lines.append(f"**{comp_name}**: `{line.strip()[:200]}`\n")
+
+            if has_errors:
+                lines.extend(error_lines)
+                lines.append("")
+
+            lines.append("## Component Logs\n")
+            for comp_name, log_content in comp_logs:
+                linecount = log_content.count("\n") + 1 if log_content else 0
+                lines.append(f"<details><summary>{comp_name} ({linecount} lines)</summary>\n")
+                lines.append(f"```\n{log_content}\n```\n")
+                lines.append("</details>\n")
+            lines.append("")
+
+        report_path = os.path.join(scenario_dir, "report.md")
+        with open(report_path, "w") as f:
+            f.write("\n".join(lines))
+        ok(f"Scenario report: {report_path}")
 
     def _build_output(self) -> dict:
         return {
