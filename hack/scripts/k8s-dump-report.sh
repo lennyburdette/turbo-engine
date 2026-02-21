@@ -255,16 +255,35 @@ cat <<'EOF'
 
 EOF
 
-if [[ -d "$SCREENSHOT_DIR" ]] && ls "$SCREENSHOT_DIR"/* &>/dev/null 2>&1; then
+if compgen -G "${SCREENSHOT_DIR}/*.png" >/dev/null 2>&1 || compgen -G "${SCREENSHOT_DIR}/*.html" >/dev/null 2>&1; then
   printf "| Page | File | Size |\n"
   printf "|------|------|------|\n"
-  for f in "${SCREENSHOT_DIR}"/*; do
+  for f in "${SCREENSHOT_DIR}"/*.png "${SCREENSHOT_DIR}"/*.jpg "${SCREENSHOT_DIR}"/*.html; do
+    [ -f "$f" ] || continue
     fname=$(basename "$f")
     page="${fname%.*}"
     size=$(wc -c < "$f" 2>/dev/null || echo "0")
     printf "| %s | \`ci-report/screenshots/%s\` | %s bytes |\n" "$page" "$fname" "$size"
   done
   echo ""
+  # Show browser console logs if captured (skip empty files).
+  for logf in "${SCREENSHOT_DIR}"/*.log; do
+    [ -f "$logf" ] || continue
+    # Skip files that are empty or contain only whitespace.
+    if ! grep -q '[^[:space:]]' "$logf" 2>/dev/null; then
+      continue
+    fi
+    logname=$(basename "$logf")
+    page="${logname%.log}"
+    linecount=$(wc -l < "$logf" 2>/dev/null || echo "0")
+    echo "<details><summary>Browser console: ${page} (${linecount} lines)</summary>"
+    echo ""
+    echo '```'
+    cat "$logf"
+    echo '```'
+    echo "</details>"
+    echo ""
+  done
 else
   echo "_No screenshots captured._"
   echo ""

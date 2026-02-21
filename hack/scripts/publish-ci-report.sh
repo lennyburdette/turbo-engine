@@ -290,11 +290,23 @@ if [ -d "${REPORT_PATH}/screenshots" ]; then
     for img in "${REPORT_PATH}/screenshots/"*.png "${REPORT_PATH}/screenshots/"*.jpg "${REPORT_PATH}/screenshots/"*.html; do
       [ -f "$img" ] || continue
       fname=$(basename "$img")
+      name_no_ext="${fname%.*}"
+      logfile="${REPORT_PATH}/screenshots/${name_no_ext}.log"
       if [[ "$fname" == *.html ]]; then
         echo "- [${fname}](./screenshots/${fname})"
       else
-        echo "### ${fname%.png}"
+        echo "### ${name_no_ext}"
         echo "![${fname}](./screenshots/${fname})"
+        echo ""
+      fi
+      # Append browser console log if present and non-empty.
+      if [ -f "$logfile" ] && grep -q '[^[:space:]]' "$logfile" 2>/dev/null; then
+        echo "<details><summary>Browser console log (${name_no_ext})</summary>"
+        echo ""
+        echo '```'
+        cat "$logfile"
+        echo '```'
+        echo "</details>"
         echo ""
       fi
     done

@@ -28,6 +28,16 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/envmanager/, ""),
       },
+      "/api/gateway": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/gateway/, ""),
+      },
+      "/api/jaeger": {
+        target: "http://localhost:16686",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api\/jaeger/, ""),
+      },
     },
   },
   test: {

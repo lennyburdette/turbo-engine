@@ -24,11 +24,11 @@ variable "CACHE" {
 // ---------------------------------------------------------------------------
 
 group "default" {
-  targets = ["registry", "builder", "operator", "envmanager", "gateway", "console"]
+  targets = ["registry", "builder", "operator", "envmanager", "gateway", "console", "explorer"]
 }
 
 group "k8s-e2e" {
-  targets = ["registry", "builder", "operator", "envmanager", "gateway", "console", "petstore-mock", "orchestrator"]
+  targets = ["registry", "builder", "operator", "envmanager", "gateway", "console", "explorer", "petstore-mock", "orchestrator"]
 }
 
 group "e2e-fixtures" {
@@ -91,6 +91,13 @@ target "console" {
   tags       = ["turbo-engine/console:${TAG}"]
   cache-from = CACHE != "" ? ["type=${CACHE},scope=console"] : []
   cache-to   = CACHE != "" ? ["type=${CACHE},mode=max,scope=console"] : []
+}
+
+target "explorer" {
+  context    = "ui/explorer"
+  tags       = ["turbo-engine/explorer:${TAG}"]
+  cache-from = CACHE != "" ? ["type=${CACHE},scope=explorer"] : []
+  cache-to   = CACHE != "" ? ["type=${CACHE},mode=max,scope=explorer"] : []
 }
 
 // ---------------------------------------------------------------------------

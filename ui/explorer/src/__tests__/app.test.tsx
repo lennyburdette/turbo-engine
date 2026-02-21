@@ -26,7 +26,8 @@ beforeEach(() => {
       Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ packages: [], environments: [] }),
+        json: () =>
+          Promise.resolve({ packages: [], environments: [], data: [] }),
         text: () => Promise.resolve(""),
       }),
     ),
@@ -50,49 +51,54 @@ function renderApp() {
 }
 
 describe("App", () => {
-  it("renders the Explore tab by default", () => {
+  it("renders the header with app title", () => {
     renderApp();
-    const heading = screen.getByRole("heading", { name: "Explore" });
-    expect(heading).toBeTruthy();
+    expect(screen.getByText("Turbo Engine Explorer")).toBeTruthy();
   });
 
-  it("renders the bottom tab bar with all four tabs", () => {
+  it("renders the Recent Traces card", async () => {
     renderApp();
-    expect(screen.getByRole("tab", { name: "Explore" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Graph" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Logs" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Settings" })).toBeTruthy();
-  });
-
-  it("switches to Graph tab when tapped", async () => {
-    renderApp();
-    fireEvent.click(screen.getByRole("tab", { name: "Graph" }));
-    // Graph tab shows a heading after the query resolves
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Graph" })).toBeTruthy();
+      expect(screen.getByText("Recent Traces")).toBeTruthy();
     });
   });
 
-  it("switches to Logs tab when tapped", () => {
+  it("renders the Send Request card", () => {
     renderApp();
-    fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
-    expect(screen.getByRole("heading", { name: "Logs" })).toBeTruthy();
+    expect(screen.getByText("Send Request")).toBeTruthy();
   });
 
-  it("switches to Settings tab when tapped", async () => {
+  it("renders the View all traces link", () => {
     renderApp();
-    fireEvent.click(screen.getByRole("tab", { name: "Settings" }));
+    expect(screen.getByText("View all")).toBeTruthy();
+  });
+
+  it("shows loading state for traces", async () => {
+    renderApp();
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Settings" })).toBeTruthy();
+      expect(screen.getByText("Loading traces...")).toBeTruthy();
     });
   });
 
-  it("marks the active tab as selected", () => {
+  it("opens settings overlay when gear icon is clicked", async () => {
     renderApp();
-    const exploreTab = screen.getByRole("tab", { name: "Explore" });
-    expect(exploreTab.getAttribute("aria-selected")).toBe("true");
+    const header = screen.getByText("Turbo Engine Explorer").closest("header");
+    const settingsButton = header?.querySelector("button");
+    if (settingsButton) {
+      fireEvent.click(settingsButton);
+      await waitFor(() => {
+        expect(screen.getByText("Settings")).toBeTruthy();
+        expect(screen.getByText("Done")).toBeTruthy();
+      });
+    }
+  });
 
-    const graphTab = screen.getByRole("tab", { name: "Graph" });
-    expect(graphTab.getAttribute("aria-selected")).toBe("false");
+  it("shows empty state when no traces are found", async () => {
+    renderApp();
+    await waitFor(() => {
+      expect(
+        screen.getByText("No traces yet. Send a request to see traces here."),
+      ).toBeTruthy();
+    });
   });
 });

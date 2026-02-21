@@ -179,6 +179,180 @@ export async function getEnvironment(id: string): Promise<Environment> {
 }
 
 // ---------------------------------------------------------------------------
+// Gateway API — request execution
+// ---------------------------------------------------------------------------
+
+export interface GatewayResponse {
+  status: number;
+  headers: Record<string, string>;
+  body: unknown;
+  durationMs: number;
+  traceId?: string;
+}
+
+export async function executeGatewayRequest(
+  method: string,
+  path: string,
+  body?: string,
+  headers?: Record<string, string>,
+): Promise<GatewayResponse> {
+  const url = `${_baseUrl}/api/gateway${path}`;
+  const start = performance.now();
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    body: method !== "GET" && method !== "HEAD" ? body : undefined,
+  });
+
+  const durationMs = Math.round(performance.now() - start);
+  const resHeaders: Record<string, string> = {};
+  res.headers.forEach((v, k) => {
+    resHeaders[k] = v;
+  });
+
+  let resBody: unknown;
+  const text = await res.text();
+  try {
+    resBody = JSON.parse(text);
+  } catch {
+    resBody = text;
+  }
+
+  // Extract trace ID from response body if present
+  const traceId =
+    typeof resBody === "object" && resBody !== null && "trace_id" in resBody
+      ? String((resBody as Record<string, unknown>).trace_id)
+      : undefined;
+
+  return {
+    status: res.status,
+    headers: resHeaders,
+    body: resBody,
+    durationMs,
+    traceId,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Jaeger API — trace querying
+// ---------------------------------------------------------------------------
+
+export interface JaegerTrace {
+  traceID: string;
+  spans: JaegerSpan[];
+  processes: Record<string, JaegerProcess>;
+}
+
+export interface JaegerSpan {
+  traceID: string;
+  spanID: string;
+  operationName: string;
+  references: JaegerReference[];
+  startTime: number; // microseconds
+  duration: number; // microseconds
+  tags: JaegerTag[];
+  logs: JaegerLog[];
+  processID: string;
+}
+
+export interface JaegerReference {
+  refType: "CHILD_OF" | "FOLLOWS_FROM";
+  traceID: string;
+  spanID: string;
+}
+
+export interface JaegerTag {
+  key: string;
+  type: string;
+  value: string | number | boolean;
+}
+
+export interface JaegerLog {
+  timestamp: number;
+  fields: JaegerTag[];
+}
+
+export interface JaegerProcess {
+  serviceName: string;
+  tags: JaegerTag[];
+}
+
+export interface JaegerTracesResponse {
+  data: JaegerTrace[];
+}
+
+export interface JaegerServicesResponse {
+  data: string[];
+}
+
+export async function listJaegerServices(): Promise<string[]> {
+  const url = `${_baseUrl}/api/jaeger/api/services`;
+  const res = await fetch(url);
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+  const json = (await res.json()) as JaegerServicesResponse;
+  return json.data ?? [];
+}
+
+export async function queryJaegerTraces(
+  service: string,
+  params?: {
+    limit?: number;
+    lookback?: string;
+    start?: number;
+    end?: number;
+  },
+): Promise<JaegerTrace[]> {
+  const qs = new URLSearchParams();
+  qs.set("service", service);
+  if (params?.limit) qs.set("limit", String(params.limit));
+  if (params?.lookback) qs.set("lookback", params.lookback);
+  if (params?.start) qs.set("start", String(params.start));
+  if (params?.end) qs.set("end", String(params.end));
+
+  const url = `${_baseUrl}/api/jaeger/api/traces?${qs}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new ApiError(res.status, await res.text());
+  const json = (await res.json()) as JaegerTracesResponse;
+  return json.data ?? [];
+}
+
+export async function getJaegerTrace(
+  traceId: string,
+): Promise<JaegerTrace | null> {
+  const url = `${_baseUrl}/api/jaeger/api/traces/${encodeURIComponent(traceId)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new ApiError(res.status, await res.text());
+  }
+  const json = (await res.json()) as JaegerTracesResponse;
+  return json.data?.[0] ?? null;
+}
+
+/** Extract all unique service names involved in a trace */
+export function traceServiceNames(trace: JaegerTrace): string[] {
+  const names = new Set<string>();
+  for (const proc of Object.values(trace.processes)) {
+    names.add(proc.serviceName);
+  }
+  return [...names].sort();
+}
+
+/** Compute total trace duration in ms */
+export function traceDurationMs(trace: JaegerTrace): number {
+  if (trace.spans.length === 0) return 0;
+  const minStart = Math.min(...trace.spans.map((s) => s.startTime));
+  const maxEnd = Math.max(
+    ...trace.spans.map((s) => s.startTime + s.duration),
+  );
+  return Math.round((maxEnd - minStart) / 1000);
+}
+
+// ---------------------------------------------------------------------------
 // Builder API — build log streaming
 // ---------------------------------------------------------------------------
 

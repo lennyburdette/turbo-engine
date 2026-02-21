@@ -1,0 +1,66 @@
+# Explorer UI — Mobile-first API explorer.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explorer
+  namespace: turbo-engine
+  labels:
+    app.kubernetes.io/name: explorer
+    app.kubernetes.io/component: ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: explorer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: explorer
+        app.kubernetes.io/component: ui
+    spec:
+      containers:
+        - name: explorer
+          image: turbo-engine/explorer:latest
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: explorer
+  namespace: turbo-engine
+  labels:
+    app.kubernetes.io/name: explorer
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: explorer
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http
+      protocol: TCP

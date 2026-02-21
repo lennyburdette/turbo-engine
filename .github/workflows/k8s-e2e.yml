@@ -41,8 +41,8 @@ jobs:
       - name: Build gateway image (Rust)
         run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load gateway
 
-      - name: Build console + E2E fixture images
-        run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load console e2e-fixtures
+      - name: Build console, explorer + E2E fixture images
+        run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load console explorer e2e-fixtures
 
       # ---------------------------------------------------------------
       # Verify images
@@ -52,7 +52,7 @@ jobs:
           IMAGES=$(docker images 'turbo-engine/*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}")
           echo "$IMAGES"
           echo "::warning title=Docker Images::${IMAGES//$'\n'/%0A}"
-          for svc in registry builder operator envmanager gateway console petstore-mock orchestrator; do
+          for svc in registry builder operator envmanager gateway console explorer petstore-mock orchestrator; do
             docker image inspect "turbo-engine/${svc}:e2e" > /dev/null 2>&1 || {
               echo "::error::Missing image turbo-engine/${svc}:e2e"
               exit 1
@@ -72,7 +72,7 @@ jobs:
       # ---------------------------------------------------------------
       - name: Load images into kind
         run: |
-          for svc in registry builder envmanager operator gateway console petstore-mock orchestrator; do
+          for svc in registry builder envmanager operator gateway console explorer petstore-mock orchestrator; do
             echo "Loading turbo-engine/${svc}:e2e..."
             kind load docker-image "turbo-engine/${svc}:e2e" --name turbo-engine-e2e
           done
@@ -126,16 +126,6 @@ jobs:
         if: always()
         run: ./hack/scripts/k8s-collect-debug.sh
 
-      - name: Capture traces
-        if: always()
-        run: |
-          # Port-forward Jaeger for trace capture
-          kubectl -n turbo-engine-e2e port-forward svc/jaeger 16686:16686 &>/dev/null &
-          PF_PID=$!
-          sleep 3
-          JAEGER_PORT=16686 ./hack/scripts/k8s-dump-report.sh || true
-          kill $PF_PID 2>/dev/null || true
-
       - name: Cache Playwright browsers
         if: always()
         uses: actions/cache@v4
@@ -147,16 +137,55 @@ jobs:
         if: always()
         run: |
           # Install Playwright npm package + Chromium browser.
-          # npm install makes require('playwright') work from node scripts.
-          # Browser binaries are cached across runs via actions/cache.
-          npm install --no-save playwright 2>&1 | tail -5 || true
-          npx playwright install --with-deps chromium 2>&1 | tail -5 || true
+          # Use --prefix to install into a known location independent of workspace.
+          npm install --prefix /tmp/pw playwright 2>&1 | tail -10
+          echo "Playwright npm package installed"
+          NODE_PATH=/tmp/pw/node_modules npx --prefix /tmp/pw playwright install --with-deps chromium 2>&1 | tail -10
+          echo "Playwright browsers installed"
 
-          # Port-forward console for screenshots
+          # Port-forward UI frontends
           kubectl -n turbo-engine-e2e port-forward svc/console 13000:3000 &>/dev/null &
+          PF_CONSOLE=$!
+          kubectl -n turbo-engine-e2e port-forward svc/explorer 13001:3001 &>/dev/null &
+          PF_EXPLORER=$!
+
+          # Port-forward backend services so Playwright can proxy API calls.
+          # The UIs use /api/registry/*, /api/builder/*, etc. (Vite proxy in dev),
+          # but in K8s the SPA static server returns index.html for unknown paths.
+          # capture-screenshots.sh intercepts these requests via page.route().
+          kubectl -n turbo-engine-e2e port-forward svc/registry 18081:8081 &>/dev/null &
+          PF_REGISTRY=$!
+          kubectl -n turbo-engine-e2e port-forward svc/builder 18082:8082 &>/dev/null &
+          PF_BUILDER=$!
+          kubectl -n turbo-engine-e2e port-forward svc/envmanager 18083:8083 &>/dev/null &
+          PF_ENVMANAGER=$!
+          kubectl -n turbo-engine-e2e port-forward svc/gateway 18080:8080 &>/dev/null &
+          PF_GATEWAY=$!
+          kubectl -n turbo-engine-e2e port-forward svc/jaeger 18686:16686 &>/dev/null &
+          PF_JAEGER=$!
+          sleep 3
+
+          NODE_PATH=/tmp/pw/node_modules \
+            CONSOLE_URL=http://localhost:13000 \
+            EXPLORER_URL=http://localhost:13001 \
+            REGISTRY_URL=http://localhost:18081 \
+            BUILDER_URL=http://localhost:18082 \
+            ENVMANAGER_URL=http://localhost:18083 \
+            GATEWAY_URL=http://localhost:18080 \
+            JAEGER_URL=http://localhost:18686 \
+            ./hack/scripts/capture-screenshots.sh || true
+
+          kill $PF_CONSOLE $PF_EXPLORER $PF_REGISTRY $PF_BUILDER $PF_ENVMANAGER $PF_GATEWAY $PF_JAEGER 2>/dev/null || true
+
+      - name: Capture traces and generate report
+        if: always()
+        run: |
+          # Port-forward Jaeger for trace capture.
+          # Screenshots are already captured above, so the report includes them.
+          kubectl -n turbo-engine-e2e port-forward svc/jaeger 16686:16686 &>/dev/null &
           PF_PID=$!
           sleep 3
-          CONSOLE_URL=http://localhost:13000 ./hack/scripts/capture-screenshots.sh || true
+          JAEGER_PORT=16686 ./hack/scripts/k8s-dump-report.sh || true
           kill $PF_PID 2>/dev/null || true
 
       # ---------------------------------------------------------------

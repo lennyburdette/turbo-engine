@@ -9,6 +9,10 @@ dist/
 # Go
 vendor/
 
+# Python
+__pycache__/
+*.pyc
+
 # Node
 node_modules/
 .pnpm-store/
