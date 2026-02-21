@@ -541,6 +541,151 @@ class ScenarioRunner:
             duration = time.monotonic_ns() // 1_000_000 - t0
             self._record(req_name, all_passed, "; ".join(details), duration)
 
+    def capture_screenshots(self) -> None:
+        """Capture screenshots defined in the scenario using Playwright."""
+        screenshots = self.scenario.get("screenshots", [])
+        if not screenshots:
+            return
+
+        report_dir = os.environ.get("REPORT_DIR", "ci-report")
+        screenshot_dir = os.path.join(report_dir, "screenshots", self.name)
+        os.makedirs(screenshot_dir, exist_ok=True)
+
+        # Check if Playwright is available.
+        node_path = os.environ.get("NODE_PATH", "")
+        try:
+            subprocess.run(
+                ["node", "-e", "require('playwright')"],
+                capture_output=True, timeout=10,
+                env={**os.environ, "NODE_PATH": node_path} if node_path else None,
+            )
+        except Exception:
+            warn("Playwright not available; skipping screenshots")
+            return
+
+        console_url = os.environ.get("CONSOLE_URL", "http://localhost:13000")
+        explorer_url = os.environ.get("EXPLORER_URL", "http://localhost:13001")
+        registry_url = os.environ.get("REGISTRY_URL", "")
+        builder_url = os.environ.get("BUILDER_URL", "")
+        envmanager_url = os.environ.get("ENVMANAGER_URL", "")
+        gateway_url = os.environ.get("GATEWAY_URL", "")
+        jaeger_url = os.environ.get("JAEGER_URL", "")
+
+        # Build API route interception JS.
+        api_routes = []
+        if registry_url:
+            api_routes.append(f"    ['/api/registry', '{registry_url}']")
+        if builder_url:
+            api_routes.append(f"    ['/api/builder', '{builder_url}']")
+        if envmanager_url:
+            api_routes.append(f"    ['/api/envmanager', '{envmanager_url}']")
+        if gateway_url:
+            api_routes.append(f"    ['/api/gateway', '{gateway_url}']")
+        if jaeger_url:
+            api_routes.append(f"    ['/api/jaeger', '{jaeger_url}']")
+
+        if api_routes:
+            route_js = (
+                "  const apiRoutes = [\n"
+                + ",\n".join(api_routes) + "\n"
+                "  ];\n"
+                "  for (const [prefix, target] of apiRoutes) {\n"
+                "    await page.route('**' + prefix + '/**', async (route) => {\n"
+                "      const url = new URL(route.request().url());\n"
+                "      const newPath = url.pathname.replace(prefix, '') + url.search;\n"
+                "      try {\n"
+                "        const resp = await route.fetch({ url: target + newPath });\n"
+                "        await route.fulfill({ response: resp });\n"
+                "      } catch (e) { await route.abort(); }\n"
+                "    });\n"
+                "  }\n"
+            )
+        else:
+            route_js = "  // No backend URLs configured.\n"
+
+        for ss in screenshots:
+            name = ss["name"]
+            ui = ss.get("ui", "console")
+            path = ss.get("path", "/")
+            is_mobile = ui == "explorer"
+            base_url = explorer_url if is_mobile else console_url
+            url = f"{base_url}{path}"
+            output_path = os.path.join(screenshot_dir, f"{name}.png")
+            log_path = os.path.join(screenshot_dir, f"{name}.log")
+
+            info(f"  Screenshot: {name} ({url})")
+
+            if is_mobile:
+                browser_setup = (
+                    "  const context = await browser.newContext({\n"
+                    "    viewport: { width: 390, height: 844 },\n"
+                    "    deviceScaleFactor: 3,\n"
+                    "    isMobile: true,\n"
+                    "    hasTouch: true,\n"
+                    "    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
+                    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',\n"
+                    "  });\n"
+                    "  const page = await context.newPage();\n"
+                )
+                screenshot_opts = "{ path: OUTPUT, fullPage: false }"
+            else:
+                browser_setup = (
+                    "  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });\n"
+                )
+                screenshot_opts = "{ path: OUTPUT, fullPage: true }"
+
+            script = (
+                "const { chromium } = require('playwright');\n"
+                "const fs = require('fs');\n"
+                "const OUTPUT = " + json.dumps(output_path) + ";\n"
+                "const LOG_OUTPUT = " + json.dumps(log_path) + ";\n"
+                "(async () => {\n"
+                "  const consoleLogs = [];\n"
+                "  const browser = await chromium.launch({ headless: true });\n"
+                + browser_setup +
+                "  page.on('console', msg => consoleLogs.push('[' + msg.type() + '] ' + msg.text()));\n"
+                "  page.on('pageerror', err => consoleLogs.push('[PAGE-ERROR] ' + err.message));\n"
+                "  page.on('requestfailed', req => consoleLogs.push('[REQ-FAILED] ' + req.url()));\n"
+                + route_js +
+                "  try {\n"
+                f"    await page.goto({json.dumps(url)}, {{ waitUntil: 'networkidle', timeout: 30000 }});\n"
+                "    await page.waitForTimeout(3000);\n"
+                f"    await page.screenshot({screenshot_opts});\n"
+                "  } catch (err) {\n"
+                "    consoleLogs.push('[CAPTURE-ERROR] ' + err.message);\n"
+                "    process.exitCode = 1;\n"
+                "  } finally {\n"
+                "    if (consoleLogs.length > 0) fs.writeFileSync(LOG_OUTPUT, consoleLogs.join('\\n') + '\\n');\n"
+                "    await browser.close();\n"
+                "  }\n"
+                "})();\n"
+            )
+
+            tmp_path = f"/tmp/pw-scenario-{self.name}-{name}.js"
+            with open(tmp_path, "w") as f:
+                f.write(script)
+
+            env = {**os.environ}
+            if node_path:
+                env["NODE_PATH"] = node_path
+
+            try:
+                result = subprocess.run(
+                    ["node", tmp_path],
+                    capture_output=True, text=True, timeout=60, env=env,
+                )
+                if result.returncode == 0:
+                    ok(f"  Screenshot saved: {output_path}")
+                else:
+                    warn(f"  Screenshot failed: {result.stderr[:200]}")
+            except subprocess.TimeoutExpired:
+                warn(f"  Screenshot timed out: {name}")
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+
     def capture_logs(self) -> None:
         """Dump pod logs to the report directory."""
         report_dir = os.environ.get("REPORT_DIR", "ci-report")
@@ -605,6 +750,8 @@ class ScenarioRunner:
                 for req in self.scenario.get("requests", []):
                     self._record(req["name"], False, "Skipped — pods not running", 0)
 
+            # Capture screenshots after requests (so UIs reflect scenario state).
+            self.capture_screenshots()
             self.capture_logs()
         finally:
             self.cleanup()

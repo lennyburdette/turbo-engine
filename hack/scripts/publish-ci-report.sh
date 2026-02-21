@@ -287,6 +287,44 @@ if [ -d "${REPORT_PATH}/screenshots" ]; then
     echo ""
     echo "## Screenshots"
     echo ""
+
+    # Per-scenario screenshot subdirectories.
+    for scenario_dir in "${REPORT_PATH}/screenshots"/*/; do
+      [ -d "$scenario_dir" ] || continue
+      scenario_name=$(basename "$scenario_dir")
+      has_images=false
+      for f in "${scenario_dir}"*.png "${scenario_dir}"*.jpg; do
+        [ -f "$f" ] && has_images=true && break
+      done
+      $has_images || continue
+
+      echo "### Scenario: ${scenario_name}"
+      echo ""
+      for img in "${scenario_dir}"*.png "${scenario_dir}"*.jpg "${scenario_dir}"*.html; do
+        [ -f "$img" ] || continue
+        fname=$(basename "$img")
+        name_no_ext="${fname%.*}"
+        logfile="${scenario_dir}${name_no_ext}.log"
+        if [[ "$fname" == *.html ]]; then
+          echo "- [${fname}](./screenshots/${scenario_name}/${fname})"
+        else
+          echo "#### ${name_no_ext}"
+          echo "![${fname}](./screenshots/${scenario_name}/${fname})"
+          echo ""
+        fi
+        if [ -f "$logfile" ] && grep -q '[^[:space:]]' "$logfile" 2>/dev/null; then
+          echo "<details><summary>Browser console log (${name_no_ext})</summary>"
+          echo ""
+          echo '```'
+          cat "$logfile"
+          echo '```'
+          echo "</details>"
+          echo ""
+        fi
+      done
+    done
+
+    # Top-level screenshots (backwards compat).
     for img in "${REPORT_PATH}/screenshots/"*.png "${REPORT_PATH}/screenshots/"*.jpg "${REPORT_PATH}/screenshots/"*.html; do
       [ -f "$img" ] || continue
       fname=$(basename "$img")
@@ -299,7 +337,6 @@ if [ -d "${REPORT_PATH}/screenshots" ]; then
         echo "![${fname}](./screenshots/${fname})"
         echo ""
       fi
-      # Append browser console log if present and non-empty.
       if [ -f "$logfile" ] && grep -q '[^[:space:]]' "$logfile" 2>/dev/null; then
         echo "<details><summary>Browser console log (${name_no_ext})</summary>"
         echo ""

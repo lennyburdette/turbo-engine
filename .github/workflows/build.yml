@@ -102,11 +102,5 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build Go service images
-        run: CACHE=gha docker buildx bake --progress=plain --load go-services
-
-      - name: Build gateway image
-        run: CACHE=gha docker buildx bake --progress=plain --load gateway
-
-      - name: Build console image
-        run: CACHE=gha docker buildx bake --progress=plain --load console
+      - name: Build all Docker images (parallel)
+        run: CACHE=gha docker buildx bake --progress=plain --load default
