@@ -1,0 +1,697 @@
+Name:             builder-678474bf88-2qqz6
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:57 +0000
+Labels:           app.kubernetes.io/component=control-plane
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=builder
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=678474bf88
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.5
+IPs:
+  IP:           10.244.0.5
+Controlled By:  ReplicaSet/builder-678474bf88
+Containers:
+  builder:
+    Container ID:   containerd://7acc9d6e90d4493bb6f0b339d042d1bb46fdc7ba0760f791f889f0076bb8dc40
+    Image:          turbo-engine/builder:e2e
+    Image ID:       sha256:a50b4e840717473ae00e2f633fe41debb12d7b0aabc6909021e3233d94de5b2e
+    Port:           8082/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:29:58 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:http/healthz delay=5s timeout=5s period=15s #success=1 #failure=3
+    Readiness:  http-get http://:http/healthz delay=3s timeout=3s period=10s #success=1 #failure=3
+    Environment:
+      PORT:                         8082
+      LOG_LEVEL:                    debug
+      LOG_FORMAT:                   json
+      REGISTRY_URL:                 http://registry:8081
+      OTEL_EXPORTER_OTLP_ENDPOINT:  http://otel-collector:4317
+      OTEL_SERVICE_NAME:            builder
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-vwn69 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-vwn69:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  35s   default-scheduler  Successfully assigned turbo-engine-e2e/builder-678474bf88-2qqz6 to turbo-engine-e2e-control-plane
+  Normal  Pulled     34s   kubelet            spec.containers{builder}: Container image "turbo-engine/builder:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    34s   kubelet            spec.containers{builder}: Container created
+  Normal  Started    34s   kubelet            spec.containers{builder}: Container started
+
+
+Name:             console-78fbd5c84-8bdqb
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:58 +0000
+Labels:           app.kubernetes.io/component=ui
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=console
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=78fbd5c84
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.6
+IPs:
+  IP:           10.244.0.6
+Controlled By:  ReplicaSet/console-78fbd5c84
+Containers:
+  console:
+    Container ID:   containerd://2e28392ec8047a48d6a08f773a274225772387afd7a1377e6291987dd7f351f0
+    Image:          turbo-engine/console:e2e
+    Image ID:       sha256:6a047775e8f4787cb6be0c609d95f030daeee0d6edb190bcdad99272cd102654
+    Port:           3000/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:29:59 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  128Mi
+    Requests:
+      cpu:      25m
+      memory:   32Mi
+    Liveness:   http-get http://:http/ delay=10s timeout=5s period=15s #success=1 #failure=3
+    Readiness:  http-get http://:http/ delay=5s timeout=3s period=10s #success=1 #failure=3
+    Environment:
+      PORT:                  3000
+      VITE_API_GATEWAY_URL:  http://gateway:8080
+      VITE_REGISTRY_URL:     http://registry:8081
+      VITE_BUILDER_URL:      http://builder:8082
+      VITE_ENVMANAGER_URL:   http://envmanager:8083
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-t2s95 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-t2s95:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned turbo-engine-e2e/console-78fbd5c84-8bdqb to turbo-engine-e2e-control-plane
+  Normal  Pulled     34s   kubelet            spec.containers{console}: Container image "turbo-engine/console:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    34s   kubelet            spec.containers{console}: Container created
+  Normal  Started    33s   kubelet            spec.containers{console}: Container started
+
+
+Name:             deploy-petstore-api-59d5b6c857-8q9j6
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:30:19 +0000
+Labels:           app.kubernetes.io/instance=cde7438ea98a00c68acc6302024b5dad
+                  app.kubernetes.io/managed-by=turbo-engine-operator
+                  app.kubernetes.io/name=petstore-api
+                  pod-template-hash=59d5b6c857
+                  turboengine.io/component=petstore-api
+                  turboengine.io/environment=cde7438ea98a00c68acc6302024b5dad
+Annotations:      turboengine.io/artifact-hash: petstore-api-hash
+Status:           Running
+IP:               10.244.0.13
+IPs:
+  IP:           10.244.0.13
+Controlled By:  ReplicaSet/deploy-petstore-api-59d5b6c857
+Containers:
+  petstore-api:
+    Container ID:   containerd://9739a4fb2cebb57163ffe59a45c2cc0a868d453ce68ea4ebccf8a66a8edbbd94
+    Image:          turbo-engine/petstore-mock:e2e
+    Image ID:       sha256:fc8df22eda493f29fc35aa71cd56b24cad9cd6aed686f20271e55626e125d0e7
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:30:20 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment Variables from:
+      cm-petstore-api  ConfigMap  Optional: false
+    Environment:       <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-kvd8c (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-kvd8c:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  13s   default-scheduler  Successfully assigned turbo-engine-e2e/deploy-petstore-api-59d5b6c857-8q9j6 to turbo-engine-e2e-control-plane
+  Normal  Pulled     13s   kubelet            spec.containers{petstore-api}: Container image "turbo-engine/petstore-mock:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    13s   kubelet            spec.containers{petstore-api}: Container created
+  Normal  Started    12s   kubelet            spec.containers{petstore-api}: Container started
+
+
+Name:             deploy-petstore-orchestrator-958594fff-68j8d
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:30:19 +0000
+Labels:           app.kubernetes.io/instance=cde7438ea98a00c68acc6302024b5dad
+                  app.kubernetes.io/managed-by=turbo-engine-operator
+                  app.kubernetes.io/name=petstore-orchestrator
+                  pod-template-hash=958594fff
+                  turboengine.io/component=petstore-orchestrator
+                  turboengine.io/environment=cde7438ea98a00c68acc6302024b5dad
+Annotations:      turboengine.io/artifact-hash: orchestrator-hash
+Status:           Running
+IP:               10.244.0.14
+IPs:
+  IP:           10.244.0.14
+Controlled By:  ReplicaSet/deploy-petstore-orchestrator-958594fff
+Containers:
+  petstore-orchestrator:
+    Container ID:   containerd://bcefb22b375089c290b9ac0f1f5d49c2e0dfa23202397236500db399ddd2244b
+    Image:          turbo-engine/orchestrator:e2e
+    Image ID:       sha256:580e556400a66c8594733fc0cdef9a145c7a10cb234c6d5431496339cd9afd6f
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:30:20 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment Variables from:
+      cm-petstore-orchestrator  ConfigMap  Optional: false
+    Environment:                <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-244lg (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-244lg:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  13s   default-scheduler  Successfully assigned turbo-engine-e2e/deploy-petstore-orchestrator-958594fff-68j8d to turbo-engine-e2e-control-plane
+  Normal  Pulled     13s   kubelet            spec.containers{petstore-orchestrator}: Container image "turbo-engine/orchestrator:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    12s   kubelet            spec.containers{petstore-orchestrator}: Container created
+  Normal  Started    12s   kubelet            spec.containers{petstore-orchestrator}: Container started
+
+
+Name:             envmanager-76c64c8cc9-lgqmt
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:58 +0000
+Labels:           app.kubernetes.io/component=control-plane
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=envmanager
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=76c64c8cc9
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.7
+IPs:
+  IP:           10.244.0.7
+Controlled By:  ReplicaSet/envmanager-76c64c8cc9
+Containers:
+  envmanager:
+    Container ID:   containerd://d4735a4e2efac3c9890344bc6ed5acbf2b566c5accf856fa5689e81f628538e7
+    Image:          turbo-engine/envmanager:e2e
+    Image ID:       sha256:6c08495edc148cf72a657065acb670b6c66a91fd594c3575191dd9887afe2544
+    Port:           8083/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:29:58 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:http/healthz delay=5s timeout=5s period=15s #success=1 #failure=3
+    Readiness:  http-get http://:http/healthz delay=3s timeout=3s period=10s #success=1 #failure=3
+    Environment:
+      PORT:                         8083
+      LOG_LEVEL:                    debug
+      LOG_FORMAT:                   json
+      REGISTRY_URL:                 http://registry:8081
+      BUILDER_URL:                  http://builder:8082
+      OTEL_EXPORTER_OTLP_ENDPOINT:  http://otel-collector:4317
+      OTEL_SERVICE_NAME:            envmanager
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-2nkms (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-2nkms:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned turbo-engine-e2e/envmanager-76c64c8cc9-lgqmt to turbo-engine-e2e-control-plane
+  Normal  Pulled     34s   kubelet            spec.containers{envmanager}: Container image "turbo-engine/envmanager:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    34s   kubelet            spec.containers{envmanager}: Container created
+  Normal  Started    34s   kubelet            spec.containers{envmanager}: Container started
+
+
+Name:             gateway-586c64fdf5-b8nqm
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:58 +0000
+Labels:           app.kubernetes.io/component=control-plane
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=gateway
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=586c64fdf5
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.8
+IPs:
+  IP:           10.244.0.8
+Controlled By:  ReplicaSet/gateway-586c64fdf5
+Containers:
+  gateway:
+    Container ID:   containerd://1375c02d1aaabb0d878dd10f3415b6638acd92d773ab24920449ff9b765dcb2b
+    Image:          turbo-engine/gateway:e2e
+    Image ID:       sha256:7d90d7f8de06ba03495fa81b5867dcd706a0ccee4fe4ca74884d145f85d37a24
+    Port:           8080/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:29:58 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:http/healthz delay=5s timeout=5s period=15s #success=1 #failure=3
+    Readiness:  http-get http://:http/healthz delay=3s timeout=3s period=10s #success=1 #failure=3
+    Environment:
+      PORT:                         8080
+      RUST_LOG:                     info
+      CONFIG_URL:                   http://turbo-engine-operator:8084/v1/gateway-config
+      OTEL_EXPORTER_OTLP_ENDPOINT:  http://otel-collector:4317
+      OTEL_SERVICE_NAME:            gateway
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-qrdgd (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-qrdgd:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned turbo-engine-e2e/gateway-586c64fdf5-b8nqm to turbo-engine-e2e-control-plane
+  Normal  Pulled     34s   kubelet            spec.containers{gateway}: Container image "turbo-engine/gateway:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    34s   kubelet            spec.containers{gateway}: Container created
+  Normal  Started    34s   kubelet            spec.containers{gateway}: Container started
+
+
+Name:             jaeger-54885dfdf-jxmn8
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:58 +0000
+Labels:           app.kubernetes.io/component=telemetry
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=jaeger
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=54885dfdf
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.10
+IPs:
+  IP:           10.244.0.10
+Controlled By:  ReplicaSet/jaeger-54885dfdf
+Containers:
+  jaeger:
+    Container ID:   containerd://c1345cce0cd78b98d04b99a31faad363da0c64c9825f4b9a4360c365053cc95f
+    Image:          jaegertracing/all-in-one:1.54
+    Image ID:       docker.io/jaegertracing/all-in-one@sha256:f4044964505c81bf12131c2dfd1f4ddf1d1421bbbd9d79f691221cac077599a8
+    Ports:          16686/TCP (query), 4317/TCP (otlp-grpc), 14269/TCP (health)
+    Host Ports:     0/TCP (query), 0/TCP (otlp-grpc), 0/TCP (health)
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:30:01 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  128Mi
+    Requests:
+      cpu:      25m
+      memory:   32Mi
+    Liveness:   http-get http://:health/ delay=5s timeout=1s period=15s #success=1 #failure=3
+    Readiness:  http-get http://:health/ delay=3s timeout=1s period=10s #success=1 #failure=3
+    Environment:
+      COLLECTOR_OTLP_ENABLED:  true
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-zfx5n (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-zfx5n:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned turbo-engine-e2e/jaeger-54885dfdf-jxmn8 to turbo-engine-e2e-control-plane
+  Normal  Pulling    34s   kubelet            spec.containers{jaeger}: Pulling image "jaegertracing/all-in-one:1.54"
+  Normal  Pulled     31s   kubelet            spec.containers{jaeger}: Successfully pulled image "jaegertracing/all-in-one:1.54" in 942ms (2.484s including waiting). Image size: 33344095 bytes.
+  Normal  Created    31s   kubelet            spec.containers{jaeger}: Container created
+  Normal  Started    31s   kubelet            spec.containers{jaeger}: Container started
+
+
+Name:             otel-collector-8584bc4d4c-zmqt4
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:58 +0000
+Labels:           app.kubernetes.io/component=telemetry
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=otel-collector
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=8584bc4d4c
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.9
+IPs:
+  IP:           10.244.0.9
+Controlled By:  ReplicaSet/otel-collector-8584bc4d4c
+Containers:
+  otel-collector:
+    Container ID:  containerd://7984bea08c477a343cf9df8b27812be67d9b35665038bd65a72aeab9a30c1035
+    Image:         otel/opentelemetry-collector-contrib:0.96.0
+    Image ID:      docker.io/otel/opentelemetry-collector-contrib@sha256:7ef2a2ff46b9e432321fdd63df104bfeedaf7b4e276950f42c634d0f23521fc4
+    Ports:         4317/TCP (otlp-grpc), 4318/TCP (otlp-http), 13133/TCP (health)
+    Host Ports:    0/TCP (otlp-grpc), 0/TCP (otlp-http), 0/TCP (health)
+    Args:
+      --config
+      /etc/otelcol/config.yaml
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:30:00 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     100m
+      memory:  128Mi
+    Requests:
+      cpu:        25m
+      memory:     32Mi
+    Liveness:     http-get http://:health/ delay=5s timeout=1s period=15s #success=1 #failure=3
+    Readiness:    http-get http://:health/ delay=3s timeout=1s period=10s #success=1 #failure=3
+    Environment:  <none>
+    Mounts:
+      /etc/otelcol from config (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-5jcqn (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  config:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      otel-collector-config
+    Optional:  false
+  kube-api-access-5jcqn:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned turbo-engine-e2e/otel-collector-8584bc4d4c-zmqt4 to turbo-engine-e2e-control-plane
+  Normal  Pulling    34s   kubelet            spec.containers{otel-collector}: Pulling image "otel/opentelemetry-collector-contrib:0.96.0"
+  Normal  Pulled     32s   kubelet            spec.containers{otel-collector}: Successfully pulled image "otel/opentelemetry-collector-contrib:0.96.0" in 1.643s (1.644s including waiting). Image size: 65128183 bytes.
+  Normal  Created    32s   kubelet            spec.containers{otel-collector}: Container created
+  Normal  Started    32s   kubelet            spec.containers{otel-collector}: Container started
+
+
+Name:             registry-7d5f66bcd8-96kq6
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  default
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:58 +0000
+Labels:           app.kubernetes.io/component=control-plane
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=registry
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=7d5f66bcd8
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.11
+IPs:
+  IP:           10.244.0.11
+Controlled By:  ReplicaSet/registry-7d5f66bcd8
+Containers:
+  registry:
+    Container ID:   containerd://0e8365e403f5a806b0ce1d78209056e9ed725be27d0de433939b2de0f0a99fc8
+    Image:          turbo-engine/registry:e2e
+    Image ID:       sha256:ae5fbd5f241afc0ffea2d21e0d22d5279acd22f97496bdc0ab9f93a3f78411a3
+    Port:           8081/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:29:59 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:http/healthz delay=5s timeout=5s period=15s #success=1 #failure=3
+    Readiness:  http-get http://:http/healthz delay=3s timeout=3s period=10s #success=1 #failure=3
+    Environment:
+      PORT:                         8081
+      LOG_LEVEL:                    debug
+      LOG_FORMAT:                   json
+      OTEL_EXPORTER_OTLP_ENDPOINT:  http://otel-collector:4317
+      OTEL_SERVICE_NAME:            registry
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-mwq7q (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-mwq7q:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned turbo-engine-e2e/registry-7d5f66bcd8-96kq6 to turbo-engine-e2e-control-plane
+  Normal  Pulled     34s   kubelet            spec.containers{registry}: Container image "turbo-engine/registry:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    34s   kubelet            spec.containers{registry}: Container created
+  Normal  Started    33s   kubelet            spec.containers{registry}: Container started
+
+
+Name:             turbo-engine-operator-7cd95f4bc4-z46dh
+Namespace:        turbo-engine-e2e
+Priority:         0
+Service Account:  turbo-engine-operator
+Node:             turbo-engine-e2e-control-plane/172.18.0.2
+Start Time:       Sat, 21 Feb 2026 07:29:58 +0000
+Labels:           app.kubernetes.io/component=controller
+                  app.kubernetes.io/managed-by=kustomize
+                  app.kubernetes.io/name=operator
+                  app.kubernetes.io/part-of=turbo-engine
+                  pod-template-hash=7cd95f4bc4
+Annotations:      prometheus.io/port: 8084
+                  prometheus.io/scrape: true
+Status:           Running
+IP:               10.244.0.12
+IPs:
+  IP:           10.244.0.12
+Controlled By:  ReplicaSet/turbo-engine-operator-7cd95f4bc4
+Containers:
+  operator:
+    Container ID:   containerd://f9107afc1427ed00d89e570763da2e4ffc22d3e2624c036109076e47de651265
+    Image:          turbo-engine/operator:e2e
+    Image ID:       sha256:1ab17ec962a7e7e5a85e0ae9d63aa3b13963acc5025509c44206cef6dbda6caf
+    Port:           8084/TCP (http)
+    Host Port:      0/TCP (http)
+    State:          Running
+      Started:      Sat, 21 Feb 2026 07:29:59 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      50m
+      memory:   64Mi
+    Liveness:   http-get http://:http/healthz delay=10s timeout=5s period=15s #success=1 #failure=3
+    Readiness:  http-get http://:http/healthz delay=5s timeout=3s period=10s #success=1 #failure=3
+    Environment:
+      PORT:                         8084
+      LOG_LEVEL:                    debug
+      LOG_FORMAT:                   json
+      BUILDER_URL:                  http://builder:8082
+      POLL_INTERVAL:                5s
+      OTEL_EXPORTER_OTLP_ENDPOINT:  http://otel-collector:4317
+      OTEL_SERVICE_NAME:            operator
+      OPERATOR_MODE:                k8s
+      OPERATOR_NAMESPACE:           turbo-engine-e2e
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pxnz4 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-pxnz4:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned turbo-engine-e2e/turbo-engine-operator-7cd95f4bc4-z46dh to turbo-engine-e2e-control-plane
+  Normal  Pulled     34s   kubelet            spec.containers{operator}: Container image "turbo-engine/operator:e2e" already present on machine and can be accessed by the pod
+  Normal  Created    34s   kubelet            spec.containers{operator}: Container created
+  Normal  Started    33s   kubelet            spec.containers{operator}: Container started

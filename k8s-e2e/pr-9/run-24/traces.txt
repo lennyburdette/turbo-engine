@@ -1,0 +1,53 @@
+Trace Summary (captured 2026-02-21T07:30:36Z)
+============================================================
+
+builder: 10 traces, 19 spans
+  [62f1d268d86b] builder/builder 0.1ms (1 spans)
+  [f388b4b4e6e9] builder/builder 0.0ms (1 spans)
+  [20e3edfe9136] builder/builder 0.0ms (1 spans)
+  [1f69e78a2fab] builder/builder 0.0ms (1 spans)
+  [7420f63cee34] builder/builder 0.2ms (10 spans)
+    builder/BuildEngine.Run 0.1ms
+    builder/step.resolve 0.0ms
+    builder/resolve.execute 0.0ms
+    builder/step.compose 0.0ms
+    builder/compose.execute 0.0ms
+    builder/step.validate 0.0ms
+    builder/validate.execute 0.0ms
+    builder/step.bundle 0.0ms
+    builder/bundle.execute 0.0ms
+  [0e97aef7a7d9] builder/builder 0.0ms (1 spans)
+  [20de80b5ec64] builder/builder 0.0ms (1 spans)
+  [76498e6b0554] builder/builder 0.0ms (1 spans)
+  [86ead290ae80] builder/builder 0.1ms (1 spans)
+  [751dba904cf7] builder/builder 0.0ms (1 spans)
+
+envmanager: 6 traces, 7 spans
+  [df6393c666ee] envmanager/envmanager 0.0ms (1 spans)
+  [e77c13ba1b9f] envmanager/envmanager 0.0ms (1 spans)
+  [e0f4113cef53] envmanager/envmanager 0.2ms (2 spans)
+    envmanager/Orchestrator.CreateEnvironment 0.0ms
+  [6286bcbb5f7f] envmanager/envmanager 0.0ms (1 spans)
+  [6c77e50766d9] envmanager/envmanager 0.0ms (1 spans)
+  [c605c294d650] envmanager/envmanager 0.0ms (1 spans)
+
+gateway: no traces
+operator: no traces
+orchestrator: 1 traces, 4 spans
+  [61c35ac7de0e] orchestrator/orchestrator 1.7ms (4 spans)
+    orchestrator/rpc/listPets 1.5ms
+    orchestrator/HTTP GET 1.4ms
+    petstore-mock/petstore-mock 0.1ms
+
+petstore-mock: 2 traces, 5 spans
+  [61c35ac7de0e] orchestrator/orchestrator 1.7ms (4 spans)
+    orchestrator/rpc/listPets 1.5ms
+    orchestrator/HTTP GET 1.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [73bee6165c14] petstore-mock/petstore-mock 0.2ms (1 spans)
+
+registry: 2 traces, 2 spans
+  [9c3f9d37fa67] registry/PublishPackage 0.2ms (1 spans)
+  [a2f6ea9e7228] registry/PublishPackage 0.1ms (1 spans)
+
+Total: 21 traces, 37 spans across 7 services

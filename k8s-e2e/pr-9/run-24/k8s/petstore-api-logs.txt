@@ -1,0 +1,11 @@
+{"level":"info","msg":"petstore mock starting","port":"8080","time":"2026-02-21T07:30:20.068791513Z"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T07:30:27.467366215Z","trace_id":"","traceparent":"","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T07:30:27.467512447Z","trace_id":""}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T07:30:29.509236114Z","trace_id":"61c35ac7de0e32c6839a34dc2e238453","traceparent":"00-61c35ac7de0e32c6839a34dc2e238453-c280a978aca65d40-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T07:30:29.509285546Z","trace_id":"61c35ac7de0e32c6839a34dc2e238453"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T07:30:31.602735343Z","trace_id":"f1c15f7cc224253d3194fea3eb39aaa8","traceparent":"00-f1c15f7cc224253d3194fea3eb39aaa8-60ae43394a15b235-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T07:30:31.60278171Z","trace_id":"f1c15f7cc224253d3194fea3eb39aaa8"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets/2","query":"","time":"2026-02-21T07:30:31.686231164Z","trace_id":"2bb33ea65855de59b7041adc3b8191bf","traceparent":"00-2bb33ea65855de59b7041adc3b8191bf-7dae34d3866547b8-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets/2","status":200,"time":"2026-02-21T07:30:31.686281678Z","trace_id":"2bb33ea65855de59b7041adc3b8191bf"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T07:30:31.725893516Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","traceparent":"00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-33066813ad3df8b1-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T07:30:31.725934863Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"}
