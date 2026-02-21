@@ -1,0 +1,2 @@
+{"time":"2026-02-21T17:56:57.884294695Z","level":"INFO","msg":"starting server","addr":":8083"}
+{"time":"2026-02-21T17:57:19.935015492Z","level":"INFO","msg":"environment created","id":"73407b165498cfbc29677fec961e117f","name":"petstore-e2e"}

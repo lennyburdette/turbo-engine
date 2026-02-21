@@ -1,0 +1,185 @@
+{
+  "actions": [
+    {
+      "time": "2026-02-21T17:57:19.944827461Z",
+      "msg": "reconcile request received",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "reconcile request received",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": "",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944881873Z",
+      "msg": "starting reconciliation",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "starting reconciliation",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": "",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944902792Z",
+      "msg": "reconciliation action",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-petstore-api",
+      "details": "image=artifact:petstore-api-hash replicas=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944921326Z",
+      "msg": "reconciliation action",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-petstore-api",
+      "details": "selector=petstore-api",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944927939Z",
+      "msg": "reconciliation action",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-petstore-api",
+      "details": "env_vars=0",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944934411Z",
+      "msg": "reconciliation action",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-petstore-orchestrator",
+      "details": "image=artifact:petstore-orchestrator-hash replicas=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944939861Z",
+      "msg": "reconciliation action",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-petstore-orchestrator",
+      "details": "selector=petstore-orchestrator",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944945502Z",
+      "msg": "reconciliation action",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-petstore-orchestrator",
+      "details": "env_vars=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944950581Z",
+      "msg": "reconciliation action",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "Create",
+      "resource_kind": "Ingress",
+      "resource_name": "localhost-ingress",
+      "details": "host=localhost routes=1 tls=false",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.944964277Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-petstore-api",
+      "details": "image=artifact:petstore-api-hash replicas=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.956478287Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-petstore-api",
+      "details": "selector=petstore-api",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.965204473Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-petstore-api",
+      "details": "env_vars=0",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.978954084Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Deployment",
+      "resource_name": "deploy-petstore-orchestrator",
+      "details": "image=artifact:petstore-orchestrator-hash replicas=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.9860694Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Service",
+      "resource_name": "svc-petstore-orchestrator",
+      "details": "selector=petstore-orchestrator",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.993310801Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "ConfigMap",
+      "resource_name": "cm-petstore-orchestrator",
+      "details": "env_vars=1",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.99878646Z",
+      "msg": "applying action",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "Ingress",
+      "resource_name": "localhost-ingress",
+      "details": "host=localhost routes=1 tls=false",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.999542262Z",
+      "msg": "ingress action handled via gateway-config endpoint",
+      "environment_id": "",
+      "action": "Create",
+      "resource_kind": "",
+      "resource_name": "localhost-ingress",
+      "details": "",
+      "phase": ""
+    },
+    {
+      "time": "2026-02-21T17:57:19.999572479Z",
+      "msg": "reconciliation complete",
+      "environment_id": "73407b165498cfbc29677fec961e117f",
+      "action": "reconciliation complete",
+      "resource_kind": "",
+      "resource_name": "",
+      "details": "",
+      "phase": "Running"
+    }
+  ],
+  "count": 18
+}

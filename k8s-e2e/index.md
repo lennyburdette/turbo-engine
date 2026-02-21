@@ -14,6 +14,7 @@ title: "k8s-e2e Reports"
 | pr-10 | run-30 | [View](./pr-10/run-30/) |
 | pr-10 | run-31 | [View](./pr-10/run-31/) |
 | pr-10 | run-32 | [View](./pr-10/run-32/) |
+| pr-10 | run-33 | [View](./pr-10/run-33/) |
 | pr-6 | run-11 | [View](./pr-6/run-11/) |
 | pr-7 | run-13 | [View](./pr-7/run-13/) |
 | pr-8 | run-15 | [View](./pr-8/run-15/) |
