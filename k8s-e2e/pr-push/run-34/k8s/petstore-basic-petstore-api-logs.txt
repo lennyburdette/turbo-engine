@@ -1,0 +1,13 @@
+{"level":"info","msg":"petstore mock starting","port":"8080","time":"2026-02-21T18:06:42.447366014Z"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T18:06:47.538022583Z","trace_id":"3faf1d37b19f9546f5b5f809d026a8f8","traceparent":"00-3faf1d37b19f9546f5b5f809d026a8f8-2760f0ed1a90de6a-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T18:06:47.538168666Z","trace_id":"3faf1d37b19f9546f5b5f809d026a8f8"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T18:06:49.543473479Z","trace_id":"","traceparent":"","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T18:06:49.543518313Z","trace_id":""}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T18:06:51.549076659Z","trace_id":"ddad673db6580158f8f1ab1357dfd266","traceparent":"00-ddad673db6580158f8f1ab1357dfd266-04a77ef78f2ec4b9-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T18:06:51.549129548Z","trace_id":"ddad673db6580158f8f1ab1357dfd266"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T18:06:51.552852895Z","trace_id":"740c3878461c382bee77b67237ae6aff","traceparent":"00-740c3878461c382bee77b67237ae6aff-a250051a6a42b544-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T18:06:51.552880968Z","trace_id":"740c3878461c382bee77b67237ae6aff"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets/2","query":"","time":"2026-02-21T18:06:51.556503037Z","trace_id":"3ded1c3785ab151044bd66c8d1c1b440","traceparent":"00-3ded1c3785ab151044bd66c8d1c1b440-4a14be484ac54b25-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets/2","status":200,"time":"2026-02-21T18:06:51.556542281Z","trace_id":"3ded1c3785ab151044bd66c8d1c1b440"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T18:06:51.560369004Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","traceparent":"00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-b1808f8ccc5f8782-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T18:06:51.560396936Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"}
