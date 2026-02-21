@@ -1,0 +1,59 @@
+Trace Summary (captured 2026-02-21T07:58:27Z)
+============================================================
+
+builder: 13 traces, 22 spans
+  [b42a6ecbcc34] builder/builder 0.0ms (1 spans)
+  [675852f6beda] builder/builder 0.2ms (10 spans)
+    builder/BuildEngine.Run 0.1ms
+    builder/step.resolve 0.0ms
+    builder/resolve.execute 0.0ms
+    builder/step.compose 0.0ms
+    builder/compose.execute 0.0ms
+    builder/step.validate 0.0ms
+    builder/validate.execute 0.0ms
+    builder/step.bundle 0.0ms
+    builder/bundle.execute 0.0ms
+  [55adf55b9e07] builder/builder 0.0ms (1 spans)
+  [b059c7a92100] builder/builder 0.1ms (1 spans)
+  [f1117d747a52] builder/builder 0.1ms (1 spans)
+  [613df0dfbfa9] builder/builder 0.0ms (1 spans)
+  [1858e63b7e91] builder/builder 0.0ms (1 spans)
+  [6f82e68f9c05] builder/builder 0.0ms (1 spans)
+  [d432bdd1ab77] builder/builder 0.1ms (1 spans)
+  [980b9014a5a1] builder/builder 0.0ms (1 spans)
+  [ca7f3d11420c] builder/builder 0.0ms (1 spans)
+  [f87dad5e8cf8] builder/builder 0.0ms (1 spans)
+  [81d9730914bb] builder/builder 0.0ms (1 spans)
+
+envmanager: 7 traces, 8 spans
+  [0229e1d6f186] envmanager/envmanager 0.3ms (2 spans)
+    envmanager/Orchestrator.CreateEnvironment 0.0ms
+  [6267e05a570f] envmanager/envmanager 0.0ms (1 spans)
+  [066392539028] envmanager/envmanager 0.0ms (1 spans)
+  [1a40682d49a9] envmanager/envmanager 0.1ms (1 spans)
+  [2790ac6975b9] envmanager/envmanager 0.0ms (1 spans)
+  [683ddf973ccb] envmanager/envmanager 0.0ms (1 spans)
+  [fc4735480e29] envmanager/envmanager 0.1ms (1 spans)
+
+gateway: 1 traces, 1 spans
+  [ab2aa44a7edf] gateway/proxy_handler 0.0ms (1 spans)
+
+operator: no traces
+orchestrator: 1 traces, 4 spans
+  [85dd31109051] orchestrator/orchestrator 4.2ms (4 spans)
+    orchestrator/rpc/listPets 4.0ms
+    orchestrator/HTTP GET 3.8ms
+    petstore-mock/petstore-mock 0.1ms
+
+petstore-mock: 2 traces, 5 spans
+  [5afe75738bf2] petstore-mock/petstore-mock 0.2ms (1 spans)
+  [85dd31109051] orchestrator/orchestrator 4.2ms (4 spans)
+    orchestrator/rpc/listPets 4.0ms
+    orchestrator/HTTP GET 3.8ms
+    petstore-mock/petstore-mock 0.1ms
+
+registry: 2 traces, 2 spans
+  [6a768cb689d8] registry/PublishPackage 0.1ms (1 spans)
+  [a19253126ed7] registry/PublishPackage 0.2ms (1 spans)
+
+Total: 26 traces, 42 spans across 7 services
