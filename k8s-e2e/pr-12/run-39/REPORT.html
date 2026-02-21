@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>K8s E2E Report</title>
+  <style>:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }</style>
+</head>
+<body>
+<div class="container">
+<h1>K8s E2E Report</h1>
+<p><strong>Generated:</strong> 2026-02-21T20:11:20Z</p>
+<p><span class="pass"><strong>ALL 16 TESTS PASSED</strong></span></p>
+<pre><code>00:00  Waiting for control plane deployments to roll out
+00:00  Control plane ready
+00:00  Setting up port-forwards
+00:07  Port-forwards healthy
+00:07  Running scenario: petstore-basic
+00:45  Scenario petstore-basic: 14/14 passed
+00:45  Tests complete: 16 passed, 0 failed</code></pre>
+<h2>Scenarios</h2>
+<h3><a href="./scenarios/petstore-basic/">petstore-basic: ALL 14 TESTS PASSED</a></h3>
+<p>4 screenshots | <a href="./traces.html">traces</a></p>
+<h2>Platform Health</h2>
+<p><strong>Pods:</strong> 11/11 running</p>
+<details><summary>Full resource list (51 lines)</summary>
+<pre><code>NAME                                                READY   STATUS    RESTARTS   AGE   IP            NODE                             NOMINATED NODE   READINESS GATES
+pod/builder-678474bf88-45tng                        1/1     Running   0          93s   10.244.0.5    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/console-78fbd5c84-p5krw                         1/1     Running   0          93s   10.244.0.6    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/deploy-petstore-api-74768bbfdf-b94hx            1/1     Running   0          38s   10.244.0.14   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/deploy-petstore-orchestrator-59d957fb64-m9ndz   1/1     Running   0          38s   10.244.0.15   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/envmanager-76c64c8cc9-prs2q                     1/1     Running   0          93s   10.244.0.7    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/explorer-5465b84fd-6mcw6                        1/1     Running   0          93s   10.244.0.8    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/gateway-586c64fdf5-9v7js                        1/1     Running   0          93s   10.244.0.9    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/jaeger-54885dfdf-gd6hr                          1/1     Running   0          93s   10.244.0.10   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/otel-collector-8584bc4d4c-mxg7q                 1/1     Running   0          93s   10.244.0.11   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/registry-7d5f66bcd8-q7vp2                       1/1     Running   0          93s   10.244.0.12   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/turbo-engine-operator-7cd95f4bc4-fr85z          1/1     Running   0          93s   10.244.0.13   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+
+NAME                                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)              AGE   SELECTOR
+service/builder                     ClusterIP   10.96.145.13    &lt;none&gt;        8082/TCP             93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=builder,app.kubernetes.io/part-of=turbo-engine
+service/console                     ClusterIP   10.96.103.197   &lt;none&gt;        3000/TCP             93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=console,app.kubernetes.io/part-of=turbo-engine
+service/envmanager                  ClusterIP   10.96.251.181   &lt;none&gt;        8083/TCP             93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=envmanager,app.kubernetes.io/part-of=turbo-engine
+service/explorer                    ClusterIP   10.96.114.151   &lt;none&gt;        3001/TCP             93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=explorer,app.kubernetes.io/part-of=turbo-engine
+service/gateway                     ClusterIP   10.96.19.139    &lt;none&gt;        8080/TCP             93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=gateway,app.kubernetes.io/part-of=turbo-engine
+service/jaeger                      ClusterIP   10.96.97.115    &lt;none&gt;        16686/TCP,4317/TCP   93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=jaeger,app.kubernetes.io/part-of=turbo-engine
+service/otel-collector              ClusterIP   10.96.212.242   &lt;none&gt;        4317/TCP,4318/TCP    93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=otel-collector,app.kubernetes.io/part-of=turbo-engine
+service/registry                    ClusterIP   10.96.152.139   &lt;none&gt;        8081/TCP             93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=registry,app.kubernetes.io/part-of=turbo-engine
+service/svc-petstore-api            ClusterIP   10.96.17.71     &lt;none&gt;        8080/TCP             38s   app.kubernetes.io/instance=e8b7a268e9827524482ec45ad7d0665b,app.kubernetes.io/name=petstore-api
+service/svc-petstore-orchestrator   ClusterIP   10.96.167.4     &lt;none&gt;        8080/TCP             38s   app.kubernetes.io/instance=e8b7a268e9827524482ec45ad7d0665b,app.kubernetes.io/name=petstore-orchestrator
+service/turbo-engine-operator       ClusterIP   10.96.39.132    &lt;none&gt;        8084/TCP             93s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=operator,app.kubernetes.io/part-of=turbo-engine
+
+NAME                                           READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS              IMAGES                                        SELECTOR
+deployment.apps/builder                        1/1     1            1           93s   builder                 turbo-engine/builder:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=builder,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/console                        1/1     1            1           93s   console                 turbo-engine/console:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=console,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/deploy-petstore-api            1/1     1            1           38s   petstore-api            turbo-engine/petstore-mock:e2e                app.kubernetes.io/instance=e8b7a268e9827524482ec45ad7d0665b,app.kubernetes.io/name=petstore-api
+deployment.apps/deploy-petstore-orchestrator   1/1     1            1           38s   petstore-orchestrator   turbo-engine/orchestrator:e2e                 app.kubernetes.io/instance=e8b7a268e9827524482ec45ad7d0665b,app.kubernetes.io/name=petstore-orchestrator
+deployment.apps/envmanager                     1/1     1            1           93s   envmanager              turbo-engine/envmanager:e2e                   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=envmanager,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/explorer                       1/1     1            1           93s   explorer                turbo-engine/explorer:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=explorer,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/gateway                        1/1     1            1           93s   gateway                 turbo-engine/gateway:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=gateway,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/jaeger                         1/1     1            1           93s   jaeger                  jaegertracing/all-in-one:1.54                 app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=jaeger,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/otel-collector                 1/1     1            1           93s   otel-collector          otel/opentelemetry-collector-contrib:0.96.0   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=otel-collector,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/registry                       1/1     1            1           93s   registry                turbo-engine/registry:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=registry,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/turbo-engine-operator          1/1     1            1           93s   operator                turbo-engine/operator:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=operator,app.kubernetes.io/part-of=turbo-engine
+
+NAME                                                      DESIRED   CURRENT   READY   AGE   CONTAINERS              IMAGES                                        SELECTOR
+replicaset.apps/builder-678474bf88                        1         1         1       93s   builder                 turbo-engine/builder:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=builder,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=678474bf88
+replicaset.apps/console-78fbd5c84                         1         1         1       93s   console                 turbo-engine/console:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=console,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=78fbd5c84
+replicaset.apps/deploy-petstore-api-74768bbfdf            1         1         1       38s   petstore-api            turbo-engine/petstore-mock:e2e                app.kubernetes.io/instance=e8b7a268e9827524482ec45ad7d0665b,app.kubernetes.io/name=petstore-api,pod-template-hash=74768bbfdf
+replicaset.apps/deploy-petstore-orchestrator-59d957fb64   1         1         1       38s   petstore-orchestrator   turbo-engine/orchestrator:e2e                 app.kubernetes.io/instance=e8b7a268e9827524482ec45ad7d0665b,app.kubernetes.io/name=petstore-orchestrator,pod-template-hash=59d957fb64
+replicaset.apps/envmanager-76c64c8cc9                     1         1         1       93s   envmanager              turbo-engine/envmanager:e2e                   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=envmanager,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=76c64c8cc9
+replicaset.apps/explorer-5465b84fd                        1         1         1       93s   explorer                turbo-engine/explorer:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=explorer,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=5465b84fd
+replicaset.apps/gateway-586c64fdf5                        1         1         1       93s   gateway                 turbo-engine/gateway:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=gateway,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=586c64fdf5
+replicaset.apps/jaeger-54885dfdf                          1         1         1       93s   jaeger                  jaegertracing/all-in-one:1.54                 app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=jaeger,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=54885dfdf
+replicaset.apps/otel-collector-8584bc4d4c                 1         1         1       93s   otel-collector          otel/opentelemetry-collector-contrib:0.96.0   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=otel-collector,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=8584bc4d4c
+replicaset.apps/registry-7d5f66bcd8                       1         1         1       93s   registry                turbo-engine/registry:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=registry,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=7d5f66bcd8
+replicaset.apps/turbo-engine-operator-7cd95f4bc4          1         1         1       93s   operator                turbo-engine/operator:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=operator,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=7cd95f4bc4</code></pre>
+</details>
+<h2>Traces</h2>
+<p><strong>registry:</strong> 5 &nbsp; <strong>builder:</strong> 33 &nbsp; <strong>envmanager:</strong> 18 &nbsp; <strong>gateway:</strong> 6 &nbsp; <strong>orchestrator:</strong> 5 &nbsp; <strong>petstore-mock:</strong> 6 &nbsp; </p>
+<p><a href="./traces.html">Open trace viewer</a></p>
+<h2>Debug Data</h2>
+<details><summary>K8s events (69 lines)</summary>
+<pre><code>LAST SEEN   TYPE     REASON              OBJECT                                               MESSAGE
+94s         Normal   ScalingReplicaSet   deployment/turbo-engine-operator                     Scaled up replica set turbo-engine-operator-7cd95f4bc4 from 0 to 1
+94s         Normal   Scheduled           pod/envmanager-76c64c8cc9-prs2q                      Successfully assigned turbo-engine-e2e/envmanager-76c64c8cc9-prs2q to turbo-engine-e2e-control-plane
+94s         Normal   Scheduled           pod/builder-678474bf88-45tng                         Successfully assigned turbo-engine-e2e/builder-678474bf88-45tng to turbo-engine-e2e-control-plane
+94s         Normal   Scheduled           pod/otel-collector-8584bc4d4c-mxg7q                  Successfully assigned turbo-engine-e2e/otel-collector-8584bc4d4c-mxg7q to turbo-engine-e2e-control-plane
+94s         Normal   SuccessfulCreate    replicaset/builder-678474bf88                        Created pod: builder-678474bf88-45tng
+94s         Normal   ScalingReplicaSet   deployment/builder                                   Scaled up replica set builder-678474bf88 from 0 to 1
+94s         Normal   Scheduled           pod/console-78fbd5c84-p5krw                          Successfully assigned turbo-engine-e2e/console-78fbd5c84-p5krw to turbo-engine-e2e-control-plane
+94s         Normal   ScalingReplicaSet   deployment/jaeger                                    Scaled up replica set jaeger-54885dfdf from 0 to 1
+94s         Normal   SuccessfulCreate    replicaset/jaeger-54885dfdf                          Created pod: jaeger-54885dfdf-gd6hr
+94s         Normal   Scheduled           pod/jaeger-54885dfdf-gd6hr                           Successfully assigned turbo-engine-e2e/jaeger-54885dfdf-gd6hr to turbo-engine-e2e-control-plane
+94s         Normal   SuccessfulCreate    replicaset/console-78fbd5c84                         Created pod: console-78fbd5c84-p5krw
+94s         Normal   ScalingReplicaSet   deployment/gateway                                   Scaled up replica set gateway-586c64fdf5 from 0 to 1
+94s         Normal   ScalingReplicaSet   deployment/otel-collector                            Scaled up replica set otel-collector-8584bc4d4c from 0 to 1
+94s         Normal   SuccessfulCreate    replicaset/envmanager-76c64c8cc9                     Created pod: envmanager-76c64c8cc9-prs2q
+94s         Normal   ScalingReplicaSet   deployment/console                                   Scaled up replica set console-78fbd5c84 from 0 to 1
+94s         Normal   SuccessfulCreate    replicaset/gateway-586c64fdf5                        Created pod: gateway-586c64fdf5-9v7js
+94s         Normal   Scheduled           pod/gateway-586c64fdf5-9v7js                         Successfully assigned turbo-engine-e2e/gateway-586c64fdf5-9v7js to turbo-engine-e2e-control-plane
+94s         Normal   Scheduled           pod/turbo-engine-operator-7cd95f4bc4-fr85z           Successfully assigned turbo-engine-e2e/turbo-engine-operator-7cd95f4bc4-fr85z to turbo-engine-e2e-control-plane
+94s         Normal   ScalingReplicaSet   deployment/registry                                  Scaled up replica set registry-7d5f66bcd8 from 0 to 1
+94s         Normal   SuccessfulCreate    replicaset/registry-7d5f66bcd8                       Created pod: registry-7d5f66bcd8-q7vp2
+94s         Normal   ScalingReplicaSet   deployment/explorer                                  Scaled up replica set explorer-5465b84fd from 0 to 1
+94s         Normal   SuccessfulCreate    replicaset/explorer-5465b84fd                        Created pod: explorer-5465b84fd-6mcw6
+94s         Normal   Scheduled           pod/explorer-5465b84fd-6mcw6                         Successfully assigned turbo-engine-e2e/explorer-5465b84fd-6mcw6 to turbo-engine-e2e-control-plane
+94s         Normal   Scheduled           pod/registry-7d5f66bcd8-q7vp2                        Successfully assigned turbo-engine-e2e/registry-7d5f66bcd8-q7vp2 to turbo-engine-e2e-control-plane
+94s         Normal   SuccessfulCreate    replicaset/turbo-engine-operator-7cd95f4bc4          Created pod: turbo-engine-operator-7cd95f4bc4-fr85z
+94s         Normal   ScalingReplicaSet   deployment/envmanager                                Scaled up replica set envmanager-76c64c8cc9 from 0 to 1
+94s         Normal   SuccessfulCreate    replicaset/otel-collector-8584bc4d4c                 Created pod: otel-collector-8584bc4d4c-mxg7q
+93s         Normal   Created             pod/envmanager-76c64c8cc9-prs2q                      Container created
+93s         Normal   Created             pod/turbo-engine-operator-7cd95f4bc4-fr85z           Container created
+93s         Normal   Pulled              pod/envmanager-76c64c8cc9-prs2q                      Container image &quot;turbo-engine/envmanager:e2e&quot; already present on machine and can be accessed by the pod
+93s         Normal   Pulled              pod/registry-7d5f66bcd8-q7vp2                        Container image &quot;turbo-engine/registry:e2e&quot; already present on machine and can be accessed by the pod
+93s         Normal   Pulled              pod/explorer-5465b84fd-6mcw6                         Container image &quot;turbo-engine/explorer:e2e&quot; already present on machine and can be accessed by the pod
+93s         Normal   Created             pod/explorer-5465b84fd-6mcw6                         Container created
+93s         Normal   Started             pod/explorer-5465b84fd-6mcw6                         Container started
+93s         Normal   Created             pod/registry-7d5f66bcd8-q7vp2                        Container created
+93s         Normal   Started             pod/registry-7d5f66bcd8-q7vp2                        Container started
+93s         Normal   Pulled              pod/turbo-engine-operator-7cd95f4bc4-fr85z           Container image &quot;turbo-engine/operator:e2e&quot; already present on machine and can be accessed by the pod
+93s         Normal   Pulled              pod/gateway-586c64fdf5-9v7js                         Container image &quot;turbo-engine/gateway:e2e&quot; already present on machine and can be accessed by the pod
+93s         Normal   Created             pod/gateway-586c64fdf5-9v7js                         Container created
+93s         Normal   Started             pod/gateway-586c64fdf5-9v7js                         Container started
+93s         Normal   Started             pod/envmanager-76c64c8cc9-prs2q                      Container started
+93s         Normal   Started             pod/turbo-engine-operator-7cd95f4bc4-fr85z           Container started
+93s         Normal   Started             pod/console-78fbd5c84-p5krw                          Container started
+93s         Normal   Pulling             pod/jaeger-54885dfdf-gd6hr                           Pulling image &quot;jaegertracing/all-in-one:1.54&quot;
+93s         Normal   Pulled              pod/builder-678474bf88-45tng                         Container image &quot;turbo-engine/builder:e2e&quot; already present on machine and can be accessed by the pod
+93s         Normal   Created             pod/builder-678474bf88-45tng                         Container created
+93s         Normal   Pulling             pod/otel-collector-8584bc4d4c-mxg7q                  Pulling image &quot;otel/opentelemetry-collector-contrib:0.96.0&quot;
+93s         Normal   Created             pod/console-78fbd5c84-p5krw                          Container created
+93s         Normal   Pulled              pod/console-78fbd5c84-p5krw                          Container image &quot;turbo-engine/console:e2e&quot; already present on machine and can be accessed by the pod
+93s         Normal   Started             pod/builder-678474bf88-45tng                         Container started
+92s         Normal   Created             pod/jaeger-54885dfdf-gd6hr                           Container created
+92s         Normal   Pulled              pod/jaeger-54885dfdf-gd6hr                           Successfully pulled image &quot;jaegertracing/all-in-one:1.54&quot; in 1.404s (1.404s including waiting). Image size: 33344095 bytes.
+91s         Normal   Started             pod/jaeger-54885dfdf-gd6hr                           Container started
+90s         Normal   Pulled              pod/otel-collector-8584bc4d4c-mxg7q                  Successfully pulled image &quot;otel/opentelemetry-collector-contrib:0.96.0&quot; in 1.965s (3.214s including waiting). Image size: 65128183 bytes.
+90s         Normal   Created             pod/otel-collector-8584bc4d4c-mxg7q                  Container created
+89s         Normal   Started             pod/otel-collector-8584bc4d4c-mxg7q                  Container started
+39s         Normal   SuccessfulCreate    replicaset/deploy-petstore-api-74768bbfdf            Created pod: deploy-petstore-api-74768bbfdf-b94hx
+39s         Normal   SuccessfulCreate    replicaset/deploy-petstore-orchestrator-59d957fb64   Created pod: deploy-petstore-orchestrator-59d957fb64-m9ndz
+39s         Normal   Scheduled           pod/deploy-petstore-orchestrator-59d957fb64-m9ndz    Successfully assigned turbo-engine-e2e/deploy-petstore-orchestrator-59d957fb64-m9ndz to turbo-engine-e2e-control-plane
+39s         Normal   ScalingReplicaSet   deployment/deploy-petstore-api                       Scaled up replica set deploy-petstore-api-74768bbfdf from 0 to 1
+39s         Normal   ScalingReplicaSet   deployment/deploy-petstore-orchestrator              Scaled up replica set deploy-petstore-orchestrator-59d957fb64 from 0 to 1
+39s         Normal   Scheduled           pod/deploy-petstore-api-74768bbfdf-b94hx             Successfully assigned turbo-engine-e2e/deploy-petstore-api-74768bbfdf-b94hx to turbo-engine-e2e-control-plane
+38s         Normal   Started             pod/deploy-petstore-orchestrator-59d957fb64-m9ndz    Container started
+38s         Normal   Created             pod/deploy-petstore-orchestrator-59d957fb64-m9ndz    Container created
+38s         Normal   Pulled              pod/deploy-petstore-orchestrator-59d957fb64-m9ndz    Container image &quot;turbo-engine/orchestrator:e2e&quot; already present on machine and can be accessed by the pod
+38s         Normal   Started             pod/deploy-petstore-api-74768bbfdf-b94hx             Container started
+38s         Normal   Created             pod/deploy-petstore-api-74768bbfdf-b94hx             Container created
+38s         Normal   Pulled              pod/deploy-petstore-api-74768bbfdf-b94hx             Container image &quot;turbo-engine/petstore-mock:e2e&quot; already present on machine and can be accessed by the pod</code></pre>
+</details>
+<details><summary>Operator actions (185 lines)</summary>
+<pre><code>{
+  &quot;actions&quot;: [
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.748679191Z&quot;,
+      &quot;msg&quot;: &quot;reconcile request received&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;reconcile request received&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.748708886Z&quot;,
+      &quot;msg&quot;: &quot;starting reconciliation&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;starting reconciliation&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.74873765Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-api&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-api-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.748758238Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-api&quot;,
+      &quot;details&quot;: &quot;selector=petstore-api&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.74876451Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-api&quot;,
+      &quot;details&quot;: &quot;env_vars=0&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.74876985Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-orchestrator-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.74877527Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;selector=petstore-orchestrator&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.748780239Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;env_vars=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.748785469Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Ingress&quot;,
+      &quot;resource_name&quot;: &quot;localhost-ingress&quot;,
+      &quot;details&quot;: &quot;host=localhost routes=1 tls=false&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.74879171Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-api&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-api-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.759313498Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-api&quot;,
+      &quot;details&quot;: &quot;selector=petstore-api&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.769159901Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-api&quot;,
+      &quot;details&quot;: &quot;env_vars=0&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.779527687Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-orchestrator-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.78763704Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;selector=petstore-orchestrator&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.815770523Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;env_vars=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.825425259Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Ingress&quot;,
+      &quot;resource_name&quot;: &quot;localhost-ingress&quot;,
+      &quot;details&quot;: &quot;host=localhost routes=1 tls=false&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.826472651Z&quot;,
+      &quot;msg&quot;: &quot;ingress action handled via gateway-config endpoint&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;localhost-ingress&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T20:10:38.8265794Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation complete&quot;,
+      &quot;environment_id&quot;: &quot;e8b7a268e9827524482ec45ad7d0665b&quot;,
+      &quot;action&quot;: &quot;reconciliation complete&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;Running&quot;
+    }
+  ],
+  &quot;count&quot;: 18
+}</code></pre>
+</details>
+<details><summary>registry logs (6 lines)</summary>
+<pre><code>{&quot;time&quot;:&quot;2026-02-21T20:09:44.712494012Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;starting registry service&quot;,&quot;port&quot;:&quot;8081&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.732399382Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;published package&quot;,&quot;id&quot;:&quot;pkg_1&quot;,&quot;name&quot;:&quot;petstore-api&quot;,&quot;version&quot;:&quot;1.0.0&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.735505931Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;published package&quot;,&quot;id&quot;:&quot;pkg_2&quot;,&quot;name&quot;:&quot;petstore-orchestrator&quot;,&quot;version&quot;:&quot;1.0.0&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:59.579831178Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;listed packages&quot;,&quot;count&quot;:2}
+{&quot;time&quot;:&quot;2026-02-21T20:11:07.981898512Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;listed packages&quot;,&quot;count&quot;:2}
+{&quot;time&quot;:&quot;2026-02-21T20:11:12.194393959Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;listed packages&quot;,&quot;count&quot;:2}</code></pre>
+</details>
+<details><summary>builder logs (3 lines)</summary>
+<pre><code>{&quot;time&quot;:&quot;2026-02-21T20:09:44.403599895Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;builder service starting&quot;,&quot;port&quot;:&quot;8082&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.742028111Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;build created&quot;,&quot;build_id&quot;:&quot;bld-1771704638742-1&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.742271113Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;build completed successfully&quot;,&quot;build_id&quot;:&quot;bld-1771704638742-1&quot;}</code></pre>
+</details>
+<details><summary>envmanager logs (2 lines)</summary>
+<pre><code>{&quot;time&quot;:&quot;2026-02-21T20:09:44.496651334Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;starting server&quot;,&quot;addr&quot;:&quot;:8083&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.738595827Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;environment created&quot;,&quot;id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;name&quot;:&quot;petstore-e2e&quot;}</code></pre>
+</details>
+<details><summary>turbo-engine-operator logs (46 lines)</summary>
+<pre><code>{&quot;time&quot;:&quot;2026-02-21T20:09:44.762402429Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;starting operator service&quot;,&quot;version&quot;:&quot;0.1.0&quot;,&quot;log_level&quot;:&quot;debug&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:09:44.762557458Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;failed to initialize tracer, continuing without tracing&quot;,&quot;error&quot;:&quot;creating resource: conflicting Schema URL: https://opentelemetry.io/schemas/1.26.0 and https://opentelemetry.io/schemas/1.24.0&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:09:44.76259645Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;operator mode: k8s — will create real Kubernetes resources&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:09:44.763546805Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;listening&quot;,&quot;addr&quot;:&quot;:8084&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:09:44.76355259Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;starting builder poll loop&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;interval&quot;:5000000000}
+{&quot;time&quot;:&quot;2026-02-21T20:09:49.764835173Z&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;msg&quot;:&quot;failed to poll builder (will retry)&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;error&quot;:&quot;Get \&quot;http://builder:8082/v1/graphs\&quot;: dial tcp 10.96.145.13:8082: connect: connection refused&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:09:54.764572841Z&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;msg&quot;:&quot;failed to poll builder (will retry)&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;error&quot;:&quot;Get \&quot;http://builder:8082/v1/graphs\&quot;: dial tcp 10.96.145.13:8082: connect: connection refused&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:09:59.76516674Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:04.76962106Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:07.757706556Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;gateway config request&quot;,&quot;component&quot;:&quot;handler&quot;,&quot;routes&quot;:0}
+{&quot;time&quot;:&quot;2026-02-21T20:10:09.764806081Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:14.765341119Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:19.76777082Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:22.659601116Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;gateway config request&quot;,&quot;component&quot;:&quot;handler&quot;,&quot;routes&quot;:0}
+{&quot;time&quot;:&quot;2026-02-21T20:10:24.766311994Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:29.765087201Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:34.7691776Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:37.658941969Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;gateway config request&quot;,&quot;component&quot;:&quot;handler&quot;,&quot;routes&quot;:0}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.748679191Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconcile request received&quot;,&quot;component&quot;:&quot;handler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;build_id&quot;:&quot;bld-1771704638742-1&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.748708886Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;starting reconciliation&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;build_id&quot;:&quot;bld-1771704638742-1&quot;,&quot;components&quot;:2}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.74873765Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation action&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;action&quot;:&quot;Create&quot;,&quot;resource_kind&quot;:&quot;Deployment&quot;,&quot;resource_name&quot;:&quot;deploy-petstore-api&quot;,&quot;details&quot;:&quot;image=artifact:petstore-api-hash replicas=1&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.748758238Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation action&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;action&quot;:&quot;Create&quot;,&quot;resource_kind&quot;:&quot;Service&quot;,&quot;resource_name&quot;:&quot;svc-petstore-api&quot;,&quot;details&quot;:&quot;selector=petstore-api&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.74876451Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation action&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;action&quot;:&quot;Create&quot;,&quot;resource_kind&quot;:&quot;ConfigMap&quot;,&quot;resource_name&quot;:&quot;cm-petstore-api&quot;,&quot;details&quot;:&quot;env_vars=0&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.74876985Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation action&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;action&quot;:&quot;Create&quot;,&quot;resource_kind&quot;:&quot;Deployment&quot;,&quot;resource_name&quot;:&quot;deploy-petstore-orchestrator&quot;,&quot;details&quot;:&quot;image=artifact:petstore-orchestrator-hash replicas=1&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.74877527Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation action&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;action&quot;:&quot;Create&quot;,&quot;resource_kind&quot;:&quot;Service&quot;,&quot;resource_name&quot;:&quot;svc-petstore-orchestrator&quot;,&quot;details&quot;:&quot;selector=petstore-orchestrator&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.748780239Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation action&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;action&quot;:&quot;Create&quot;,&quot;resource_kind&quot;:&quot;ConfigMap&quot;,&quot;resource_name&quot;:&quot;cm-petstore-orchestrator&quot;,&quot;details&quot;:&quot;env_vars=1&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.748785469Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation action&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;action&quot;:&quot;Create&quot;,&quot;resource_kind&quot;:&quot;Ingress&quot;,&quot;resource_name&quot;:&quot;localhost-ingress&quot;,&quot;details&quot;:&quot;host=localhost routes=1 tls=false&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.74879171Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;applying action&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;kind&quot;:&quot;Deployment&quot;,&quot;name&quot;:&quot;deploy-petstore-api&quot;,&quot;details&quot;:&quot;image=artifact:petstore-api-hash replicas=1&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.759313498Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;applying action&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;kind&quot;:&quot;Service&quot;,&quot;name&quot;:&quot;svc-petstore-api&quot;,&quot;details&quot;:&quot;selector=petstore-api&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.769159901Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;applying action&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;kind&quot;:&quot;ConfigMap&quot;,&quot;name&quot;:&quot;cm-petstore-api&quot;,&quot;details&quot;:&quot;env_vars=0&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.779527687Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;applying action&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;kind&quot;:&quot;Deployment&quot;,&quot;name&quot;:&quot;deploy-petstore-orchestrator&quot;,&quot;details&quot;:&quot;image=artifact:petstore-orchestrator-hash replicas=1&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.78763704Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;applying action&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;kind&quot;:&quot;Service&quot;,&quot;name&quot;:&quot;svc-petstore-orchestrator&quot;,&quot;details&quot;:&quot;selector=petstore-orchestrator&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.815770523Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;applying action&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;kind&quot;:&quot;ConfigMap&quot;,&quot;name&quot;:&quot;cm-petstore-orchestrator&quot;,&quot;details&quot;:&quot;env_vars=1&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.825425259Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;applying action&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;kind&quot;:&quot;Ingress&quot;,&quot;name&quot;:&quot;localhost-ingress&quot;,&quot;details&quot;:&quot;host=localhost routes=1 tls=false&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.826472651Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;ingress action handled via gateway-config endpoint&quot;,&quot;component&quot;:&quot;k8s-applier&quot;,&quot;type&quot;:&quot;Create&quot;,&quot;name&quot;:&quot;localhost-ingress&quot;}
+{&quot;time&quot;:&quot;2026-02-21T20:10:38.8265794Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;reconciliation complete&quot;,&quot;component&quot;:&quot;reconciler&quot;,&quot;environment_id&quot;:&quot;e8b7a268e9827524482ec45ad7d0665b&quot;,&quot;phase&quot;:&quot;Running&quot;,&quot;actions&quot;:7}
+{&quot;time&quot;:&quot;2026-02-21T20:10:39.765478251Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:44.765198629Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:49.765163828Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:52.657319455Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;gateway config request&quot;,&quot;component&quot;:&quot;handler&quot;,&quot;routes&quot;:1}
+{&quot;time&quot;:&quot;2026-02-21T20:10:54.765456291Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:10:59.765678084Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:11:04.769208755Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:11:07.667272465Z&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;msg&quot;:&quot;gateway config request&quot;,&quot;component&quot;:&quot;handler&quot;,&quot;routes&quot;:1}
+{&quot;time&quot;:&quot;2026-02-21T20:11:09.764906348Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}
+{&quot;time&quot;:&quot;2026-02-21T20:11:14.765333245Z&quot;,&quot;level&quot;:&quot;WARN&quot;,&quot;msg&quot;:&quot;builder returned non-200 status&quot;,&quot;component&quot;:&quot;poller&quot;,&quot;builder_url&quot;:&quot;http://builder:8082&quot;,&quot;status&quot;:404}</code></pre>
+</details>
+<details><summary>gateway logs (11 lines)</summary>
+<pre><code>[2m2026-02-21T20:09:44.558156Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m starting gateway [3mport[0m[2m=[0m8080 [3mconfig_url[0m[2m=[0mSome(&quot;http://turbo-engine-operator:8084/v1/gateway-config&quot;)
+[2m2026-02-21T20:09:44.859761Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m config not available yet, retrying [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config) [3mattempt[0m[2m=[0m1 [3mmax_attempts[0m[2m=[0m4
+[2m2026-02-21T20:09:46.060996Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m config not available yet, retrying [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config) [3mattempt[0m[2m=[0m2 [3mmax_attempts[0m[2m=[0m4
+[2m2026-02-21T20:09:48.259401Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m config not available yet, retrying [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config) [3mattempt[0m[2m=[0m3 [3mmax_attempts[0m[2m=[0m4
+[2m2026-02-21T20:09:52.458717Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m failed to load config after retries — starting with empty routing table [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config)
+[2m2026-02-21T20:09:52.663081Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m gateway listening [3maddr[0m[2m=[0m0.0.0.0:8080
+[2m2026-02-21T20:10:07.758926Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m0
+[2m2026-02-21T20:10:22.660345Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m0
+[2m2026-02-21T20:10:37.659710Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m0
+[2m2026-02-21T20:10:52.658158Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m1
+[2m2026-02-21T20:11:07.668103Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m1</code></pre>
+</details>
+<hr>
+<p><em>End of report. Per-scenario details are in the linked scenario reports above.</em></p>
+</div>
+</body>
+</html>

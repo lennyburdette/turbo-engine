@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scenario: petstore-basic</title>
+  <style>:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 4px 12px; color: var(--fg-muted); }
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="breadcrumb"><a href="../../">Report</a></nav>
+<h1><span class="pass">ALL 14 TESTS PASSED</span> &mdash; petstore-basic</h1>
+<blockquote>Petstore API with RPC-to-REST orchestrator. Validates the full request chain: gateway → orchestrator → upstream API, including trace propagation.</blockquote>
+<h2>Test Results</h2>
+<table>
+<thead><tr><th>Test</th><th>Result</th><th>Detail</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>publish-petstore-api</td><td><span class="pass">PASS</span></td><td>Published petstore-api@1.0.0 (HTTP 201)</td><td>28ms</td></tr>
+<tr><td>publish-petstore-orchestrator</td><td><span class="pass">PASS</span></td><td>Published petstore-orchestrator@1.0.0 (HTTP 201)</td><td>2ms</td></tr>
+<tr><td>create-environment</td><td><span class="pass">PASS</span></td><td>Created e8b7a268e9827524482ec45ad7d0665b</td><td>4ms</td></tr>
+<tr><td>trigger-build</td><td><span class="pass">PASS</span></td><td>Build bld-1771704638742-1 triggered</td><td>3ms</td></tr>
+<tr><td>build-status</td><td><span class="pass">PASS</span></td><td>Build bld-1771704638742-1 succeeded</td><td>3ms</td></tr>
+<tr><td>operator-reconcile</td><td><span class="pass">PASS</span></td><td>Reconciled 2 components</td><td>83ms</td></tr>
+<tr><td>verify-k8s-resources</td><td><span class="pass">PASS</span></td><td>All 6 resources created</td><td>290ms</td></tr>
+<tr><td>pods-running</td><td><span class="pass">PASS</span></td><td>All pods running</td><td>295ms</td></tr>
+<tr><td>gateway-routing</td><td><span class="pass">PASS</span></td><td>Gateway route /api/pets/rpc/listPets active (HTTP 200)</td><td>10014ms</td></tr>
+<tr><td>list-pets-direct</td><td><span class="pass">PASS</span></td><td>HTTP 200; pets has 3 items (&gt;= 1)</td><td>2005ms</td></tr>
+<tr><td>orchestrator-direct</td><td><span class="pass">PASS</span></td><td>HTTP 200; rpc=listPets; upstream_status=200</td><td>2006ms</td></tr>
+<tr><td>e2e-list-pets</td><td><span class="pass">PASS</span></td><td>HTTP 200; rpc=listPets; upstream_status=200; result.pets has 3 items (&gt;= 1)</td><td>3ms</td></tr>
+<tr><td>e2e-get-pet</td><td><span class="pass">PASS</span></td><td>HTTP 200; result.pet.name=Whiskers</td><td>4ms</td></tr>
+<tr><td>trace-propagation</td><td><span class="pass">PASS</span></td><td>HTTP 200; trace_id=a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</td><td>6ms</td></tr>
+</tbody></table>
+<h2>Screenshots</h2>
+<h3>Console packages list after publishing petstore components</h3>
+<img src="../../screenshots/petstore-basic/packages.png" alt="packages">
+<h3>Environments list showing the petstore-e2e environment</h3>
+<img src="../../screenshots/petstore-basic/environments.png" alt="environments">
+<h3>Console dashboard overview</h3>
+<img src="../../screenshots/petstore-basic/dashboard.png" alt="dashboard">
+<h3>Explorer mobile UI showing deployed services and traces</h3>
+<img src="../../screenshots/petstore-basic/explorer.png" alt="explorer">
+<h2>Component Logs</h2>
+<details><summary>petstore-api (13 lines)</summary>
+<pre><code>{&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;petstore mock starting&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:39.322254947Z&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:54.426173238Z&quot;,&quot;trace_id&quot;:&quot;bb6b9ad4107a1958eca811015796cceb&quot;,&quot;traceparent&quot;:&quot;00-bb6b9ad4107a1958eca811015796cceb-c5cfb446953f7cf6-01&quot;,&quot;x_request_id&quot;:&quot;&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:54.426318749Z&quot;,&quot;trace_id&quot;:&quot;bb6b9ad4107a1958eca811015796cceb&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:56.431843082Z&quot;,&quot;trace_id&quot;:&quot;&quot;,&quot;traceparent&quot;:&quot;&quot;,&quot;x_request_id&quot;:&quot;&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:56.431893425Z&quot;,&quot;trace_id&quot;:&quot;&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.437163245Z&quot;,&quot;trace_id&quot;:&quot;e2386712ff26ba08b0485f7eb2f53bac&quot;,&quot;traceparent&quot;:&quot;00-e2386712ff26ba08b0485f7eb2f53bac-fa3e8f1ece776476-01&quot;,&quot;x_request_id&quot;:&quot;&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.437211014Z&quot;,&quot;trace_id&quot;:&quot;e2386712ff26ba08b0485f7eb2f53bac&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.44101131Z&quot;,&quot;trace_id&quot;:&quot;499085f1d6a472d51fe53b7e0a71da44&quot;,&quot;traceparent&quot;:&quot;00-499085f1d6a472d51fe53b7e0a71da44-21693b33355d6566-01&quot;,&quot;x_request_id&quot;:&quot;&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.441083144Z&quot;,&quot;trace_id&quot;:&quot;499085f1d6a472d51fe53b7e0a71da44&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/pets/2&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.445099455Z&quot;,&quot;trace_id&quot;:&quot;e9304ee68bf7bd9572b216111506b07b&quot;,&quot;traceparent&quot;:&quot;00-e9304ee68bf7bd9572b216111506b07b-ad87e5e76803f69a-01&quot;,&quot;x_request_id&quot;:&quot;&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/pets/2&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.445126836Z&quot;,&quot;trace_id&quot;:&quot;e9304ee68bf7bd9572b216111506b07b&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.45095791Z&quot;,&quot;trace_id&quot;:&quot;a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5&quot;,&quot;traceparent&quot;:&quot;00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-109c7ca16aa5617c-01&quot;,&quot;x_request_id&quot;:&quot;&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/pets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.451088974Z&quot;,&quot;trace_id&quot;:&quot;a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5&quot;}</code></pre>
+</details>
+<details><summary>petstore-orchestrator (21 lines)</summary>
+<pre><code>{&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;orchestrator starting&quot;,&quot;port&quot;:&quot;8080&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:39.351875939Z&quot;,&quot;upstream_url&quot;:&quot;http://svc-petstore-api:8080&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:54.424781836Z&quot;,&quot;trace_id&quot;:&quot;bb6b9ad4107a1958eca811015796cceb&quot;,&quot;traceparent&quot;:&quot;00-bb6b9ad4107a1958eca811015796cceb-e9b234733543c38c-01&quot;,&quot;x_request_id&quot;:&quot;a387d4be-02d1-486d-a815-8374f3f0c765&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;upstream call start&quot;,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:54.424871393Z&quot;,&quot;trace_id&quot;:&quot;bb6b9ad4107a1958eca811015796cceb&quot;,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:1,&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;upstream call complete&quot;,&quot;response_bytes&quot;:240,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:54.426587999Z&quot;,&quot;trace_id&quot;:&quot;bb6b9ad4107a1958eca811015796cceb&quot;,&quot;upstream_status&quot;:200,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:1,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:54.426694327Z&quot;,&quot;trace_id&quot;:&quot;bb6b9ad4107a1958eca811015796cceb&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.436813058Z&quot;,&quot;trace_id&quot;:&quot;&quot;,&quot;traceparent&quot;:&quot;&quot;,&quot;x_request_id&quot;:&quot;&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;upstream call start&quot;,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.43686806Z&quot;,&quot;trace_id&quot;:&quot;&quot;,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;upstream call complete&quot;,&quot;response_bytes&quot;:240,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.437411553Z&quot;,&quot;trace_id&quot;:&quot;&quot;,&quot;upstream_status&quot;:200,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.437491912Z&quot;,&quot;trace_id&quot;:&quot;&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.440762851Z&quot;,&quot;trace_id&quot;:&quot;499085f1d6a472d51fe53b7e0a71da44&quot;,&quot;traceparent&quot;:&quot;00-499085f1d6a472d51fe53b7e0a71da44-36144117d9ea411a-01&quot;,&quot;x_request_id&quot;:&quot;a8f2a347-d5db-497e-8866-05a646e79cb2&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;upstream call start&quot;,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.440784461Z&quot;,&quot;trace_id&quot;:&quot;499085f1d6a472d51fe53b7e0a71da44&quot;,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;upstream call complete&quot;,&quot;response_bytes&quot;:240,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.441238342Z&quot;,&quot;trace_id&quot;:&quot;499085f1d6a472d51fe53b7e0a71da44&quot;,&quot;upstream_status&quot;:200,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.441290599Z&quot;,&quot;trace_id&quot;:&quot;499085f1d6a472d51fe53b7e0a71da44&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/rpc/getPet&quot;,&quot;query&quot;:&quot;id=2&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.444838459Z&quot;,&quot;trace_id&quot;:&quot;e9304ee68bf7bd9572b216111506b07b&quot;,&quot;traceparent&quot;:&quot;00-e9304ee68bf7bd9572b216111506b07b-e5b9b56b0e313fb7-01&quot;,&quot;x_request_id&quot;:&quot;1c5da29d-f27e-49ce-acde-7b33c31cc4ac&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;upstream call start&quot;,&quot;rpc&quot;:&quot;getPet&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.444879505Z&quot;,&quot;trace_id&quot;:&quot;e9304ee68bf7bd9572b216111506b07b&quot;,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets/2&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;upstream call complete&quot;,&quot;response_bytes&quot;:118,&quot;rpc&quot;:&quot;getPet&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.445301031Z&quot;,&quot;trace_id&quot;:&quot;e9304ee68bf7bd9572b216111506b07b&quot;,&quot;upstream_status&quot;:200,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets/2&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/rpc/getPet&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.445361443Z&quot;,&quot;trace_id&quot;:&quot;e9304ee68bf7bd9572b216111506b07b&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;request received&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;query&quot;:&quot;&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.450505823Z&quot;,&quot;trace_id&quot;:&quot;a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5&quot;,&quot;traceparent&quot;:&quot;00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-c50ac3de619a09c5-01&quot;,&quot;x_request_id&quot;:&quot;0314b504-30e7-47a7-8119-e09b9a3353ac&quot;}
+{&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;GET&quot;,&quot;msg&quot;:&quot;upstream call start&quot;,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.450544906Z&quot;,&quot;trace_id&quot;:&quot;a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5&quot;,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;msg&quot;:&quot;upstream call complete&quot;,&quot;response_bytes&quot;:240,&quot;rpc&quot;:&quot;listPets&quot;,&quot;time&quot;:&quot;2026-02-21T20:10:58.451304379Z&quot;,&quot;trace_id&quot;:&quot;a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5&quot;,&quot;upstream_status&quot;:200,&quot;url&quot;:&quot;http://svc-petstore-api:8080/pets&quot;}
+{&quot;duration_ms&quot;:0,&quot;level&quot;:&quot;info&quot;,&quot;method&quot;:&quot;POST&quot;,&quot;msg&quot;:&quot;response sent&quot;,&quot;path&quot;:&quot;/rpc/listPets&quot;,&quot;status&quot;:200,&quot;time&quot;:&quot;2026-02-21T20:10:58.451373227Z&quot;,&quot;trace_id&quot;:&quot;a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5&quot;}</code></pre>
+</details>
+</div>
+</body>
+</html>
