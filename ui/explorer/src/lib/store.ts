@@ -2,38 +2,53 @@ import { useState, useCallback, useMemo, createContext, useContext } from "react
 import type { JaegerTrace } from "./api";
 
 // ---------------------------------------------------------------------------
-// Selection state — what the user is looking at
+// Sheet — a full-screen panel that slides up from the bottom
 // ---------------------------------------------------------------------------
 
-export type SelectionKind = "none" | "service" | "trace";
+export type SheetKind = "service" | "trace" | "traces" | "request";
 
-export interface SelectionNone {
-  kind: "none";
-}
-export interface SelectionService {
+export interface SheetService {
   kind: "service";
   serviceName: string;
 }
-export interface SelectionTrace {
+export interface SheetTrace {
   kind: "trace";
   trace: JaegerTrace;
 }
+export interface SheetTraceList {
+  kind: "traces";
+}
+export interface SheetRequest {
+  kind: "request";
+}
 
-export type Selection = SelectionNone | SelectionService | SelectionTrace;
+export type Sheet = SheetService | SheetTrace | SheetTraceList | SheetRequest;
+
+// ---------------------------------------------------------------------------
+// Explorer state
+// ---------------------------------------------------------------------------
 
 export interface ExplorerState {
-  selection: Selection;
-  selectService: (name: string) => void;
-  selectTrace: (trace: JaegerTrace) => void;
-  clearSelection: () => void;
+  // Sheet stack — last item is the visible sheet
+  sheets: Sheet[];
+  pushSheet: (sheet: Sheet) => void;
+  popSheet: () => void;
+  closeAllSheets: () => void;
+  currentSheet: Sheet | null;
+
+  // Convenience helpers that push specific sheets
+  openService: (name: string) => void;
+  openTrace: (trace: JaegerTrace) => void;
+  openTraceList: () => void;
+  openRequest: () => void;
 
   // Which service to query traces for
   traceService: string;
   setTraceService: (svc: string) => void;
 
-  // Bottom panel visibility (mobile)
-  bottomPanel: "traces" | "inspector" | "request";
-  setBottomPanel: (p: "traces" | "inspector" | "request") => void;
+  // Selected trace (for topology highlighting even when sheet is closed)
+  activeTrace: JaegerTrace | null;
+  setActiveTrace: (t: JaegerTrace | null) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,46 +65,77 @@ export function useExplorer(): ExplorerState {
 }
 
 export function useExplorerState(): ExplorerState {
-  const [selection, setSelection] = useState<Selection>({ kind: "none" });
+  const [sheets, setSheets] = useState<Sheet[]>([]);
   const [traceService, setTraceService] = useState("gateway");
-  const [bottomPanel, setBottomPanel] = useState<
-    "traces" | "inspector" | "request"
-  >("traces");
+  const [activeTrace, setActiveTrace] = useState<JaegerTrace | null>(null);
 
-  const selectService = useCallback((name: string) => {
-    setSelection({ kind: "service", serviceName: name });
-    setBottomPanel("inspector");
+  const pushSheet = useCallback((sheet: Sheet) => {
+    setSheets((prev) => [...prev, sheet]);
   }, []);
 
-  const selectTrace = useCallback((trace: JaegerTrace) => {
-    setSelection({ kind: "trace", trace });
-    setBottomPanel("inspector");
+  const popSheet = useCallback(() => {
+    setSheets((prev) => prev.slice(0, -1));
   }, []);
 
-  const clearSelection = useCallback(() => {
-    setSelection({ kind: "none" });
+  const closeAllSheets = useCallback(() => {
+    setSheets([]);
   }, []);
+
+  const currentSheet = sheets.length > 0 ? sheets[sheets.length - 1] : null;
+
+  const openService = useCallback(
+    (name: string) => pushSheet({ kind: "service", serviceName: name }),
+    [pushSheet],
+  );
+
+  const openTrace = useCallback(
+    (trace: JaegerTrace) => {
+      setActiveTrace(trace);
+      pushSheet({ kind: "trace", trace });
+    },
+    [pushSheet],
+  );
+
+  const openTraceList = useCallback(
+    () => pushSheet({ kind: "traces" }),
+    [pushSheet],
+  );
+
+  const openRequest = useCallback(
+    () => pushSheet({ kind: "request" }),
+    [pushSheet],
+  );
 
   return useMemo(
     () => ({
-      selection,
-      selectService,
-      selectTrace,
-      clearSelection,
+      sheets,
+      pushSheet,
+      popSheet,
+      closeAllSheets,
+      currentSheet,
+      openService,
+      openTrace,
+      openTraceList,
+      openRequest,
       traceService,
       setTraceService,
-      bottomPanel,
-      setBottomPanel,
+      activeTrace,
+      setActiveTrace,
     }),
     [
-      selection,
-      selectService,
-      selectTrace,
-      clearSelection,
+      sheets,
+      pushSheet,
+      popSheet,
+      closeAllSheets,
+      currentSheet,
+      openService,
+      openTrace,
+      openTraceList,
+      openRequest,
       traceService,
       setTraceService,
-      bottomPanel,
-      setBottomPanel,
+      activeTrace,
+      setActiveTrace,
     ],
   );
 }

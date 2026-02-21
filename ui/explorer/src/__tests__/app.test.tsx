@@ -56,51 +56,27 @@ describe("App", () => {
     expect(screen.getByText("Turbo Engine Explorer")).toBeTruthy();
   });
 
-  it("renders the Topology panel header", async () => {
+  it("renders the Recent Traces card", async () => {
     renderApp();
-    // The topology panel header shows "Topology" as text
     await waitFor(() => {
-      expect(screen.getByText("Topology")).toBeTruthy();
+      expect(screen.getByText("Recent Traces")).toBeTruthy();
     });
   });
 
-  it("renders bottom panel tab buttons", () => {
+  it("renders the Send Request card", () => {
     renderApp();
-    // The bottom panel bar has buttons with text
-    const buttons = screen.getAllByRole("button");
-    const tabLabels = buttons.map((b) => b.textContent);
-    expect(tabLabels).toContain("Traces");
-    expect(tabLabels).toContain("Inspector");
-    expect(tabLabels).toContain("Request");
+    expect(screen.getByText("Send Request")).toBeTruthy();
   });
 
-  it("shows Traces panel by default with loading state", async () => {
+  it("renders the View all traces link", () => {
     renderApp();
-    // The trace panel shows a loading indicator initially
+    expect(screen.getByText("View all")).toBeTruthy();
+  });
+
+  it("shows loading state for traces", async () => {
+    renderApp();
     await waitFor(() => {
       expect(screen.getByText("Loading traces...")).toBeTruthy();
-    });
-  });
-
-  it("switches to Inspector panel when clicked", async () => {
-    renderApp();
-    const inspectorButton = screen
-      .getAllByRole("button")
-      .find((b) => b.textContent === "Inspector");
-    if (inspectorButton) fireEvent.click(inspectorButton);
-    await waitFor(() => {
-      expect(screen.getByText(/Select a service/)).toBeTruthy();
-    });
-  });
-
-  it("switches to Request panel when clicked", async () => {
-    renderApp();
-    const requestButton = screen
-      .getAllByRole("button")
-      .find((b) => b.textContent === "Request");
-    if (requestButton) fireEvent.click(requestButton);
-    await waitFor(() => {
-      expect(screen.getByText("Send")).toBeTruthy();
     });
   });
 
@@ -115,5 +91,14 @@ describe("App", () => {
         expect(screen.getByText("Done")).toBeTruthy();
       });
     }
+  });
+
+  it("shows empty state when no traces are found", async () => {
+    renderApp();
+    await waitFor(() => {
+      expect(
+        screen.getByText("No traces yet. Send a request to see traces here."),
+      ).toBeTruthy();
+    });
   });
 });

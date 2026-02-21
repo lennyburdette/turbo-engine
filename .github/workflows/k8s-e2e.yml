@@ -41,8 +41,8 @@ jobs:
       - name: Build gateway image (Rust)
         run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load gateway
 
-      - name: Build console + E2E fixture images
-        run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load console e2e-fixtures
+      - name: Build console, explorer + E2E fixture images
+        run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load console explorer e2e-fixtures
 
       # ---------------------------------------------------------------
       # Verify images
@@ -52,7 +52,7 @@ jobs:
           IMAGES=$(docker images 'turbo-engine/*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}")
           echo "$IMAGES"
           echo "::warning title=Docker Images::${IMAGES//$'\n'/%0A}"
-          for svc in registry builder operator envmanager gateway console petstore-mock orchestrator; do
+          for svc in registry builder operator envmanager gateway console explorer petstore-mock orchestrator; do
             docker image inspect "turbo-engine/${svc}:e2e" > /dev/null 2>&1 || {
               echo "::error::Missing image turbo-engine/${svc}:e2e"
               exit 1
@@ -72,7 +72,7 @@ jobs:
       # ---------------------------------------------------------------
       - name: Load images into kind
         run: |
-          for svc in registry builder envmanager operator gateway console petstore-mock orchestrator; do
+          for svc in registry builder envmanager operator gateway console explorer petstore-mock orchestrator; do
             echo "Loading turbo-engine/${svc}:e2e..."
             kind load docker-image "turbo-engine/${svc}:e2e" --name turbo-engine-e2e
           done
@@ -152,12 +152,15 @@ jobs:
           npm install --no-save playwright 2>&1 | tail -5 || true
           npx playwright install --with-deps chromium 2>&1 | tail -5 || true
 
-          # Port-forward console for screenshots
+          # Port-forward console and explorer for screenshots
           kubectl -n turbo-engine-e2e port-forward svc/console 13000:3000 &>/dev/null &
-          PF_PID=$!
+          PF_CONSOLE=$!
+          kubectl -n turbo-engine-e2e port-forward svc/explorer 13001:3001 &>/dev/null &
+          PF_EXPLORER=$!
           sleep 3
-          CONSOLE_URL=http://localhost:13000 ./hack/scripts/capture-screenshots.sh || true
-          kill $PF_PID 2>/dev/null || true
+          CONSOLE_URL=http://localhost:13000 EXPLORER_URL=http://localhost:13001 ./hack/scripts/capture-screenshots.sh || true
+          kill $PF_CONSOLE 2>/dev/null || true
+          kill $PF_EXPLORER 2>/dev/null || true
 
       # ---------------------------------------------------------------
       # Upload artifacts

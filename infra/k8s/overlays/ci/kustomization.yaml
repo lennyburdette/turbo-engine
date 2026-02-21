@@ -25,6 +25,8 @@ images:
     newTag: e2e
   - name: turbo-engine/console
     newTag: e2e
+  - name: turbo-engine/explorer
+    newTag: e2e
 
 patches:
   # --- Operator: K8s mode, fast polling, debug logging ---
@@ -118,6 +120,23 @@ patches:
   - target:
       kind: Deployment
       name: console
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Never
+
+  - target:
+      kind: Deployment
+      name: explorer
     patch: |
       - op: replace
         path: /spec/template/spec/containers/0/resources
