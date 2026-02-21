@@ -1,0 +1,3 @@
+{"time":"2026-02-21T22:23:33.703564171Z","level":"INFO","msg":"starting server","addr":":8083"}
+{"time":"2026-02-21T22:23:48.705063254Z","level":"INFO","msg":"traces export: context deadline exceeded: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.96.38.16:4317: connect: connection refused\""}
+{"time":"2026-02-21T22:24:28.914620331Z","level":"INFO","msg":"environment created","id":"4e803023934523a366aad7716690351a","name":"petstore-e2e"}

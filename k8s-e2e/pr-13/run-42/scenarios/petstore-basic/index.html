@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scenario: petstore-basic</title>
+  <style>:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 4px 12px; color: var(--fg-muted); }
+.log-line { border-bottom: 1px solid var(--border); padding: 3px 0; font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+.log-line:last-child { border-bottom: none; }
+.log-time { color: var(--fg-muted); font-size: 11px; flex-shrink: 0; }
+.log-level { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; flex-shrink: 0; }
+.log-level-info { color: var(--pass); }
+.log-level-warn { color: #b08800; }
+.log-level-error { color: var(--fail); }
+.log-level-debug { color: var(--fg-muted); }
+.log-msg { font-weight: 500; }
+.log-meta { color: var(--fg-muted); font-size: 12px; }
+.log-meta-key { color: var(--fg-muted); }
+.log-meta-val { color: var(--fg); }
+.log-raw { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.log-container { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; overflow-x: auto; max-width: 100%; }
+
+/* Timeline layout */
+.tl { display: grid; grid-template-columns: 52px 1fr; font-size: 13px; }
+.tl-epoch {
+  color: var(--fg-muted); font-size: 11px; font-family: SFMono-Regular, Consolas, monospace;
+  text-align: right; padding: 2px 8px 2px 0; border-right: 2px solid var(--border);
+  white-space: nowrap; user-select: none;
+}
+.tl-epoch-dot { position: relative; }
+.tl-epoch-dot::after {
+  content: ''; position: absolute; right: -5px; top: 8px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border);
+}
+.tl-event { padding: 2px 0 2px 12px; min-height: 22px; }
+
+/* Landmark headers */
+.tl-landmark {
+  padding: 8px 0 4px 12px; font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+.tl-landmark-toggle { font-size: 10px; color: var(--fg-muted); }
+.tl-landmark-name { text-transform: uppercase; letter-spacing: 0.5px; }
+.tl-landmark-dur { color: var(--fg-muted); font-weight: 400; font-size: 12px; }
+.tl-landmark-badge { font-size: 11px; margin-left: auto; padding: 1px 6px; border-radius: 3px; }
+.tl-lm-pass .tl-epoch-dot::after { background: var(--pass); }
+.tl-lm-fail .tl-epoch-dot::after { background: var(--fail); }
+
+/* Event type icons */
+.tl-icon { display: inline-block; width: 18px; text-align: center; flex-shrink: 0; }
+.tl-test { display: flex; align-items: baseline; gap: 4px; }
+.tl-test-detail { color: var(--fg-muted); }
+.tl-test-dur { color: var(--fg-muted); font-size: 11px; }
+.tl-http { color: var(--fg-muted); font-family: SFMono-Regular, Consolas, monospace; font-size: 12px; }
+.tl-http-status { font-weight: 600; }
+.tl-http-ok { color: var(--pass); }
+.tl-http-err { color: var(--fail); }
+.tl-info-msg { color: var(--fg-muted); }
+.tl-warn-msg { color: #b08800; }
+.tl-k8s { color: var(--fg-muted); font-size: 12px; }
+.tl-k8s-obj { font-weight: 500; color: var(--fg); }
+.tl-screenshot { display: flex; align-items: center; gap: 8px; }
+.tl-screenshot img {
+  max-width: 120px; height: auto; border: 1px solid var(--border);
+  border-radius: 4px; cursor: pointer; transition: max-width 0.2s;
+}
+.tl-screenshot img:hover { max-width: 300px; }
+.tl-screenshot-label { font-weight: 500; }
+.tl-log-entry { font-size: 12px; font-family: SFMono-Regular, Consolas, monospace; }
+.tl-gap { height: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="breadcrumb"><a href="../../">Report</a></nav>
+<h1><span class="pass">ALL 14 TESTS PASSED</span> &mdash; petstore-basic</h1>
+<blockquote>Petstore API with RPC-to-REST orchestrator. Validates the full request chain: gateway → orchestrator → upstream API, including trace propagation.</blockquote>
+<p style="color:var(--fg-muted);font-size:13px">Total: 38.5s &middot; 14 tests &middot; 4 screenshots &middot; 0 K8s events</p>
+<div class="tl">
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">publish</span><span class="tl-landmark-dur">(31ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /v1/packages <span class="tl-http-status tl-http-ok">201</span> (28ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>publish-petstore-api</span><span class="tl-test-detail">Published petstore-api@1.0.0 (HTTP 201)</span> <span class="tl-test-dur">(28ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /v1/packages <span class="tl-http-status tl-http-ok">201</span> (3ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>publish-petstore-orchestrator</span><span class="tl-test-detail">Published petstore-orchestrator@1.0.0 (HTTP 201)</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">environment</span><span class="tl-landmark-dur">(4ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /v1/environments <span class="tl-http-status tl-http-ok">201</span> (4ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>create-environment</span><span class="tl-test-detail">Created 4e803023934523a366aad7716690351a</span> <span class="tl-test-dur">(4ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">build</span><span class="tl-landmark-dur">(6ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /v1/builds <span class="tl-http-status tl-http-ok">201</span> (3ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>trigger-build</span><span class="tl-test-detail">Build bld-1771712668917-1 triggered</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Build poll #1: succeeded</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>build-status</span><span class="tl-test-detail">Build bld-1771712668917-1 succeeded</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">reconcile</span><span class="tl-landmark-dur">(5.1s)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /v1/reconcile <span class="tl-http-status tl-http-ok">200</span> (59ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Waiting 5s for operator to settle...</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-api</strong>: petstore mock starting</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: orchestrator starting</div>
+<div class="tl-epoch">+5.1s</div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>operator-reconcile</span><span class="tl-test-detail">Reconciled 2 components</span> <span class="tl-test-dur">(59ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+5.1s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">k8s-resources</span><span class="tl-landmark-dur">(266ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: deployment/deploy-petstore-api</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: service/svc-petstore-api</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: configmap/cm-petstore-api</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: deployment/deploy-petstore-orchestrator</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: service/svc-petstore-orchestrator</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: configmap/cm-petstore-orchestrator</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>verify-k8s-resources</span><span class="tl-test-detail">All 6 resources created</span> <span class="tl-test-dur">(266ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+5.4s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">pods</span><span class="tl-landmark-dur">(293ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Waiting for deploy-petstore-api...</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>deploy-petstore-api available</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Waiting for deploy-petstore-orchestrator...</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>deploy-petstore-orchestrator available</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>pods-running</span><span class="tl-test-detail">All pods running</span> <span class="tl-test-dur">(293ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+5.7s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">gateway</span><span class="tl-landmark-dur">(10.0s)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-err">404</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Route not ready (attempt 1, HTTP 404), retrying...</div>
+<div class="tl-epoch">+10.7s</div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-err">404</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Route not ready (attempt 2, HTTP 404), retrying...</div>
+<div class="tl-epoch">+15.7s</div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-ok">200</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>gateway-routing</span><span class="tl-test-detail">Gateway route /api/pets/rpc/listPets active (HTTP 200)</span> <span class="tl-test-dur">(10015ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+15.7s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">requests</span><span class="tl-landmark-dur">(4.0s)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch">+17.7s</div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>GET /pets <span class="tl-http-status tl-http-ok">200</span> (2005ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>list-pets-direct</span><span class="tl-test-detail">HTTP 200; pets has 3 items (&gt;= 1)</span> <span class="tl-test-dur">(2005ms)</span></div>
+<div class="tl-epoch">+19.7s</div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /rpc/listPets <span class="tl-http-status tl-http-ok">200</span> (2005ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>orchestrator-direct</span><span class="tl-test-detail">HTTP 200; rpc=listPets; upstream_status=200</span> <span class="tl-test-dur">(2005ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-ok">200</span> (4ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>e2e-list-pets</span><span class="tl-test-detail">HTTP 200; rpc=listPets; upstream_status=200; result.pets has 3 items (&gt;= 1)</span> <span class="tl-test-dur">(4ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/getPet?id=2 <span class="tl-http-status tl-http-ok">200</span> (4ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>e2e-get-pet</span><span class="tl-test-detail">HTTP 200; result.pet.name=Whiskers</span> <span class="tl-test-dur">(4ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-ok">200</span> (3ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>trace-propagation</span><span class="tl-test-detail">HTTP 200; trace_id=a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot">+19.7s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">screenshots</span><span class="tl-landmark-dur">(18.6s)</span></div>
+<div class="tl-epoch">+25.7s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Console packages list after publishing petstore components</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/packages.png" alt="packages" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch">+29.8s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Environments list showing the petstore-e2e environment</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/environments.png" alt="environments" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch">+34.0s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Console dashboard overview</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/dashboard.png" alt="dashboard" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch">+38.3s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Explorer mobile UI showing deployed services and traces</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/explorer.png" alt="explorer" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot">+38.3s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">logs</span><span class="tl-landmark-dur">(227ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Captured petstore-api logs (13 lines)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Captured petstore-orchestrator logs (21 lines)</div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+</div>
+<h2>Component Logs</h2>
+<details><summary>petstore-api (13 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">22:24:29.481</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">petstore mock starting</span> <span class="log-meta"><span class="log-meta-key">port</span>=<span class="log-meta-val">8080</span></span></div>
+<div class="log-line"><span class="log-time">22:24:44.553</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">c4adc042ecacfba747e211219532c2e7</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-c4adc042ecacfba747e211219532c2e7-6c50e85341aafb79-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:44.553</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">c4adc042ecacfba747e211219532c2e7</span></span></div>
+<div class="log-line"><span class="log-time">22:24:46.559</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val"></span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val"></span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:46.559</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.563</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4adf9a927aeb49db922d73afd10d6ddc</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-4adf9a927aeb49db922d73afd10d6ddc-9a26a06e24bae6ea-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.563</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4adf9a927aeb49db922d73afd10d6ddc</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.567</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4b088442f24712604e094100404779fb</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-4b088442f24712604e094100404779fb-48031eb84e10ddb9-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.567</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4b088442f24712604e094100404779fb</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.571</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets/2</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">9fd5005ba9a47bc7aee5714096bbd510</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-9fd5005ba9a47bc7aee5714096bbd510-cac1a854dc5552a6-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.571</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets/2</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">9fd5005ba9a47bc7aee5714096bbd510</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.575</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-3f8d0e46183eab88-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.575</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</span></span></div>
+</div>
+</details>
+<details><summary>petstore-orchestrator (21 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">22:24:29.521</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">orchestrator starting</span> <span class="log-meta"><span class="log-meta-key">port</span>=<span class="log-meta-val">8080</span> <span class="log-meta-key">upstream_url</span>=<span class="log-meta-val">http://svc-petstore-api:8080</span></span></div>
+<div class="log-line"><span class="log-time">22:24:44.552</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">c4adc042ecacfba747e211219532c2e7</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-c4adc042ecacfba747e211219532c2e7-e231d2c4439a957d-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">be736c0b-4f08-4bc4-be49-f2d013a74989</span></span></div>
+<div class="log-line"><span class="log-time">22:24:44.552</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">c4adc042ecacfba747e211219532c2e7</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:44.553</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">1</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">c4adc042ecacfba747e211219532c2e7</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:44.554</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">2</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">c4adc042ecacfba747e211219532c2e7</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.563</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val"></span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val"></span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.563</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val"></span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.563</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val"></span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.563</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.567</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4b088442f24712604e094100404779fb</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-4b088442f24712604e094100404779fb-1b0825c8c549df32-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">09786256-dc73-40ec-8436-0a5b31eabeec</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.567</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4b088442f24712604e094100404779fb</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.567</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4b088442f24712604e094100404779fb</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.567</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">4b088442f24712604e094100404779fb</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.571</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/getPet</span> <span class="log-meta-key">query</span>=<span class="log-meta-val">id=2</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">9fd5005ba9a47bc7aee5714096bbd510</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-9fd5005ba9a47bc7aee5714096bbd510-252102afbcdc232e-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">256f6753-0603-4ca5-92b7-1a855026f036</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.571</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">getPet</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">9fd5005ba9a47bc7aee5714096bbd510</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets/2</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.571</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">118</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">getPet</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">9fd5005ba9a47bc7aee5714096bbd510</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets/2</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.571</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/getPet</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">9fd5005ba9a47bc7aee5714096bbd510</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.575</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-a3532358866855da-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">59795a61-db44-4d2e-a39d-c264cd14df4b</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.575</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.575</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">22:24:48.575</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5</span></span></div>
+</div>
+</details>
+</div>
+</body>
+</html>
