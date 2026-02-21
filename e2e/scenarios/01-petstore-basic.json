@@ -1,0 +1,121 @@
+{
+  "name": "petstore-basic",
+  "description": "Petstore API with RPC-to-REST orchestrator. Validates the full request chain: gateway → orchestrator → upstream API, including trace propagation.",
+
+  "packages": [
+    {
+      "name": "petstore-api",
+      "kind": "openapi-service",
+      "version": "1.0.0",
+      "schema": "{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Petstore\",\"version\":\"1.0.0\"},\"paths\":{\"/pets\":{\"get\":{\"operationId\":\"listPets\",\"summary\":\"List all pets\"}},\"/pets/{id}\":{\"get\":{\"operationId\":\"getPet\",\"summary\":\"Get pet by ID\"}}}}",
+      "upstream_url": "http://petstore-api:8080",
+      "dependencies": []
+    },
+    {
+      "name": "petstore-orchestrator",
+      "kind": "workflow-engine",
+      "version": "1.0.0",
+      "schema": "{\"workflows\":{\"listPets\":{\"method\":\"POST\",\"path\":\"/rpc/listPets\",\"upstream\":\"petstore-api\",\"upstreamMethod\":\"GET\",\"upstreamPath\":\"/pets\"},\"getPet\":{\"method\":\"POST\",\"path\":\"/rpc/getPet\",\"upstream\":\"petstore-api\",\"upstreamMethod\":\"GET\",\"upstreamPath\":\"/pets/{id}\"}}}",
+      "dependencies": [
+        {"packageName": "petstore-api", "versionConstraint": "1.0.0"}
+      ]
+    }
+  ],
+
+  "environment": {
+    "name": "petstore-e2e",
+    "root_package": "petstore-orchestrator",
+    "root_version": "1.0.0",
+    "branch": "k8s-e2e"
+  },
+
+  "components": [
+    {
+      "package_name": "petstore-api",
+      "package_version": "1.0.0",
+      "kind": "OPENAPI_SERVICE",
+      "image": "turbo-engine/petstore-mock:e2e",
+      "env": {}
+    },
+    {
+      "package_name": "petstore-orchestrator",
+      "package_version": "1.0.0",
+      "kind": "WORKFLOW_ENGINE",
+      "image": "turbo-engine/orchestrator:e2e",
+      "env": {
+        "UPSTREAM_URL": "http://svc-petstore-api:8080"
+      }
+    }
+  ],
+
+  "ingress": {
+    "host": "localhost",
+    "routes": [
+      {"path": "/api/pets", "component": "petstore-orchestrator", "port": 8080}
+    ]
+  },
+
+  "requests": [
+    {
+      "name": "list-pets-direct",
+      "description": "Hit petstore-api directly to verify upstream is working",
+      "method": "GET",
+      "path": "/pets",
+      "via": "component:petstore-api",
+      "assertions": [
+        {"type": "status", "expect": 200},
+        {"type": "json_path", "path": "pets", "expect_type": "array_min_length", "value": 1}
+      ]
+    },
+    {
+      "name": "orchestrator-direct",
+      "description": "Hit orchestrator directly to verify RPC-to-REST translation",
+      "method": "POST",
+      "path": "/rpc/listPets",
+      "via": "component:petstore-orchestrator",
+      "assertions": [
+        {"type": "status", "expect": 200},
+        {"type": "json_field", "field": "rpc", "expect": "listPets"},
+        {"type": "json_field", "field": "upstream_status", "expect": 200}
+      ]
+    },
+    {
+      "name": "e2e-list-pets",
+      "description": "Full chain: gateway → orchestrator → petstore-api",
+      "method": "POST",
+      "path": "/api/pets/rpc/listPets",
+      "via": "gateway",
+      "assertions": [
+        {"type": "status", "expect": 200},
+        {"type": "json_field", "field": "rpc", "expect": "listPets"},
+        {"type": "json_field", "field": "upstream_status", "expect": 200},
+        {"type": "json_path", "path": "result.pets", "expect_type": "array_min_length", "value": 1}
+      ]
+    },
+    {
+      "name": "e2e-get-pet",
+      "description": "Single pet lookup through full chain",
+      "method": "POST",
+      "path": "/api/pets/rpc/getPet?id=2",
+      "via": "gateway",
+      "assertions": [
+        {"type": "status", "expect": 200},
+        {"type": "json_path", "path": "result.pet.name", "expect": "Whiskers"}
+      ]
+    },
+    {
+      "name": "trace-propagation",
+      "description": "Verify W3C Traceparent header flows through the full chain",
+      "method": "POST",
+      "path": "/api/pets/rpc/listPets",
+      "via": "gateway",
+      "headers": {
+        "Traceparent": "00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-0000000000000001-01"
+      },
+      "assertions": [
+        {"type": "status", "expect": 200},
+        {"type": "json_field", "field": "trace_id", "expect": "a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"}
+      ]
+    }
+  ]
+}
