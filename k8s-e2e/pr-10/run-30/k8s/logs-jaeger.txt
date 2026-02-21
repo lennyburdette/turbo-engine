@@ -1,0 +1,66 @@
+2026/02/21 17:23:50 maxprocs: Updating GOMAXPROCS=1: using minimum allowed GOMAXPROCS
+2026/02/21 17:23:50 application version: git-commit=a614bb9ab161020b17917452e7d9680819622480, git-version=v1.54.0, build-date=2024-02-06T23:10:30Z
+{"level":"info","ts":1771694630.4221964,"caller":"flags/service.go:119","msg":"Mounting metrics handler on admin server","route":"/metrics"}
+{"level":"info","ts":1771694630.4222403,"caller":"flags/service.go:125","msg":"Mounting expvar handler on admin server","route":"/debug/vars"}
+{"level":"info","ts":1771694630.4223943,"caller":"flags/admin.go:130","msg":"Mounting health check on admin server","route":"/"}
+{"level":"info","ts":1771694630.4224346,"caller":"flags/admin.go:144","msg":"Starting admin HTTP server","http-addr":":14269"}
+{"level":"info","ts":1771694630.4224522,"caller":"flags/admin.go:122","msg":"Admin server started","http.host-port":"[::]:14269","health-status":"unavailable"}
+{"level":"info","ts":1771694630.4225252,"caller":"grpc@v1.61.0/clientconn.go:429","msg":"[core][Channel #1] Channel created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4225595,"caller":"grpc@v1.61.0/clientconn.go:1724","msg":"[core][Channel #1] original dial target is: \"localhost:4317\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4225807,"caller":"grpc@v1.61.0/clientconn.go:1731","msg":"[core][Channel #1] parsed dial target is: resolver.Target{URL:url.URL{Scheme:\"localhost\", Opaque:\"4317\", User:(*url.Userinfo)(nil), Host:\"\", Path:\"\", RawPath:\"\", OmitHost:false, ForceQuery:false, RawQuery:\"\", Fragment:\"\", RawFragment:\"\"}}","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4225965,"caller":"grpc@v1.61.0/clientconn.go:1745","msg":"[core][Channel #1] fallback to scheme \"passthrough\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4226108,"caller":"grpc@v1.61.0/clientconn.go:1753","msg":"[core][Channel #1] parsed dial target is: passthrough:///localhost:4317","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4226258,"caller":"grpc@v1.61.0/clientconn.go:1874","msg":"[core][Channel #1] Channel authority set to \"localhost:4317\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4228346,"caller":"grpc@v1.61.0/resolver_wrapper.go:196","msg":"[core][Channel #1] Resolver state updated: {\n  \"Addresses\": [\n    {\n      \"Addr\": \"localhost:4317\",\n      \"ServerName\": \"\",\n      \"Attributes\": null,\n      \"BalancerAttributes\": null,\n      \"Metadata\": null\n    }\n  ],\n  \"Endpoints\": [\n    {\n      \"Addresses\": [\n        {\n          \"Addr\": \"localhost:4317\",\n          \"ServerName\": \"\",\n          \"Attributes\": null,\n          \"BalancerAttributes\": null,\n          \"Metadata\": null\n        }\n      ],\n      \"Attributes\": null\n    }\n  ],\n  \"ServiceConfig\": null,\n  \"Attributes\": null\n} (resolver returned new addresses)","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4228654,"caller":"grpc@v1.61.0/balancer_wrapper.go:161","msg":"[core][Channel #1] Channel switches to new LB policy \"pick_first\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.422908,"caller":"grpc@v1.61.0/balancer_wrapper.go:213","msg":"[core][Channel #1 SubChannel #2] Subchannel created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4229305,"caller":"grpc@v1.61.0/clientconn.go:532","msg":"[core][Channel #1] Channel Connectivity change to CONNECTING","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4229512,"caller":"grpc@v1.61.0/clientconn.go:335","msg":"[core][Channel #1] Channel exiting idle mode","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4231696,"caller":"memory/factory.go:85","msg":"Memory storage initialized","configuration":{"MaxTraces":0}}
+{"level":"info","ts":1771694630.4233687,"caller":"static/strategy_store.go:145","msg":"Loading sampling strategies","filename":"/etc/jaeger/sampling_strategies.json"}
+{"level":"info","ts":1771694630.4238327,"caller":"grpc@v1.61.0/clientconn.go:1223","msg":"[core][Channel #1 SubChannel #2] Subchannel Connectivity change to CONNECTING","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.4238489,"caller":"grpc@v1.61.0/clientconn.go:1338","msg":"[core][Channel #1 SubChannel #2] Subchannel picks a new address \"localhost:4317\" to connect","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5219176,"caller":"grpc@v1.61.0/server.go:681","msg":"[core][Server #3] Server created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5220058,"caller":"server/grpc.go:104","msg":"Starting jaeger-collector gRPC server","grpc.host-port":"[::]:14250"}
+{"level":"info","ts":1771694630.5220246,"caller":"server/http.go:56","msg":"Starting jaeger-collector HTTP server","http host-port":":14268"}
+{"level":"info","ts":1771694630.5222173,"caller":"app/collector.go:146","msg":"Not listening for Zipkin HTTP traffic, port not configured"}
+{"level":"info","ts":1771694630.5222557,"caller":"handler/otlp_receiver.go:77","msg":"OTLP receiver status change","status":"StatusStarting"}
+{"level":"warn","ts":1771694630.5222769,"caller":"internal@v0.93.0/warning.go:40","msg":"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks","documentation":"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md#safeguards-against-denial-of-service-attacks"}
+{"level":"info","ts":1771694630.5223129,"caller":"grpc@v1.61.0/server.go:681","msg":"[core][Server #4] Server created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5223324,"caller":"otlpreceiver@v0.93.0/otlp.go:102","msg":"Starting GRPC server","endpoint":"0.0.0.0:4317"}
+{"level":"warn","ts":1771694630.5223718,"caller":"internal@v0.93.0/warning.go:40","msg":"Using the 0.0.0.0 address exposes this server to every network interface, which may facilitate Denial of Service attacks","documentation":"https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md#safeguards-against-denial-of-service-attacks"}
+{"level":"info","ts":1771694630.5223987,"caller":"otlpreceiver@v0.93.0/otlp.go:152","msg":"Starting HTTP server","endpoint":"0.0.0.0:4318"}
+{"level":"info","ts":1771694630.5224416,"caller":"grpc/builder.go:74","msg":"Agent requested insecure grpc connection to collector(s)"}
+{"level":"info","ts":1771694630.5224743,"caller":"grpc@v1.61.0/clientconn.go:429","msg":"[core][Channel #5] Channel created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.522487,"caller":"grpc@v1.61.0/clientconn.go:1724","msg":"[core][Channel #5] original dial target is: \"localhost:14250\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5225093,"caller":"grpc@v1.61.0/clientconn.go:1731","msg":"[core][Channel #5] parsed dial target is: resolver.Target{URL:url.URL{Scheme:\"localhost\", Opaque:\"14250\", User:(*url.Userinfo)(nil), Host:\"\", Path:\"\", RawPath:\"\", OmitHost:false, ForceQuery:false, RawQuery:\"\", Fragment:\"\", RawFragment:\"\"}}","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5225255,"caller":"grpc@v1.61.0/clientconn.go:1745","msg":"[core][Channel #5] fallback to scheme \"passthrough\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5225384,"caller":"grpc@v1.61.0/clientconn.go:1753","msg":"[core][Channel #5] parsed dial target is: passthrough:///localhost:14250","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5225482,"caller":"grpc@v1.61.0/clientconn.go:1874","msg":"[core][Channel #5] Channel authority set to \"localhost:14250\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5225837,"caller":"grpc@v1.61.0/server.go:881","msg":"[core][Server #3 ListenSocket #6] ListenSocket created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.522634,"caller":"grpc@v1.61.0/server.go:881","msg":"[core][Server #4 ListenSocket #7] ListenSocket created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5227485,"caller":"grpc@v1.61.0/resolver_wrapper.go:196","msg":"[core][Channel #5] Resolver state updated: {\n  \"Addresses\": [\n    {\n      \"Addr\": \"localhost:14250\",\n      \"ServerName\": \"\",\n      \"Attributes\": null,\n      \"BalancerAttributes\": null,\n      \"Metadata\": null\n    }\n  ],\n  \"Endpoints\": [\n    {\n      \"Addresses\": [\n        {\n          \"Addr\": \"localhost:14250\",\n          \"ServerName\": \"\",\n          \"Attributes\": null,\n          \"BalancerAttributes\": null,\n          \"Metadata\": null\n        }\n      ],\n      \"Attributes\": null\n    }\n  ],\n  \"ServiceConfig\": null,\n  \"Attributes\": null\n} (resolver returned new addresses)","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.52278,"caller":"grpc@v1.61.0/balancer_wrapper.go:161","msg":"[core][Channel #5] Channel switches to new LB policy \"round_robin\"","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.522812,"caller":"grpc@v1.61.0/balancer_wrapper.go:213","msg":"[core][Channel #5 SubChannel #8] Subchannel created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5228524,"caller":"base/balancer.go:182","msg":"[roundrobin]roundrobinPicker: Build called with info: {map[]}","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.522874,"caller":"grpc@v1.61.0/clientconn.go:532","msg":"[core][Channel #5] Channel Connectivity change to CONNECTING","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5228875,"caller":"grpc@v1.61.0/clientconn.go:335","msg":"[core][Channel #5] Channel exiting idle mode","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5232794,"caller":"all-in-one/main.go:263","msg":"Starting agent"}
+{"level":"info","ts":1771694630.5234342,"caller":"grpc@v1.61.0/server.go:681","msg":"[core][Server #9] Server created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.523818,"caller":"app/static_handler.go:107","msg":"Using UI configuration","path":""}
+{"level":"info","ts":1771694630.5239143,"caller":"app/server.go:220","msg":"Query server started","http_addr":"[::]:16686","grpc_addr":"[::]:16685"}
+{"level":"info","ts":1771694630.523931,"caller":"healthcheck/handler.go:129","msg":"Health Check state change","status":"ready"}
+{"level":"info","ts":1771694630.5239441,"caller":"app/server.go:300","msg":"Starting GRPC server","port":16685,"addr":":16685"}
+{"level":"info","ts":1771694630.5239584,"caller":"grpc@v1.61.0/server.go:881","msg":"[core][Server #9 ListenSocket #10] ListenSocket created","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5240126,"caller":"grpc@v1.61.0/clientconn.go:1223","msg":"[core][Channel #5 SubChannel #8] Subchannel Connectivity change to CONNECTING","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5240595,"caller":"grpc@v1.61.0/clientconn.go:1338","msg":"[core][Channel #5 SubChannel #8] Subchannel picks a new address \"localhost:14250\" to connect","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5242422,"caller":"grpc/builder.go:115","msg":"Checking connection to collector"}
+{"level":"info","ts":1771694630.5242586,"caller":"grpc/builder.go:131","msg":"Agent collector connection state change","dialTarget":"localhost:14250","status":"CONNECTING"}
+{"level":"info","ts":1771694630.5242875,"caller":"app/agent.go:69","msg":"Starting jaeger-agent HTTP server","http-port":5778}
+{"level":"info","ts":1771694630.5243506,"caller":"app/server.go:284","msg":"Starting HTTP server","port":16686,"addr":":16686"}
+{"level":"info","ts":1771694630.5246344,"caller":"grpc@v1.61.0/clientconn.go:1223","msg":"[core][Channel #5 SubChannel #8] Subchannel Connectivity change to READY","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5246727,"caller":"base/balancer.go:182","msg":"[roundrobin]roundrobinPicker: Build called with info: {map[SubConn(id:8):{{Addr: \"localhost:14250\", ServerName: \"\", }}]}","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.524693,"caller":"grpc@v1.61.0/clientconn.go:532","msg":"[core][Channel #5] Channel Connectivity change to READY","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.524704,"caller":"grpc/builder.go:131","msg":"Agent collector connection state change","dialTarget":"localhost:14250","status":"READY"}
+{"level":"info","ts":1771694630.5262232,"caller":"grpc@v1.61.0/clientconn.go:1223","msg":"[core][Channel #1 SubChannel #2] Subchannel Connectivity change to READY","system":"grpc","grpc_log":true}
+{"level":"info","ts":1771694630.5262501,"caller":"grpc@v1.61.0/clientconn.go:532","msg":"[core][Channel #1] Channel Connectivity change to READY","system":"grpc","grpc_log":true}

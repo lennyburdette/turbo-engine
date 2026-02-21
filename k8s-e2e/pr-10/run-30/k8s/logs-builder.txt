@@ -1,0 +1,4 @@
+{"time":"2026-02-21T17:23:47.814355636Z","level":"INFO","msg":"builder service starting","port":"8082"}
+{"time":"2026-02-21T17:24:02.815113621Z","level":"INFO","msg":"traces export: context deadline exceeded: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 10.96.96.41:4317: connect: connection refused\""}
+{"time":"2026-02-21T17:24:11.341433217Z","level":"INFO","msg":"build created","build_id":"bld-1771694651341-1","environment_id":"c2349df9149e0bb6f9c8b5edd493035e"}
+{"time":"2026-02-21T17:24:11.341699899Z","level":"INFO","msg":"build completed successfully","build_id":"bld-1771694651341-1"}
