@@ -174,6 +174,15 @@ func (a *KubernetesApplier) createDeployment(ctx context.Context, ns, envID, nam
 						{
 							Name:  comp.PackageName,
 							Image: componentImage(comp),
+							EnvFrom: []corev1.EnvFromSource{
+								{
+									ConfigMapRef: &corev1.ConfigMapEnvSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: fmt.Sprintf("cm-%s", comp.PackageName),
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -210,6 +219,19 @@ func (a *KubernetesApplier) updateDeployment(ctx context.Context, ns, envID, nam
 		existing.Spec.Template.Annotations = make(map[string]string)
 	}
 	existing.Spec.Template.Annotations["turboengine.io/artifact-hash"] = comp.ArtifactHash
+
+	// Ensure containers reference the ConfigMap for env vars.
+	if len(existing.Spec.Template.Spec.Containers) > 0 {
+		existing.Spec.Template.Spec.Containers[0].EnvFrom = []corev1.EnvFromSource{
+			{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: fmt.Sprintf("cm-%s", comp.PackageName),
+					},
+				},
+			},
+		}
+	}
 
 	_, err = a.client.AppsV1().Deployments(ns).Update(ctx, existing, metav1.UpdateOptions{})
 	return err
