@@ -161,6 +161,8 @@ jobs:
           PF_ENVMANAGER=$!
           kubectl -n turbo-engine-e2e port-forward svc/gateway 18080:8080 &>/dev/null &
           PF_GATEWAY=$!
+          kubectl -n turbo-engine-e2e port-forward svc/jaeger 18686:16686 &>/dev/null &
+          PF_JAEGER=$!
           sleep 3
 
           NODE_PATH=/tmp/pw/node_modules \
@@ -170,9 +172,10 @@ jobs:
             BUILDER_URL=http://localhost:18082 \
             ENVMANAGER_URL=http://localhost:18083 \
             GATEWAY_URL=http://localhost:18080 \
+            JAEGER_URL=http://localhost:18686 \
             ./hack/scripts/capture-screenshots.sh || true
 
-          kill $PF_CONSOLE $PF_EXPLORER $PF_REGISTRY $PF_BUILDER $PF_ENVMANAGER $PF_GATEWAY 2>/dev/null || true
+          kill $PF_CONSOLE $PF_EXPLORER $PF_REGISTRY $PF_BUILDER $PF_ENVMANAGER $PF_GATEWAY $PF_JAEGER 2>/dev/null || true
 
       - name: Capture traces and generate report
         if: always()

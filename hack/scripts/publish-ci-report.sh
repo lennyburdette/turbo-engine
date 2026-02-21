@@ -299,8 +299,8 @@ if [ -d "${REPORT_PATH}/screenshots" ]; then
         echo "![${fname}](./screenshots/${fname})"
         echo ""
       fi
-      # Append browser console log if present.
-      if [ -f "$logfile" ] && [ -s "$logfile" ]; then
+      # Append browser console log if present and non-empty.
+      if [ -f "$logfile" ] && grep -q '[^[:space:]]' "$logfile" 2>/dev/null; then
         echo "<details><summary>Browser console log (${name_no_ext})</summary>"
         echo ""
         echo '```'

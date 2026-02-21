@@ -213,9 +213,12 @@ ${api_routes_js}
     console.error('Error capturing ${name}:', err.message);
     process.exitCode = 1;
   } finally {
-    // Always write console logs, even on failure.
-    fs.writeFileSync('${log_output}', consoleLogs.join('\\n') + '\\n');
-    console.log('Console log saved: ${log_output} (' + consoleLogs.length + ' entries)');
+    if (consoleLogs.length > 0) {
+      fs.writeFileSync('${log_output}', consoleLogs.join('\\n') + '\\n');
+      console.log('Console log saved: ${log_output} (' + consoleLogs.length + ' entries)');
+    } else {
+      console.log('No browser console output captured for ${name}');
+    }
     await browser.close();
   }
 })();
@@ -330,8 +333,12 @@ ${api_routes_js}
     console.error('Error capturing ${name}:', err.message);
     process.exitCode = 1;
   } finally {
-    fs.writeFileSync('${log_output}', consoleLogs.join('\\n') + '\\n');
-    console.log('Console log saved: ${log_output} (' + consoleLogs.length + ' entries)');
+    if (consoleLogs.length > 0) {
+      fs.writeFileSync('${log_output}', consoleLogs.join('\\n') + '\\n');
+      console.log('Console log saved: ${log_output} (' + consoleLogs.length + ' entries)');
+    } else {
+      console.log('No browser console output captured for ${name}');
+    }
     await browser.close();
   }
 })();

@@ -266,9 +266,13 @@ if compgen -G "${SCREENSHOT_DIR}/*.png" >/dev/null 2>&1 || compgen -G "${SCREENS
     printf "| %s | \`ci-report/screenshots/%s\` | %s bytes |\n" "$page" "$fname" "$size"
   done
   echo ""
-  # Show browser console logs if captured.
+  # Show browser console logs if captured (skip empty files).
   for logf in "${SCREENSHOT_DIR}"/*.log; do
     [ -f "$logf" ] || continue
+    # Skip files that are empty or contain only whitespace.
+    if ! grep -q '[^[:space:]]' "$logf" 2>/dev/null; then
+      continue
+    fi
     logname=$(basename "$logf")
     page="${logname%.log}"
     linecount=$(wc -l < "$logf" 2>/dev/null || echo "0")
