@@ -255,28 +255,39 @@ cat <<'EOF'
 
 EOF
 
-if compgen -G "${SCREENSHOT_DIR}/*.png" >/dev/null 2>&1 || compgen -G "${SCREENSHOT_DIR}/*.html" >/dev/null 2>&1; then
+FOUND_SCREENSHOTS=false
+
+# Check for per-scenario subdirectories first.
+for scenario_dir in "${SCREENSHOT_DIR}"/*/; do
+  [ -d "$scenario_dir" ] || continue
+  scenario_name=$(basename "$scenario_dir")
+  has_images=false
+  for f in "${scenario_dir}"*.png "${scenario_dir}"*.jpg "${scenario_dir}"*.html; do
+    [ -f "$f" ] && has_images=true && break
+  done
+  $has_images || continue
+  FOUND_SCREENSHOTS=true
+
+  printf "### %s\n\n" "$scenario_name"
   printf "| Page | File | Size |\n"
   printf "|------|------|------|\n"
-  for f in "${SCREENSHOT_DIR}"/*.png "${SCREENSHOT_DIR}"/*.jpg "${SCREENSHOT_DIR}"/*.html; do
+  for f in "${scenario_dir}"*.png "${scenario_dir}"*.jpg "${scenario_dir}"*.html; do
     [ -f "$f" ] || continue
     fname=$(basename "$f")
     page="${fname%.*}"
     size=$(wc -c < "$f" 2>/dev/null || echo "0")
-    printf "| %s | \`ci-report/screenshots/%s\` | %s bytes |\n" "$page" "$fname" "$size"
+    printf "| %s | \`ci-report/screenshots/%s/%s\` | %s bytes |\n" "$page" "$scenario_name" "$fname" "$size"
   done
   echo ""
+
   # Show browser console logs if captured (skip empty files).
-  for logf in "${SCREENSHOT_DIR}"/*.log; do
+  for logf in "${scenario_dir}"*.log; do
     [ -f "$logf" ] || continue
-    # Skip files that are empty or contain only whitespace.
-    if ! grep -q '[^[:space:]]' "$logf" 2>/dev/null; then
-      continue
-    fi
+    if ! grep -q '[^[:space:]]' "$logf" 2>/dev/null; then continue; fi
     logname=$(basename "$logf")
     page="${logname%.log}"
     linecount=$(wc -l < "$logf" 2>/dev/null || echo "0")
-    echo "<details><summary>Browser console: ${page} (${linecount} lines)</summary>"
+    echo "<details><summary>Browser console: ${scenario_name}/${page} (${linecount} lines)</summary>"
     echo ""
     echo '```'
     cat "$logf"
@@ -284,7 +295,24 @@ if compgen -G "${SCREENSHOT_DIR}/*.png" >/dev/null 2>&1 || compgen -G "${SCREENS
     echo "</details>"
     echo ""
   done
-else
+done
+
+# Also check for top-level screenshots (backwards compat).
+for f in "${SCREENSHOT_DIR}"/*.png "${SCREENSHOT_DIR}"/*.jpg "${SCREENSHOT_DIR}"/*.html; do
+  [ -f "$f" ] || continue
+  if ! $FOUND_SCREENSHOTS; then
+    FOUND_SCREENSHOTS=true
+    printf "| Page | File | Size |\n"
+    printf "|------|------|------|\n"
+  fi
+  fname=$(basename "$f")
+  page="${fname%.*}"
+  size=$(wc -c < "$f" 2>/dev/null || echo "0")
+  printf "| %s | \`ci-report/screenshots/%s\` | %s bytes |\n" "$page" "$fname" "$size"
+done
+if $FOUND_SCREENSHOTS; then echo ""; fi
+
+if ! $FOUND_SCREENSHOTS; then
   echo "_No screenshots captured._"
   echo ""
 fi

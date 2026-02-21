@@ -55,6 +55,33 @@
     ]
   },
 
+  "screenshots": [
+    {
+      "name": "packages",
+      "ui": "console",
+      "path": "/packages",
+      "description": "Console packages list after publishing petstore components"
+    },
+    {
+      "name": "environments",
+      "ui": "console",
+      "path": "/environments",
+      "description": "Environments list showing the petstore-e2e environment"
+    },
+    {
+      "name": "dashboard",
+      "ui": "console",
+      "path": "/",
+      "description": "Console dashboard overview"
+    },
+    {
+      "name": "explorer",
+      "ui": "explorer",
+      "path": "/",
+      "description": "Explorer mobile UI showing deployed services and traces"
+    }
+  ],
+
   "requests": [
     {
       "name": "list-pets-direct",
