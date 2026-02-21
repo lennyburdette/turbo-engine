@@ -1,0 +1,5 @@
+{"level":"info","msg":"petstore mock starting","port":"8080","time":"2026-02-21T17:31:10.433866837Z"}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T17:31:17.588959166Z","trace_id":"","traceparent":"","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T17:31:17.589076306Z","trace_id":""}
+{"level":"info","method":"GET","msg":"request received","path":"/pets","query":"","time":"2026-02-21T17:31:19.595123495Z","trace_id":"02d9f2d2b38218609ccd0346d78c6783","traceparent":"00-02d9f2d2b38218609ccd0346d78c6783-751bbc02c437c1a6-01","x_request_id":""}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/pets","status":200,"time":"2026-02-21T17:31:19.595163936Z","trace_id":"02d9f2d2b38218609ccd0346d78c6783"}

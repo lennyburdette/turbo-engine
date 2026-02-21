@@ -1,0 +1,5 @@
+{"level":"info","msg":"orchestrator starting","port":"8080","time":"2026-02-21T17:31:10.464592489Z","upstream_url":"http://svc-petstore-api:8080"}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/listPets","query":"","time":"2026-02-21T17:31:19.593963033Z","trace_id":"","traceparent":"","x_request_id":""}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"listPets","time":"2026-02-21T17:31:19.59402821Z","trace_id":"","url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":1,"level":"info","msg":"upstream call complete","response_bytes":240,"rpc":"listPets","time":"2026-02-21T17:31:19.595334707Z","trace_id":"","upstream_status":200,"url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":1,"level":"info","method":"POST","msg":"response sent","path":"/rpc/listPets","status":200,"time":"2026-02-21T17:31:19.595428218Z","trace_id":""}
