@@ -1,0 +1,3 @@
+{"time":"2026-02-21T08:24:29.791859972Z","level":"INFO","msg":"builder service starting","port":"8082"}
+{"time":"2026-02-21T08:24:49.294352664Z","level":"INFO","msg":"build created","build_id":"bld-1771662289294-1","environment_id":"7a119e47cc91f3fad93ddf14fad6fbf5"}
+{"time":"2026-02-21T08:24:49.294586969Z","level":"INFO","msg":"build completed successfully","build_id":"bld-1771662289294-1"}

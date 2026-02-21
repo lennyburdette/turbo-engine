@@ -1,0 +1,3 @@
+{"time":"2026-02-21T08:24:29.916878976Z","level":"INFO","msg":"starting registry service","port":"8081"}
+{"time":"2026-02-21T08:24:49.21484905Z","level":"INFO","msg":"published package","id":"pkg_1","name":"petstore-api","version":"1.0.0"}
+{"time":"2026-02-21T08:24:49.232989871Z","level":"INFO","msg":"published package","id":"pkg_2","name":"petstore-orchestrator","version":"1.0.0"}
