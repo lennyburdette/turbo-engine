@@ -54,9 +54,9 @@ declare -A PAGES=(
 # ---------------------------------------------------------------------------
 USE_PLAYWRIGHT=false
 
-if command -v npx &>/dev/null; then
-  # Check if playwright is installed (either globally or in node_modules).
-  if npx playwright --version &>/dev/null 2>&1; then
+if command -v node &>/dev/null; then
+  # Check if the playwright package is importable by node.
+  if node -e "require('playwright')" &>/dev/null 2>&1; then
     USE_PLAYWRIGHT=true
   fi
 fi
@@ -103,7 +103,7 @@ const { chromium } = require('playwright');
 })();
 PLAYWRIGHT_EOF
 
-  if npx playwright test --config=/dev/null -- "$tmp_script" 2>/dev/null || node "$tmp_script" 2>/dev/null; then
+  if node "$tmp_script" 2>/dev/null; then
     ok "  ${name} -> ${output}"
   else
     warn "  Playwright failed for ${name}, falling back to curl."

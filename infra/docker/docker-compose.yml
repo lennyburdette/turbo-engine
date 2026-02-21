@@ -58,6 +58,7 @@ services:
   # Platform services
   # ---------------------------------------------------------------------------
   registry:
+    image: turbo-engine/registry:${TAG:-latest}
     build:
       context: ../../services/registry
       dockerfile: Dockerfile
@@ -78,6 +79,7 @@ services:
     restart: unless-stopped
 
   builder:
+    image: turbo-engine/builder:${TAG:-latest}
     build:
       context: ../../services/builder
       dockerfile: Dockerfile
@@ -101,6 +103,7 @@ services:
     restart: unless-stopped
 
   envmanager:
+    image: turbo-engine/envmanager:${TAG:-latest}
     build:
       context: ../../services/envmanager
       dockerfile: Dockerfile
@@ -127,6 +130,7 @@ services:
     restart: unless-stopped
 
   operator:
+    image: turbo-engine/operator:${TAG:-latest}
     build:
       context: ../../services/operator
       dockerfile: Dockerfile
@@ -149,6 +153,7 @@ services:
     restart: unless-stopped
 
   gateway:
+    image: turbo-engine/gateway:${TAG:-latest}
     build:
       context: ../../services/gateway
       dockerfile: Dockerfile
@@ -174,6 +179,7 @@ services:
     restart: unless-stopped
 
   console:
+    image: turbo-engine/console:${TAG:-latest}
     build:
       context: ../../ui/console
       dockerfile: Dockerfile

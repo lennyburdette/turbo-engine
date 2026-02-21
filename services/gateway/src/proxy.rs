@@ -8,10 +8,44 @@ use futures_util::{SinkExt, StreamExt};
 use std::time::Duration;
 use tokio_tungstenite::tungstenite::Message as TungsteniteMsg;
 use tracing::{info_span, instrument, warn, Instrument};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 use url::Url;
 
 use crate::config::ConfigHandle;
 use crate::error::GatewayError;
+
+// ---------------------------------------------------------------------------
+// W3C Trace Context propagation helpers
+// ---------------------------------------------------------------------------
+
+/// Extracts W3C trace context headers (traceparent, tracestate) from an HTTP
+/// request's header map.
+struct HeaderExtractor<'a>(&'a HeaderMap);
+
+impl opentelemetry::propagation::Extractor for HeaderExtractor<'_> {
+    fn get(&self, key: &str) -> Option<&str> {
+        self.0.get(key).and_then(|v| v.to_str().ok())
+    }
+
+    fn keys(&self) -> Vec<&str> {
+        self.0.keys().map(|k| k.as_str()).collect()
+    }
+}
+
+/// Injects W3C trace context headers into an HTTP header map for outgoing
+/// requests.
+struct HeaderInjector<'a>(&'a mut HeaderMap);
+
+impl opentelemetry::propagation::Injector for HeaderInjector<'_> {
+    fn set(&mut self, key: &str, value: String) {
+        if let (Ok(name), Ok(val)) = (
+            header::HeaderName::from_bytes(key.as_bytes()),
+            HeaderValue::from_str(&value),
+        ) {
+            self.0.insert(name, val);
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Application state shared across handlers
@@ -38,6 +72,13 @@ pub async fn proxy_handler(
     State(state): State<AppState>,
     req: Request,
 ) -> Result<Response, GatewayError> {
+    // Extract W3C trace context from incoming request and link this span
+    // to the caller's trace, enabling correlated distributed traces.
+    let parent_cx = opentelemetry::global::get_text_map_propagator(|propagator| {
+        propagator.extract(&HeaderExtractor(req.headers()))
+    });
+    tracing::Span::current().set_parent(parent_cx);
+
     let path = req.uri().path().to_string();
     let query = req
         .uri()
@@ -101,6 +142,13 @@ async fn forward_http(
         headers.insert("x-forwarded-host", host.clone());
     }
     headers.insert("x-forwarded-proto", HeaderValue::from_static("https"));
+
+    // Inject W3C trace context (traceparent/tracestate) into outgoing
+    // headers so upstream services join the same distributed trace.
+    let cx = span.context();
+    opentelemetry::global::get_text_map_propagator(|propagator| {
+        propagator.inject_context(&cx, &mut HeaderInjector(&mut headers));
+    });
 
     // Read body.
     let body_bytes = axum::body::to_bytes(req.into_body(), 10 * 1024 * 1024)

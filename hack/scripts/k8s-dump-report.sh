@@ -50,7 +50,7 @@ if [[ "$jaeger_status" == "200" ]]; then
     printf '  "services": {\n'
 
     first=true
-    for svc in registry builder envmanager operator gateway; do
+    for svc in registry builder envmanager operator gateway orchestrator petstore-mock; do
       if ! $first; then printf ',\n'; fi
       first=false
 
@@ -294,6 +294,31 @@ for svc in "${SERVICES[@]}"; do
   printf '```\n\n'
 done
 
+# Include operator-deployed component logs (captured by k8s-e2e-tests.sh).
+COMPONENT_LOGS=()
+for f in "${K8S_DIR}"/*-logs.txt; do
+  [[ -f "$f" ]] || continue
+  fname=$(basename "$f")
+  # Skip control-plane logs already rendered above.
+  is_cp=false
+  for svc in "${SERVICES[@]}"; do
+    [[ "$fname" == "logs-${svc}.txt" ]] && is_cp=true
+  done
+  $is_cp && continue
+  COMPONENT_LOGS+=("$f")
+done
+
+if [[ ${#COMPONENT_LOGS[@]} -gt 0 ]]; then
+  printf "### Operator-deployed components\n\n"
+  for f in "${COMPONENT_LOGS[@]}"; do
+    comp=$(basename "$f" .txt | sed 's/-logs$//')
+    printf "#### %s\n\n" "$comp"
+    printf '```\n'
+    tail -n "$LOG_TAIL_LINES" "$f"
+    printf '```\n\n'
+  done
+fi
+
 # --- Section 8: Errors and Warnings ----------------------------------------
 cat <<'EOF'
 ---
@@ -306,6 +331,7 @@ printf "Scanning logs for errors, panics, and warnings...\n\n"
 
 ERRORS_FOUND=false
 
+# Scan control-plane logs.
 for svc in "${SERVICES[@]}"; do
   LOG_FILE="${K8S_DIR}/logs-${svc}.txt"
   if [[ -f "$LOG_FILE" ]]; then
@@ -318,6 +344,20 @@ for svc in "${SERVICES[@]}"; do
       printf "### %s\n\n" "$svc"
       printf '```\n%s\n```\n\n' "$errors"
     fi
+  fi
+done
+
+# Scan operator-deployed component logs.
+for f in "${COMPONENT_LOGS[@]:-}"; do
+  [[ -z "$f" || ! -f "$f" ]] && continue
+  comp=$(basename "$f" .txt | sed 's/-logs$//')
+  errors=$(grep -iE '("level":"ERROR"|"level":"error"|panic|fatal|"level":"WARN"|"level":"warn")' "$f" \
+    | tail -20 || true)
+
+  if [[ -n "$errors" ]]; then
+    ERRORS_FOUND=true
+    printf "### %s (component)\n\n" "$comp"
+    printf '```\n%s\n```\n\n' "$errors"
   fi
 done
 

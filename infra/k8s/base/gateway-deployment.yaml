@@ -31,6 +31,8 @@ spec:
               value: "8080"
             - name: RUST_LOG
               value: "info"
+            - name: CONFIG_URL
+              value: "http://turbo-engine-operator:8084/v1/gateway-config"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: "http://otel-collector:4317"
             - name: OTEL_SERVICE_NAME

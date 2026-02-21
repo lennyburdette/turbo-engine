@@ -18,9 +18,17 @@ import (
 	"github.com/lennyburdette/turbo-engine/services/operator/internal/reconciler"
 )
 
-// stubImage is used for operator-created API service deployments.
-// These are not real applications — they prove the operator can manage resources.
-const stubImage = "registry.k8s.io/pause:3.9"
+// defaultImage is used when the component spec doesn't include an explicit image.
+const defaultImage = "registry.k8s.io/pause:3.9"
+
+// componentImage returns the container image for a deployed component.
+// Uses the runtime image if specified, otherwise falls back to the default.
+func componentImage(comp model.DeployedComponent) string {
+	if comp.Runtime.Image != "" {
+		return comp.Runtime.Image
+	}
+	return defaultImage
+}
 
 // labels builds standard labels for operator-managed resources.
 func labels(environmentID, componentName string) map[string]string {
@@ -105,6 +113,11 @@ func (a *KubernetesApplier) Apply(ctx context.Context, namespace, environmentID 
 			err = a.updateConfigMap(ctx, namespace, environmentID, action.ResourceName, spec)
 		case action.ResourceKind == "ConfigMap" && action.Type == reconciler.ActionDelete:
 			err = a.deleteConfigMap(ctx, namespace, action.ResourceName)
+		case action.ResourceKind == "Ingress":
+			// Ingress routing is handled by the gateway polling /v1/gateway-config
+			// rather than by creating K8s Ingress resources, so this is a no-op.
+			a.logger.InfoContext(ctx, "ingress action handled via gateway-config endpoint",
+				"type", action.Type, "name", action.ResourceName)
 		default:
 			a.logger.WarnContext(ctx, "unhandled action", "type", action.Type, "kind", action.ResourceKind)
 		}
@@ -160,7 +173,16 @@ func (a *KubernetesApplier) createDeployment(ctx context.Context, ns, envID, nam
 					Containers: []corev1.Container{
 						{
 							Name:  comp.PackageName,
-							Image: stubImage,
+							Image: componentImage(comp),
+							EnvFrom: []corev1.EnvFromSource{
+								{
+									ConfigMapRef: &corev1.ConfigMapEnvSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: fmt.Sprintf("cm-%s", comp.PackageName),
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -197,6 +219,19 @@ func (a *KubernetesApplier) updateDeployment(ctx context.Context, ns, envID, nam
 		existing.Spec.Template.Annotations = make(map[string]string)
 	}
 	existing.Spec.Template.Annotations["turboengine.io/artifact-hash"] = comp.ArtifactHash
+
+	// Ensure containers reference the ConfigMap for env vars.
+	if len(existing.Spec.Template.Spec.Containers) > 0 {
+		existing.Spec.Template.Spec.Containers[0].EnvFrom = []corev1.EnvFromSource{
+			{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: fmt.Sprintf("cm-%s", comp.PackageName),
+					},
+				},
+			},
+		}
+	}
 
 	_, err = a.client.AppsV1().Deployments(ns).Update(ctx, existing, metav1.UpdateOptions{})
 	return err
