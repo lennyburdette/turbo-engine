@@ -26,7 +26,8 @@ beforeEach(() => {
       Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ packages: [], environments: [] }),
+        json: () =>
+          Promise.resolve({ packages: [], environments: [], data: [] }),
         text: () => Promise.resolve(""),
       }),
     ),
@@ -50,49 +51,69 @@ function renderApp() {
 }
 
 describe("App", () => {
-  it("renders the Explore tab by default", () => {
+  it("renders the header with app title", () => {
     renderApp();
-    const heading = screen.getByRole("heading", { name: "Explore" });
-    expect(heading).toBeTruthy();
+    expect(screen.getByText("Turbo Engine Explorer")).toBeTruthy();
   });
 
-  it("renders the bottom tab bar with all four tabs", () => {
+  it("renders the Topology panel header", async () => {
     renderApp();
-    expect(screen.getByRole("tab", { name: "Explore" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Graph" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Logs" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "Settings" })).toBeTruthy();
-  });
-
-  it("switches to Graph tab when tapped", async () => {
-    renderApp();
-    fireEvent.click(screen.getByRole("tab", { name: "Graph" }));
-    // Graph tab shows a heading after the query resolves
+    // The topology panel header shows "Topology" as text
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Graph" })).toBeTruthy();
+      expect(screen.getByText("Topology")).toBeTruthy();
     });
   });
 
-  it("switches to Logs tab when tapped", () => {
+  it("renders bottom panel tab buttons", () => {
     renderApp();
-    fireEvent.click(screen.getByRole("tab", { name: "Logs" }));
-    expect(screen.getByRole("heading", { name: "Logs" })).toBeTruthy();
+    // The bottom panel bar has buttons with text
+    const buttons = screen.getAllByRole("button");
+    const tabLabels = buttons.map((b) => b.textContent);
+    expect(tabLabels).toContain("Traces");
+    expect(tabLabels).toContain("Inspector");
+    expect(tabLabels).toContain("Request");
   });
 
-  it("switches to Settings tab when tapped", async () => {
+  it("shows Traces panel by default with loading state", async () => {
     renderApp();
-    fireEvent.click(screen.getByRole("tab", { name: "Settings" }));
+    // The trace panel shows a loading indicator initially
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Settings" })).toBeTruthy();
+      expect(screen.getByText("Loading traces...")).toBeTruthy();
     });
   });
 
-  it("marks the active tab as selected", () => {
+  it("switches to Inspector panel when clicked", async () => {
     renderApp();
-    const exploreTab = screen.getByRole("tab", { name: "Explore" });
-    expect(exploreTab.getAttribute("aria-selected")).toBe("true");
+    const inspectorButton = screen
+      .getAllByRole("button")
+      .find((b) => b.textContent === "Inspector");
+    if (inspectorButton) fireEvent.click(inspectorButton);
+    await waitFor(() => {
+      expect(screen.getByText(/Select a service/)).toBeTruthy();
+    });
+  });
 
-    const graphTab = screen.getByRole("tab", { name: "Graph" });
-    expect(graphTab.getAttribute("aria-selected")).toBe("false");
+  it("switches to Request panel when clicked", async () => {
+    renderApp();
+    const requestButton = screen
+      .getAllByRole("button")
+      .find((b) => b.textContent === "Request");
+    if (requestButton) fireEvent.click(requestButton);
+    await waitFor(() => {
+      expect(screen.getByText("Send")).toBeTruthy();
+    });
+  });
+
+  it("opens settings overlay when gear icon is clicked", async () => {
+    renderApp();
+    const header = screen.getByText("Turbo Engine Explorer").closest("header");
+    const settingsButton = header?.querySelector("button");
+    if (settingsButton) {
+      fireEvent.click(settingsButton);
+      await waitFor(() => {
+        expect(screen.getByText("Settings")).toBeTruthy();
+        expect(screen.getByText("Done")).toBeTruthy();
+      });
+    }
   });
 });

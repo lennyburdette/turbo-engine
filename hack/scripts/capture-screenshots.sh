@@ -4,9 +4,13 @@
 # playwright is not available.
 #
 # Pages captured:
+#   Console UI (port 3000):
 #   - Dashboard        (/)
 #   - Packages list    (/packages)
 #   - Environments list (/environments)
+#
+#   Explorer UI (port 3001):
+#   - Explorer         (/)
 #
 # Output: ci-report/screenshots/
 #
@@ -23,6 +27,7 @@ REPORT_DIR="${ROOT_DIR}/ci-report"
 SCREENSHOT_DIR="${REPORT_DIR}/screenshots"
 
 CONSOLE_URL="${CONSOLE_URL:-http://localhost:3000}"
+EXPLORER_URL="${EXPLORER_URL:-http://localhost:3001}"
 
 mkdir -p "${SCREENSHOT_DIR}"
 
@@ -155,6 +160,75 @@ for name in "${!PAGES[@]}"; do
     capture_with_curl "$name" "$path"
   fi
 done
+
+# ---------------------------------------------------------------------------
+# Explorer UI — single-page app on port 3001
+# ---------------------------------------------------------------------------
+echo ""
+info "Capturing Explorer UI..."
+info "Explorer URL: ${EXPLORER_URL}"
+echo ""
+
+capture_explorer() {
+  local name="explorer"
+  local url="${EXPLORER_URL}/"
+  local output="${SCREENSHOT_DIR}/${name}.png"
+
+  if $USE_PLAYWRIGHT; then
+    info "  Capturing ${name} (${url})..."
+    local tmp_script
+    tmp_script=$(mktemp /tmp/pw-screenshot-XXXXXX.js)
+    cat > "$tmp_script" <<EXPLORER_PW_EOF
+const { chromium } = require('playwright');
+
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  try {
+    await page.goto('${url}', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.waitForTimeout(3000);
+    await page.screenshot({ path: '${output}', fullPage: false });
+    console.log('Screenshot saved: ${output}');
+  } catch (err) {
+    console.error('Error capturing ${name}:', err.message);
+    process.exit(1);
+  } finally {
+    await browser.close();
+  }
+})();
+EXPLORER_PW_EOF
+
+    if node "$tmp_script" 2>/dev/null; then
+      ok "  ${name} -> ${output}"
+    else
+      warn "  Playwright failed for ${name}, falling back to curl."
+      capture_with_curl_explorer
+    fi
+    rm -f "$tmp_script"
+  else
+    capture_with_curl_explorer
+  fi
+}
+
+capture_with_curl_explorer() {
+  local name="explorer"
+  local url="${EXPLORER_URL}/"
+  local output="${SCREENSHOT_DIR}/${name}.html"
+  info "  Capturing ${name} via curl (${url})..."
+  local http_code
+  http_code=$(curl -s -o "${output}" -w '%{http_code}' "${url}" 2>/dev/null || echo "000")
+  if [[ "$http_code" == "200" ]]; then
+    local size
+    size=$(wc -c < "${output}" 2>/dev/null || echo "0")
+    ok "  ${name} -> ${output} (${size} bytes, HTML)"
+  elif [[ "$http_code" == "000" ]]; then
+    warn "  ${name}: Explorer unreachable at ${url} (skipping)"
+  else
+    warn "  ${name}: HTTP ${http_code} (saved response to ${output})"
+  fi
+}
+
+capture_explorer
 
 echo ""
 ok "Screenshots captured in: ${SCREENSHOT_DIR}"
