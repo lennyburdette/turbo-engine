@@ -8,6 +8,7 @@ title: "k8s-e2e Reports"
 | PR | Run | Link |
 |----|-----|------|
 | pr-10 | run-26 | [View](./pr-10/run-26/) |
+| pr-10 | run-27 | [View](./pr-10/run-27/) |
 | pr-6 | run-11 | [View](./pr-6/run-11/) |
 | pr-7 | run-13 | [View](./pr-7/run-13/) |
 | pr-8 | run-15 | [View](./pr-8/run-15/) |
