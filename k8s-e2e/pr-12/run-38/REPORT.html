@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>K8s E2E Report</title>
+  <style>:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }</style>
+</head>
+<body>
+<div class="container">
+<h1>K8s E2E Report</h1>
+<p><strong>Generated:</strong> 2026-02-21T20:04:00Z</p>
+<h2>Scenarios</h2>
+<p><em>No scenario reports found.</em></p>
+<h2>Platform Health</h2>
+<p><strong>Pods:</strong> 0
+0/0
+0 running</p>
+<details><summary>Full resource list (6 lines)</summary>
+<pre><code>E0221 20:03:54.787780   25428 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:54.788703   25428 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:54.790551   25428 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:54.791171   25428 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:54.792797   25428 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+The connection to the server localhost:8080 was refused - did you specify the right host or port?</code></pre>
+</details>
+<h2>Debug Data</h2>
+<details><summary>K8s events (6 lines)</summary>
+<pre><code>E0221 20:03:56.993503   25670 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:56.994167   25670 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:56.995791   25670 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:56.996276   25670 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+E0221 20:03:56.997882   25670 memcache.go:265] &quot;Unhandled Error&quot; err=&quot;couldn't get current server API group list: Get \&quot;http://localhost:8080/api?timeout=32s\&quot;: dial tcp [::1]:8080: connect: connection refused&quot;
+The connection to the server localhost:8080 was refused - did you specify the right host or port?</code></pre>
+</details>
+<details><summary>Operator actions (4 lines)</summary>
+<pre><code>{
+  &quot;actions&quot;: [],
+  &quot;count&quot;: 0
+}</code></pre>
+</details>
+<details><summary>registry logs (1 lines)</summary>
+<pre><code>(no logs available — deployment may not exist)</code></pre>
+</details>
+<details><summary>builder logs (1 lines)</summary>
+<pre><code>(no logs available — deployment may not exist)</code></pre>
+</details>
+<details><summary>envmanager logs (1 lines)</summary>
+<pre><code>(no logs available — deployment may not exist)</code></pre>
+</details>
+<details><summary>turbo-engine-operator logs (1 lines)</summary>
+<pre><code>(no logs available — deployment may not exist)</code></pre>
+</details>
+<details><summary>gateway logs (1 lines)</summary>
+<pre><code>(no logs available — deployment may not exist)</code></pre>
+</details>
+<hr>
+<p><em>End of report. Per-scenario details are in the linked scenario reports above.</em></p>
+</div>
+</body>
+</html>
