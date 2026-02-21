@@ -1,15 +1,25 @@
 // petstore-mock is a fake REST API that serves pet data.
 // Used as the upstream service in the K8s E2E multi-package test.
 // It logs every request/response as JSON and propagates W3C traceparent.
+// Exports OTLP spans to the collector for correlated traces.
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 )
 
 type pet struct {
@@ -31,14 +41,21 @@ func main() {
 		port = "8080"
 	}
 
+	// Initialise OpenTelemetry tracing.
+	shutdown := initTracer()
+	defer shutdown()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", handleHealth)
 	mux.HandleFunc("/pets/", handlePetByID)
 	mux.HandleFunc("/pets", handleListPets)
 	mux.HandleFunc("/", handleCatchAll)
 
+	// Wrap the mux with OTel HTTP handler for automatic inbound span creation.
+	handler := otelhttp.NewHandler(withLogging(mux), "petstore-mock")
+
 	logJSON("info", "petstore mock starting", map[string]any{"port": port})
-	if err := http.ListenAndServe(":"+port, withLogging(mux)); err != nil {
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		logJSON("error", "server exited", map[string]any{"error": err.Error()})
 	}
 }
@@ -155,4 +172,49 @@ func logJSON(level, msg string, fields map[string]any) {
 	}
 	data, _ := json.Marshal(entry)
 	fmt.Println(string(data))
+}
+
+// ---------------------------------------------------------------------------
+// OpenTelemetry initialisation
+// ---------------------------------------------------------------------------
+
+func initTracer() func() {
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "http://otel-collector:4318"
+	}
+
+	ctx := context.Background()
+
+	exporter, err := otlptracehttp.New(ctx,
+		otlptracehttp.WithEndpoint(strings.TrimPrefix(strings.TrimPrefix(endpoint, "http://"), "https://")),
+		otlptracehttp.WithInsecure(),
+	)
+	if err != nil {
+		logJSON("warn", "failed to create OTLP exporter, tracing disabled", map[string]any{"error": err.Error()})
+		return func() {}
+	}
+
+	res, _ := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String("petstore-mock"),
+			semconv.ServiceVersionKey.String("0.1.0"),
+		),
+	)
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tp.Shutdown(ctx); err != nil {
+			logJSON("warn", "tracer shutdown error", map[string]any{"error": err.Error()})
+		}
+	}
 }

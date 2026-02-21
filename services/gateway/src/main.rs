@@ -251,6 +251,12 @@ async fn shutdown_signal() {
 fn init_tracing(otlp_endpoint: &str) {
     use tracing_subscriber::Layer;
 
+    // Register W3C TraceContext propagator so the gateway extracts
+    // incoming traceparent headers and injects them into upstream requests.
+    opentelemetry::global::set_text_map_propagator(
+        opentelemetry_sdk::propagation::TraceContextPropagator::new(),
+    );
+
     let env_filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("gateway=info,tower_http=info"));
 
