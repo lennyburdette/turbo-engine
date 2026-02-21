@@ -1,0 +1,19 @@
+{"level":"info","msg":"orchestrator starting","port":"8080","time":"2026-02-21T01:04:34.221626975Z","upstream_url":"http://svc-petstore-api:8080"}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/listPets","query":"","time":"2026-02-21T01:04:43.630204165Z","trace_id":"","traceparent":"","x_request_id":""}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"listPets","time":"2026-02-21T01:04:43.630239228Z","trace_id":"","url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":1,"level":"info","msg":"upstream call complete","response_bytes":208,"rpc":"listPets","time":"2026-02-21T01:04:43.631396198Z","trace_id":"","upstream_status":200,"url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":1,"level":"info","method":"POST","msg":"response sent","path":"/rpc/listPets","status":200,"time":"2026-02-21T01:04:43.631504033Z","trace_id":""}
+{"level":"info","method":"GET","msg":"request received","path":"/healthz","query":"","time":"2026-02-21T01:04:45.720963352Z","trace_id":"","traceparent":"","x_request_id":"0909bc2e-d727-4b0d-916c-b665d9417ba9"}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/healthz","status":200,"time":"2026-02-21T01:04:45.721007719Z","trace_id":""}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/listPets","query":"","time":"2026-02-21T01:04:45.73381843Z","trace_id":"","traceparent":"","x_request_id":"4c1c2ab0-c1ef-4d0e-b9a5-068f2d470d8d"}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"listPets","time":"2026-02-21T01:04:45.733852084Z","trace_id":"","url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":0,"level":"info","msg":"upstream call complete","response_bytes":208,"rpc":"listPets","time":"2026-02-21T01:04:45.734596149Z","trace_id":"","upstream_status":200,"url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":0,"level":"info","method":"POST","msg":"response sent","path":"/rpc/listPets","status":200,"time":"2026-02-21T01:04:45.734696931Z","trace_id":""}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/getPet","query":"id=2","time":"2026-02-21T01:04:45.812328537Z","trace_id":"","traceparent":"","x_request_id":"577dbe5a-a86f-4f81-8243-ff82e29d8f0f"}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"getPet","time":"2026-02-21T01:04:45.812358217Z","trace_id":"","url":"http://svc-petstore-api:8080/pets/2"}
+{"duration_ms":0,"level":"info","msg":"upstream call complete","response_bytes":86,"rpc":"getPet","time":"2026-02-21T01:04:45.812756158Z","trace_id":"","upstream_status":200,"url":"http://svc-petstore-api:8080/pets/2"}
+{"duration_ms":0,"level":"info","method":"POST","msg":"response sent","path":"/rpc/getPet","status":200,"time":"2026-02-21T01:04:45.812817482Z","trace_id":""}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/listPets","query":"","time":"2026-02-21T01:04:45.84626052Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","traceparent":"00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-0000000000000001-01","x_request_id":"0b37c0c3-f60e-49d7-a5de-c27990655567"}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"listPets","time":"2026-02-21T01:04:45.846294846Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":0,"level":"info","msg":"upstream call complete","response_bytes":240,"rpc":"listPets","time":"2026-02-21T01:04:45.846682396Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","upstream_status":200,"url":"http://svc-petstore-api:8080/pets"}
+{"duration_ms":0,"level":"info","method":"POST","msg":"response sent","path":"/rpc/listPets","status":200,"time":"2026-02-21T01:04:45.846741474Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"}
