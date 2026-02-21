@@ -487,6 +487,11 @@ HTMLHEAD
       if [[ -f "${REPORT_DIR}/traces.html" ]]; then
         printf ' | <a href="./traces.html">traces</a>'
       fi
+      timeline_json="${SCENARIO_DIR}/${scenario_name}/timeline.json"
+      if [[ -f "$timeline_json" ]]; then
+        tl_events=$(python3 -c "import json;d=json.load(open('${timeline_json}'));print(len(d.get('events',[])))" 2>/dev/null || echo "0")
+        printf ' | %s timeline events' "$tl_events"
+      fi
       printf '</p>\n'
     done
   else

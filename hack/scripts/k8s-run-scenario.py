@@ -35,15 +35,18 @@ Exit code:
 """
 
 import argparse
+import contextlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from html import escape as html_escape
-from typing import Any
+from typing import Any, Generator
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +123,55 @@ blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 4px 1
 .log-meta-val { color: var(--fg); }
 .log-raw { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
 .log-container { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; overflow-x: auto; max-width: 100%; }
+
+/* Timeline layout */
+.tl { display: grid; grid-template-columns: 52px 1fr; font-size: 13px; }
+.tl-epoch {
+  color: var(--fg-muted); font-size: 11px; font-family: SFMono-Regular, Consolas, monospace;
+  text-align: right; padding: 2px 8px 2px 0; border-right: 2px solid var(--border);
+  white-space: nowrap; user-select: none;
+}
+.tl-epoch-dot { position: relative; }
+.tl-epoch-dot::after {
+  content: ''; position: absolute; right: -5px; top: 8px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border);
+}
+.tl-event { padding: 2px 0 2px 12px; min-height: 22px; }
+
+/* Landmark headers */
+.tl-landmark {
+  padding: 8px 0 4px 12px; font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+.tl-landmark-toggle { font-size: 10px; color: var(--fg-muted); }
+.tl-landmark-name { text-transform: uppercase; letter-spacing: 0.5px; }
+.tl-landmark-dur { color: var(--fg-muted); font-weight: 400; font-size: 12px; }
+.tl-landmark-badge { font-size: 11px; margin-left: auto; padding: 1px 6px; border-radius: 3px; }
+.tl-lm-pass .tl-epoch-dot::after { background: var(--pass); }
+.tl-lm-fail .tl-epoch-dot::after { background: var(--fail); }
+
+/* Event type icons */
+.tl-icon { display: inline-block; width: 18px; text-align: center; flex-shrink: 0; }
+.tl-test { display: flex; align-items: baseline; gap: 4px; }
+.tl-test-detail { color: var(--fg-muted); }
+.tl-test-dur { color: var(--fg-muted); font-size: 11px; }
+.tl-http { color: var(--fg-muted); font-family: SFMono-Regular, Consolas, monospace; font-size: 12px; }
+.tl-http-status { font-weight: 600; }
+.tl-http-ok { color: var(--pass); }
+.tl-http-err { color: var(--fail); }
+.tl-info-msg { color: var(--fg-muted); }
+.tl-warn-msg { color: #b08800; }
+.tl-k8s { color: var(--fg-muted); font-size: 12px; }
+.tl-k8s-obj { font-weight: 500; color: var(--fg); }
+.tl-screenshot { display: flex; align-items: center; gap: 8px; }
+.tl-screenshot img {
+  max-width: 120px; height: auto; border: 1px solid var(--border);
+  border-radius: 4px; cursor: pointer; transition: max-width 0.2s;
+}
+.tl-screenshot img:hover { max-width: 300px; }
+.tl-screenshot-label { font-weight: 500; }
+.tl-log-entry { font-size: 12px; font-family: SFMono-Regular, Consolas, monospace; }
+.tl-gap { height: 8px; }
 """
 
 
@@ -407,6 +459,38 @@ class ScenarioRunner:
         self._pf_procs: list[subprocess.Popen] = []
         self._next_port = 19000
 
+        # Timeline: flat list of timestamped events.
+        self._epoch_mono_ms = time.monotonic_ns() // 1_000_000
+        self._epoch_wall = datetime.now(timezone.utc)
+        self.timeline: list[dict] = []
+        self._current_landmark: str = ""
+
+    # -- Timeline helpers ---------------------------------------------------
+
+    def _now_ms(self) -> int:
+        """Milliseconds elapsed since scenario start."""
+        return time.monotonic_ns() // 1_000_000 - self._epoch_mono_ms
+
+    def _emit(self, etype: str, data: dict | None = None) -> None:
+        """Append a timestamped event to the timeline."""
+        self.timeline.append({
+            "t": self._now_ms(),
+            "type": etype,
+            "landmark": self._current_landmark,
+            **(data or {}),
+        })
+
+    @contextlib.contextmanager
+    def _landmark(self, name: str) -> Generator[None, None, None]:
+        """Context manager that emits landmark-start / landmark-end events."""
+        self._current_landmark = name
+        self._emit("landmark-start", {"name": name})
+        try:
+            yield
+        finally:
+            self._emit("landmark-end", {"name": name})
+            self._current_landmark = ""
+
     def _base_url(self, service: str) -> str:
         ports = {
             "registry": self.args.registry_port,
@@ -428,12 +512,25 @@ class ScenarioRunner:
                 "duration_ms": duration_ms,
             }
         )
+        self._emit("test", {
+            "name": name, "status": status, "detail": detail,
+            "duration_ms": duration_ms,
+        })
         if passed:
             ok(f"{prefixed_name}: {detail}")
             self.pass_count += 1
         else:
             fail(f"{prefixed_name}: {detail}")
             self.fail_count += 1
+
+    def _emit_http(self, method: str, url: str, status: int, duration_ms: int) -> None:
+        """Emit an HTTP request/response event to the timeline."""
+        # Shorten URL for display: keep path only
+        path = url.split("//", 1)[-1].split("/", 1)[-1] if "//" in url else url
+        self._emit("http", {
+            "method": method, "url": f"/{path}", "status": status,
+            "duration_ms": duration_ms,
+        })
 
     def _port_forward_component(self, component_name: str) -> int:
         """Set up a port-forward to a component service and return the local port."""
@@ -470,278 +567,298 @@ class ScenarioRunner:
     def publish_packages(self) -> bool:
         """Publish all packages defined in the scenario."""
         all_ok = True
-        for pkg in self.scenario["packages"]:
-            t0 = time.monotonic_ns() // 1_000_000
-            payload = {
-                "package": {
-                    "name": pkg["name"],
-                    "kind": pkg["kind"],
-                    "version": pkg["version"],
-                    "schema": pkg.get("schema", "{}"),
-                    "dependencies": pkg.get("dependencies", []),
+        with self._landmark("publish"):
+            for pkg in self.scenario["packages"]:
+                t0 = time.monotonic_ns() // 1_000_000
+                payload = {
+                    "package": {
+                        "name": pkg["name"],
+                        "kind": pkg["kind"],
+                        "version": pkg["version"],
+                        "schema": pkg.get("schema", "{}"),
+                        "dependencies": pkg.get("dependencies", []),
+                    }
                 }
-            }
-            if "upstream_url" in pkg:
-                payload["package"]["upstreamConfig"] = {"url": pkg["upstream_url"]}
+                if "upstream_url" in pkg:
+                    payload["package"]["upstreamConfig"] = {"url": pkg["upstream_url"]}
 
-            url = f"{self._base_url('registry')}/v1/packages"
-            status, body = http_request(url, method="POST", body=payload)
-            duration = time.monotonic_ns() // 1_000_000 - t0
+                url = f"{self._base_url('registry')}/v1/packages"
+                status, body = http_request(url, method="POST", body=payload)
+                duration = time.monotonic_ns() // 1_000_000 - t0
+                self._emit_http("POST", url, status, duration)
 
-            if status in (200, 201):
-                self._record(
-                    f"publish-{pkg['name']}",
-                    True,
-                    f"Published {pkg['name']}@{pkg['version']} (HTTP {status})",
-                    duration,
-                )
-            else:
-                self._record(
-                    f"publish-{pkg['name']}",
-                    False,
-                    f"HTTP {status}",
-                    duration,
-                )
-                all_ok = False
+                if status in (200, 201):
+                    self._record(
+                        f"publish-{pkg['name']}",
+                        True,
+                        f"Published {pkg['name']}@{pkg['version']} (HTTP {status})",
+                        duration,
+                    )
+                else:
+                    self._record(
+                        f"publish-{pkg['name']}",
+                        False,
+                        f"HTTP {status}",
+                        duration,
+                    )
+                    all_ok = False
         return all_ok
 
     def create_environment(self) -> bool:
-        env_cfg = self.scenario["environment"]
-        t0 = time.monotonic_ns() // 1_000_000
-        payload = {
-            "name": env_cfg["name"],
-            "baseRootPackage": env_cfg["root_package"],
-            "baseRootVersion": env_cfg["root_version"],
-            "branch": env_cfg["branch"],
-            "createdBy": "k8s-e2e-scenario",
-        }
-        url = f"{self._base_url('envmanager')}/v1/environments"
-        status, body = http_request(url, method="POST", body=payload)
-        duration = time.monotonic_ns() // 1_000_000 - t0
+        with self._landmark("environment"):
+            env_cfg = self.scenario["environment"]
+            t0 = time.monotonic_ns() // 1_000_000
+            payload = {
+                "name": env_cfg["name"],
+                "baseRootPackage": env_cfg["root_package"],
+                "baseRootVersion": env_cfg["root_version"],
+                "branch": env_cfg["branch"],
+                "createdBy": "k8s-e2e-scenario",
+            }
+            url = f"{self._base_url('envmanager')}/v1/environments"
+            status, body = http_request(url, method="POST", body=payload)
+            duration = time.monotonic_ns() // 1_000_000 - t0
+            self._emit_http("POST", url, status, duration)
 
-        if status in (200, 201):
-            self.env_id = body.get("id", env_cfg["name"]) if isinstance(body, dict) else env_cfg["name"]
-            self._record("create-environment", True, f"Created {self.env_id}", duration)
-            return True
-        self.env_id = env_cfg["name"]
-        self._record("create-environment", False, f"HTTP {status}", duration)
-        return False
-
-    def trigger_and_poll_build(self) -> bool:
-        env_cfg = self.scenario["environment"]
-        t0 = time.monotonic_ns() // 1_000_000
-
-        payload = {
-            "environmentId": self.env_id,
-            "rootPackageName": env_cfg["root_package"],
-            "rootPackageVersion": env_cfg["root_version"],
-        }
-        url = f"{self._base_url('builder')}/v1/builds"
-        status, body = http_request(url, method="POST", body=payload)
-        duration = time.monotonic_ns() // 1_000_000 - t0
-
-        if status not in (200, 201, 202):
-            self._record("trigger-build", False, f"HTTP {status}", duration)
+            if status in (200, 201):
+                self.env_id = body.get("id", env_cfg["name"]) if isinstance(body, dict) else env_cfg["name"]
+                self._record("create-environment", True, f"Created {self.env_id}", duration)
+                return True
+            self.env_id = env_cfg["name"]
+            self._record("create-environment", False, f"HTTP {status}", duration)
             return False
 
-        self.build_id = body.get("id", "unknown") if isinstance(body, dict) else "unknown"
-        self._record("trigger-build", True, f"Build {self.build_id} triggered", duration)
+    def trigger_and_poll_build(self) -> bool:
+        with self._landmark("build"):
+            env_cfg = self.scenario["environment"]
+            t0 = time.monotonic_ns() // 1_000_000
 
-        # Poll build status
-        t0 = time.monotonic_ns() // 1_000_000
-        deadline = time.time() + 90
-        build_status = "unknown"
-        while time.time() < deadline:
-            poll_url = f"{self._base_url('builder')}/v1/builds/{self.build_id}"
-            _, poll_body = http_request(poll_url, method="GET")
-            build_status = poll_body.get("status", "unknown") if isinstance(poll_body, dict) else "unknown"
-            if build_status in ("succeeded", "completed", "failed"):
-                break
-            time.sleep(3)
+            payload = {
+                "environmentId": self.env_id,
+                "rootPackageName": env_cfg["root_package"],
+                "rootPackageVersion": env_cfg["root_version"],
+            }
+            url = f"{self._base_url('builder')}/v1/builds"
+            status, body = http_request(url, method="POST", body=payload)
+            duration = time.monotonic_ns() // 1_000_000 - t0
+            self._emit_http("POST", url, status, duration)
 
-        duration = time.monotonic_ns() // 1_000_000 - t0
-        if build_status in ("succeeded", "completed"):
-            self._record("build-status", True, f"Build {self.build_id} succeeded", duration)
-            return True
-        self._record("build-status", False, f"Build status: {build_status}", duration)
-        return False
+            if status not in (200, 201, 202):
+                self._record("trigger-build", False, f"HTTP {status}", duration)
+                return False
+
+            self.build_id = body.get("id", "unknown") if isinstance(body, dict) else "unknown"
+            self._record("trigger-build", True, f"Build {self.build_id} triggered", duration)
+
+            # Poll build status
+            t0 = time.monotonic_ns() // 1_000_000
+            deadline = time.time() + 90
+            build_status = "unknown"
+            poll_count = 0
+            while time.time() < deadline:
+                poll_url = f"{self._base_url('builder')}/v1/builds/{self.build_id}"
+                poll_status, poll_body = http_request(poll_url, method="GET")
+                poll_count += 1
+                build_status = poll_body.get("status", "unknown") if isinstance(poll_body, dict) else "unknown"
+                self._emit("info", {"msg": f"Build poll #{poll_count}: {build_status}"})
+                if build_status in ("succeeded", "completed", "failed"):
+                    break
+                time.sleep(3)
+
+            duration = time.monotonic_ns() // 1_000_000 - t0
+            if build_status in ("succeeded", "completed"):
+                self._record("build-status", True, f"Build {self.build_id} succeeded", duration)
+                return True
+            self._record("build-status", False, f"Build status: {build_status}", duration)
+            return False
 
     def reconcile(self) -> bool:
-        t0 = time.monotonic_ns() // 1_000_000
+        with self._landmark("reconcile"):
+            t0 = time.monotonic_ns() // 1_000_000
 
-        components = []
-        for comp in self.scenario["components"]:
-            c = {
-                "packageName": comp["package_name"],
-                "packageVersion": comp["package_version"],
-                "kind": comp["kind"],
-                "artifactHash": f"{comp['package_name']}-hash",
-                "runtime": {
-                    "replicas": comp.get("replicas", 1),
-                    "image": comp["image"],
-                    "resources": {"cpuRequest": "50m", "memoryRequest": "64Mi"},
-                },
+            components = []
+            for comp in self.scenario["components"]:
+                c = {
+                    "packageName": comp["package_name"],
+                    "packageVersion": comp["package_version"],
+                    "kind": comp["kind"],
+                    "artifactHash": f"{comp['package_name']}-hash",
+                    "runtime": {
+                        "replicas": comp.get("replicas", 1),
+                        "image": comp["image"],
+                        "resources": {"cpuRequest": "50m", "memoryRequest": "64Mi"},
+                    },
+                }
+                if comp.get("env"):
+                    c["runtime"]["env"] = comp["env"]
+                components.append(c)
+
+            ingress_cfg = self.scenario.get("ingress", {})
+            routes = []
+            for r in ingress_cfg.get("routes", []):
+                routes.append({
+                    "path": r["path"],
+                    "targetComponent": r["component"],
+                    "targetPort": r["port"],
+                })
+
+            payload = {
+                "spec": {
+                    "environmentId": self.env_id,
+                    "buildId": self.build_id,
+                    "rootPackage": self.scenario["environment"]["root_package"],
+                    "components": components,
+                    "ingress": {
+                        "host": ingress_cfg.get("host", "localhost"),
+                        "routes": routes,
+                    },
+                }
             }
-            if comp.get("env"):
-                c["runtime"]["env"] = comp["env"]
-            components.append(c)
 
-        ingress_cfg = self.scenario.get("ingress", {})
-        routes = []
-        for r in ingress_cfg.get("routes", []):
-            routes.append({
-                "path": r["path"],
-                "targetComponent": r["component"],
-                "targetPort": r["port"],
-            })
+            url = f"{self._base_url('operator')}/v1/reconcile"
+            status, body = http_request(url, method="POST", body=payload)
+            duration = time.monotonic_ns() // 1_000_000 - t0
+            self._emit_http("POST", url, status, duration)
 
-        payload = {
-            "spec": {
-                "environmentId": self.env_id,
-                "buildId": self.build_id,
-                "rootPackage": self.scenario["environment"]["root_package"],
-                "components": components,
-                "ingress": {
-                    "host": ingress_cfg.get("host", "localhost"),
-                    "routes": routes,
-                },
-            }
-        }
-
-        url = f"{self._base_url('operator')}/v1/reconcile"
-        status, body = http_request(url, method="POST", body=payload)
-        duration = time.monotonic_ns() // 1_000_000 - t0
-
-        if status == 200:
-            time.sleep(5)  # Give operator time to create resources
-            self._record("operator-reconcile", True, f"Reconciled {len(components)} components", duration)
-            return True
-        detail = body if isinstance(body, str) else json.dumps(body)[:200]
-        self._record("operator-reconcile", False, f"HTTP {status}: {detail}", duration)
-        return False
+            if status == 200:
+                self._emit("info", {"msg": "Waiting 5s for operator to settle..."})
+                time.sleep(5)  # Give operator time to create resources
+                self._record("operator-reconcile", True, f"Reconciled {len(components)} components", duration)
+                return True
+            detail = body if isinstance(body, str) else json.dumps(body)[:200]
+            self._record("operator-reconcile", False, f"HTTP {status}: {detail}", duration)
+            return False
 
     def verify_k8s_resources(self) -> bool:
-        t0 = time.monotonic_ns() // 1_000_000
-        all_ok = True
-        for comp in self.scenario["components"]:
-            name = comp["package_name"]
-            for resource in [f"deployment/deploy-{name}", f"service/svc-{name}", f"configmap/cm-{name}"]:
-                rc, _ = kubectl(self.args.namespace, "get", resource)
-                if rc != 0:
-                    warn(f"  Missing {resource}")
-                    all_ok = False
-                else:
-                    info(f"  Found {resource}")
+        with self._landmark("k8s-resources"):
+            t0 = time.monotonic_ns() // 1_000_000
+            all_ok = True
+            for comp in self.scenario["components"]:
+                name = comp["package_name"]
+                for resource in [f"deployment/deploy-{name}", f"service/svc-{name}", f"configmap/cm-{name}"]:
+                    rc, _ = kubectl(self.args.namespace, "get", resource)
+                    if rc != 0:
+                        warn(f"  Missing {resource}")
+                        self._emit("info", {"msg": f"Missing: {resource}", "level": "warn"})
+                        all_ok = False
+                    else:
+                        info(f"  Found {resource}")
+                        self._emit("info", {"msg": f"Found: {resource}"})
 
-        duration = time.monotonic_ns() // 1_000_000 - t0
-        count = len(self.scenario["components"]) * 3
-        self._record(
-            "verify-k8s-resources",
-            all_ok,
-            f"{'All' if all_ok else 'Some'} {count} resources {'created' if all_ok else 'missing'}",
-            duration,
-        )
-        return all_ok
+            duration = time.monotonic_ns() // 1_000_000 - t0
+            count = len(self.scenario["components"]) * 3
+            self._record(
+                "verify-k8s-resources",
+                all_ok,
+                f"{'All' if all_ok else 'Some'} {count} resources {'created' if all_ok else 'missing'}",
+                duration,
+            )
+            return all_ok
 
     def wait_for_pods(self) -> bool:
-        t0 = time.monotonic_ns() // 1_000_000
-        all_ok = True
-        for comp in self.scenario["components"]:
-            name = comp["package_name"]
-            rc, _ = kubectl(
-                self.args.namespace,
-                "wait", "--for=condition=available", f"deployment/deploy-{name}", "--timeout=60s",
-            )
-            if rc != 0:
-                warn(f"  deploy-{name} did not become available")
-                all_ok = False
+        with self._landmark("pods"):
+            t0 = time.monotonic_ns() // 1_000_000
+            all_ok = True
+            for comp in self.scenario["components"]:
+                name = comp["package_name"]
+                self._emit("info", {"msg": f"Waiting for deploy-{name}..."})
+                rc, _ = kubectl(
+                    self.args.namespace,
+                    "wait", "--for=condition=available", f"deployment/deploy-{name}", "--timeout=60s",
+                )
+                if rc != 0:
+                    warn(f"  deploy-{name} did not become available")
+                    self._emit("info", {"msg": f"deploy-{name} not available", "level": "warn"})
+                    all_ok = False
+                else:
+                    self._emit("info", {"msg": f"deploy-{name} available"})
 
-        duration = time.monotonic_ns() // 1_000_000 - t0
-        self._record("pods-running", all_ok, "All pods running" if all_ok else "Some pods not available", duration)
-        return all_ok
+            duration = time.monotonic_ns() // 1_000_000 - t0
+            self._record("pods-running", all_ok, "All pods running" if all_ok else "Some pods not available", duration)
+            return all_ok
 
     def wait_for_gateway_routes(self) -> bool:
-        """Poll the gateway until ingress routes are active.
-
-        Uses the first gateway-bound request from the scenario as a probe.
-        A 404 means the gateway hasn't picked up the route yet; any other
-        status (including errors from the upstream) means routing is active.
-        """
-        # Find the first request that goes via gateway.
-        probe_req = None
-        for req in self.scenario.get("requests", []):
-            if req.get("via", "gateway") == "gateway":
-                probe_req = req
-                break
-        if probe_req is None:
-            return True  # No gateway requests in this scenario.
-
-        probe_path = probe_req["path"]
-        probe_method = probe_req.get("method", "GET")
-        probe_url = f"{self._base_url('gateway')}{probe_path}"
-
-        t0 = time.monotonic_ns() // 1_000_000
-        info(f"  Waiting for gateway route {probe_path} to become active...")
-
-        deadline = time.time() + 45
-        last_code = 0
-        while time.time() < deadline:
-            status, _ = http_request(probe_url, method=probe_method, timeout=5)
-            last_code = status
-            # 404 means the gateway hasn't loaded the route yet.
-            # Any other status (200, 500, 502, etc.) means the route exists.
-            if status != 404:
-                duration = time.monotonic_ns() // 1_000_000 - t0
-                self._record("gateway-routing", True, f"Gateway route {probe_path} active (HTTP {status})", duration)
+        """Poll the gateway until ingress routes are active."""
+        with self._landmark("gateway"):
+            probe_req = None
+            for req in self.scenario.get("requests", []):
+                if req.get("via", "gateway") == "gateway":
+                    probe_req = req
+                    break
+            if probe_req is None:
                 return True
-            time.sleep(5)
 
-        duration = time.monotonic_ns() // 1_000_000 - t0
-        self._record("gateway-routing", False, f"Route {probe_path} not ready after 45s (HTTP {last_code})", duration)
-        return False
+            probe_path = probe_req["path"]
+            probe_method = probe_req.get("method", "GET")
+            probe_url = f"{self._base_url('gateway')}{probe_path}"
+
+            t0 = time.monotonic_ns() // 1_000_000
+            info(f"  Waiting for gateway route {probe_path} to become active...")
+
+            deadline = time.time() + 45
+            last_code = 0
+            attempt = 0
+            while time.time() < deadline:
+                attempt += 1
+                status, _ = http_request(probe_url, method=probe_method, timeout=5)
+                last_code = status
+                self._emit_http(probe_method, probe_url, status, 0)
+                if status != 404:
+                    duration = time.monotonic_ns() // 1_000_000 - t0
+                    self._record("gateway-routing", True, f"Gateway route {probe_path} active (HTTP {status})", duration)
+                    return True
+                self._emit("info", {"msg": f"Route not ready (attempt {attempt}, HTTP 404), retrying..."})
+                time.sleep(5)
+
+            duration = time.monotonic_ns() // 1_000_000 - t0
+            self._record("gateway-routing", False, f"Route {probe_path} not ready after 45s (HTTP {last_code})", duration)
+            return False
 
     def run_requests(self) -> None:
         """Execute the scenario's HTTP requests with assertions."""
-        for req in self.scenario.get("requests", []):
-            t0 = time.monotonic_ns() // 1_000_000
-            req_name = req["name"]
-            method = req.get("method", "GET")
-            path = req["path"]
-            via = req.get("via", "gateway")
-            extra_headers = req.get("headers", {})
+        with self._landmark("requests"):
+            for req in self.scenario.get("requests", []):
+                t0 = time.monotonic_ns() // 1_000_000
+                req_name = req["name"]
+                method = req.get("method", "GET")
+                path = req["path"]
+                via = req.get("via", "gateway")
+                extra_headers = req.get("headers", {})
 
-            # Determine the target URL
-            if via == "gateway":
-                base = self._base_url("gateway")
-            elif via.startswith("component:"):
-                comp_name = via.split(":", 1)[1]
-                port = self._port_forward_component(comp_name)
-                base = f"http://localhost:{port}"
-            else:
-                base = self._base_url(via)
+                if via == "gateway":
+                    base = self._base_url("gateway")
+                elif via.startswith("component:"):
+                    comp_name = via.split(":", 1)[1]
+                    port = self._port_forward_component(comp_name)
+                    base = f"http://localhost:{port}"
+                else:
+                    base = self._base_url(via)
 
-            url = f"{base}{path}"
-            info(f"  {method} {url}")
+                url = f"{base}{path}"
+                info(f"  {method} {url}")
 
-            status_code, body = http_request(url, method=method, headers=extra_headers if extra_headers else None)
+                status_code, body = http_request(url, method=method, headers=extra_headers if extra_headers else None)
+                duration = time.monotonic_ns() // 1_000_000 - t0
+                self._emit_http(method, url, status_code, duration)
 
-            # Check all assertions
-            all_passed = True
-            details = []
-            for assertion in req.get("assertions", []):
-                passed, detail = check_assertion(assertion, status_code, body)
-                details.append(detail)
-                if not passed:
-                    all_passed = False
+                all_passed = True
+                details = []
+                for assertion in req.get("assertions", []):
+                    passed, detail = check_assertion(assertion, status_code, body)
+                    details.append(detail)
+                    if not passed:
+                        all_passed = False
 
-            duration = time.monotonic_ns() // 1_000_000 - t0
-            self._record(req_name, all_passed, "; ".join(details), duration)
+                self._record(req_name, all_passed, "; ".join(details), duration)
 
     def capture_screenshots(self) -> None:
         """Capture screenshots defined in the scenario using Playwright."""
         screenshots = self.scenario.get("screenshots", [])
         if not screenshots:
             return
+
+        self._current_landmark = "screenshots"
+        self._emit("landmark-start", {"name": "screenshots"})
 
         report_dir = os.environ.get("REPORT_DIR", "ci-report")
         screenshot_dir = os.path.join(report_dir, "screenshots", self.name)
@@ -757,6 +874,8 @@ class ScenarioRunner:
             )
         except Exception:
             warn("Playwright not available; skipping screenshots")
+            self._emit("landmark-end", {"name": "screenshots"})
+            self._current_landmark = ""
             return
 
         console_url = os.environ.get("CONSOLE_URL", "http://localhost:13000")
@@ -872,35 +991,47 @@ class ScenarioRunner:
                 )
                 if result.returncode == 0:
                     ok(f"  Screenshot saved: {output_path}")
+                    self._emit("screenshot", {
+                        "name": name, "ui": ui, "path": path,
+                        "description": ss.get("description", name),
+                        "img_src": f"../../screenshots/{self.name}/{name}.png",
+                    })
                 else:
                     warn(f"  Screenshot failed: {result.stderr[:200]}")
+                    self._emit("info", {"msg": f"Screenshot {name} failed", "level": "warn"})
             except subprocess.TimeoutExpired:
                 warn(f"  Screenshot timed out: {name}")
+                self._emit("info", {"msg": f"Screenshot {name} timed out", "level": "warn"})
             finally:
                 try:
                     os.unlink(tmp_path)
                 except OSError:
                     pass
 
+        self._emit("landmark-end", {"name": "screenshots"})
+        self._current_landmark = ""
+
     def capture_logs(self) -> None:
         """Dump pod logs to the report directory."""
-        report_dir = os.environ.get("REPORT_DIR", "ci-report")
-        k8s_dir = os.path.join(report_dir, "k8s")
-        os.makedirs(k8s_dir, exist_ok=True)
+        with self._landmark("logs"):
+            report_dir = os.environ.get("REPORT_DIR", "ci-report")
+            k8s_dir = os.path.join(report_dir, "k8s")
+            os.makedirs(k8s_dir, exist_ok=True)
 
-        for comp in self.scenario["components"]:
-            name = comp["package_name"]
-            rc, pod_name = kubectl(
-                self.args.namespace,
-                "get", "pods",
-                "-l", f"app.kubernetes.io/name={name}",
-                "-o", "jsonpath={.items[0].metadata.name}",
-            )
-            if rc == 0 and pod_name:
-                _, logs = kubectl(self.args.namespace, "logs", pod_name, "--tail=50")
-                log_file = os.path.join(k8s_dir, f"{self.name}-{name}-logs.txt")
-                with open(log_file, "w") as f:
-                    f.write(logs)
+            for comp in self.scenario["components"]:
+                name = comp["package_name"]
+                rc, pod_name = kubectl(
+                    self.args.namespace,
+                    "get", "pods",
+                    "-l", f"app.kubernetes.io/name={name}",
+                    "-o", "jsonpath={.items[0].metadata.name}",
+                )
+                if rc == 0 and pod_name:
+                    _, logs = kubectl(self.args.namespace, "logs", pod_name, "--tail=50")
+                    log_file = os.path.join(k8s_dir, f"{self.name}-{name}-logs.txt")
+                    with open(log_file, "w") as f:
+                        f.write(logs)
+                    self._emit("info", {"msg": f"Captured {name} logs ({logs.count(chr(10)) + 1} lines)"})
 
     # -- Main entry point ---------------------------------------------------
 
@@ -950,7 +1081,7 @@ class ScenarioRunner:
             self.capture_screenshots()
             self.capture_logs()
             self.generate_report()
-            self.generate_html_report()
+            self.generate_timeline_html()
         finally:
             self.cleanup()
 
@@ -1165,6 +1296,369 @@ class ScenarioRunner:
         with open(html_path, "w") as f:
             f.write(page)
         ok(f"Scenario HTML report: {html_path}")
+
+    def _backfill_k8s_events(self) -> None:
+        """Parse K8s events and component logs, inserting them into the timeline
+        at approximate positions based on timestamps."""
+        report_dir = os.environ.get("REPORT_DIR", "ci-report")
+        k8s_dir = os.path.join(report_dir, "k8s")
+        events_file = os.path.join(k8s_dir, "events.txt")
+
+        # Determine which landmarks span which time ranges.
+        landmarks: dict[str, tuple[int, int]] = {}
+        for ev in self.timeline:
+            if ev["type"] == "landmark-start":
+                landmarks[ev["name"]] = (ev["t"], 0)
+            elif ev["type"] == "landmark-end" and ev["name"] in landmarks:
+                start, _ = landmarks[ev["name"]]
+                landmarks[ev["name"]] = (start, ev["t"])
+
+        # Find the best landmark for an event at a given time offset.
+        def best_landmark(t_ms: int) -> str:
+            for name, (start, end) in landmarks.items():
+                if start <= t_ms <= end:
+                    return name
+            # Fall back to the landmark with the closest end time.
+            closest = ""
+            closest_dist = float("inf")
+            for name, (start, end) in landmarks.items():
+                dist = abs(t_ms - (start + end) / 2)
+                if dist < closest_dist:
+                    closest = name
+                    closest_dist = dist
+            return closest
+
+        # --- K8s events (relative timestamps like "94s", "2m3s") ---
+        if os.path.isfile(events_file):
+            # The events file was captured at a known wall-clock time.
+            # We can figure out the scenario end time and work backwards.
+            scenario_end_ms = max((ev["t"] for ev in self.timeline), default=0)
+            try:
+                with open(events_file) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("LAST SEEN"):
+                            continue
+                        # Parse: "94s   Normal   Scheduled   pod/foo   message"
+                        parts = line.split(None, 4)
+                        if len(parts) < 5:
+                            continue
+                        age_str, event_type, reason, obj, message = parts
+                        # Parse age string (e.g. "94s", "2m3s", "5m")
+                        age_s = 0
+                        m = re.findall(r"(\d+)([smh])", age_str)
+                        for val, unit in m:
+                            if unit == "s":
+                                age_s += int(val)
+                            elif unit == "m":
+                                age_s += int(val) * 60
+                            elif unit == "h":
+                                age_s += int(val) * 3600
+                        if age_s == 0 and not m:
+                            continue
+                        # Approximate: event happened (age_s) seconds before capture.
+                        # Capture ~ scenario end. Convert to ms offset from epoch.
+                        t_ms = max(0, scenario_end_ms - age_s * 1000)
+                        lm = best_landmark(t_ms)
+                        self.timeline.append({
+                            "t": t_ms,
+                            "type": "k8s-event",
+                            "landmark": lm,
+                            "reason": reason,
+                            "object": obj,
+                            "message": message.strip(),
+                        })
+            except Exception:
+                pass  # Non-critical
+
+        # --- Component log lines (JSON with "time" field) ---
+        for comp in self.scenario.get("components", []):
+            comp_name = comp["package_name"]
+            log_file = os.path.join(k8s_dir, f"{self.name}-{comp_name}-logs.txt")
+            if not os.path.isfile(log_file):
+                continue
+            try:
+                with open(log_file) as f:
+                    for line in f:
+                        stripped = line.strip()
+                        if not stripped or not stripped.startswith("{"):
+                            continue
+                        try:
+                            obj = json.loads(stripped)
+                        except json.JSONDecodeError:
+                            continue
+                        ts = obj.get("time") or obj.get("ts") or obj.get("timestamp")
+                        if not ts or not isinstance(ts, str) or "T" not in ts:
+                            continue
+                        # Parse ISO timestamp, compute offset from epoch.
+                        try:
+                            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                            offset_ms = int((dt - self._epoch_wall).total_seconds() * 1000)
+                            if offset_ms < 0:
+                                offset_ms = 0
+                        except (ValueError, TypeError):
+                            continue
+                        lm = best_landmark(offset_ms)
+                        level = str(obj.get("level") or obj.get("lvl") or "").upper()
+                        msg = obj.get("msg") or obj.get("message") or ""
+                        # Only include interesting log lines (avoid noise)
+                        if level in ("ERROR", "ERR", "FATAL", "PANIC", "WARN", "WARNING"):
+                            pass  # always include
+                        elif any(kw in str(msg).lower() for kw in ["start", "listen", "reload", "ready", "fail", "connect"]):
+                            pass  # include notable events
+                        else:
+                            continue
+                        self.timeline.append({
+                            "t": offset_ms,
+                            "type": "log",
+                            "landmark": lm,
+                            "component": comp_name,
+                            "level": level,
+                            "msg": str(msg)[:120],
+                        })
+            except Exception:
+                pass  # Non-critical
+
+        # Re-sort timeline by time.
+        self.timeline.sort(key=lambda e: e["t"])
+
+    def generate_timeline_html(self) -> None:
+        """Generate a timeline-based HTML report showing all events chronologically."""
+        report_dir = os.environ.get("REPORT_DIR", "ci-report")
+        scenario_dir = os.path.join(report_dir, "scenarios", self.name)
+        os.makedirs(scenario_dir, exist_ok=True)
+
+        # Backfill external events before rendering.
+        self._backfill_k8s_events()
+
+        # Write timeline.json
+        timeline_path = os.path.join(scenario_dir, "timeline.json")
+        with open(timeline_path, "w") as f:
+            json.dump({"epoch": self._epoch_wall.isoformat(), "events": self.timeline}, f)
+
+        # Group events by landmark.
+        landmark_order: list[str] = []
+        landmark_events: dict[str, list[dict]] = {}
+        landmark_times: dict[str, tuple[int, int]] = {}
+
+        for ev in self.timeline:
+            if ev["type"] == "landmark-start":
+                name = ev["name"]
+                if name not in landmark_events:
+                    landmark_order.append(name)
+                    landmark_events[name] = []
+                    landmark_times[name] = (ev["t"], ev["t"])
+            elif ev["type"] == "landmark-end":
+                name = ev["name"]
+                if name in landmark_times:
+                    start, _ = landmark_times[name]
+                    landmark_times[name] = (start, ev["t"])
+            else:
+                lm = ev.get("landmark", "")
+                if lm and lm not in landmark_events:
+                    landmark_order.append(lm)
+                    landmark_events[lm] = []
+                    landmark_times[lm] = (ev["t"], ev["t"])
+                if lm:
+                    landmark_events[lm].append(ev)
+
+        # Compute per-landmark pass/fail.
+        landmark_status: dict[str, str] = {}
+        for lm, events in landmark_events.items():
+            tests = [e for e in events if e["type"] == "test"]
+            if not tests:
+                landmark_status[lm] = ""
+            elif all(t["status"] == "pass" for t in tests):
+                landmark_status[lm] = "pass"
+            else:
+                landmark_status[lm] = "fail"
+
+        h: list[str] = []
+
+        # --- Banner ---
+        total = self.pass_count + self.fail_count
+        if self.fail_count == 0:
+            h.append(f'<h1><span class="pass">ALL {total} TESTS PASSED</span>'
+                      f' &mdash; {html_escape(self.name)}</h1>\n')
+        else:
+            h.append(f'<h1><span class="fail">{self.fail_count} FAILED</span>'
+                      f' ({self.pass_count}/{total} passed)'
+                      f' &mdash; {html_escape(self.name)}</h1>\n')
+
+        desc = self.scenario.get("description", "")
+        if desc:
+            h.append(f"<blockquote>{html_escape(desc)}</blockquote>\n")
+
+        # Summary stats
+        total_dur = max((ev["t"] for ev in self.timeline), default=0)
+        ss_count = sum(1 for ev in self.timeline if ev["type"] == "screenshot")
+        k8s_count = sum(1 for ev in self.timeline if ev["type"] == "k8s-event")
+        h.append(f'<p style="color:var(--fg-muted);font-size:13px">'
+                  f'Total: {total_dur / 1000:.1f}s &middot; '
+                  f'{total} tests &middot; '
+                  f'{ss_count} screenshots &middot; '
+                  f'{k8s_count} K8s events</p>\n')
+
+        # --- Timeline ---
+        h.append('<div class="tl">\n')
+
+        def fmt_epoch(ms: int) -> str:
+            """Format ms offset as +Xs or +M:SS."""
+            s = ms / 1000
+            if s < 60:
+                return f"+{s:.1f}s"
+            m = int(s) // 60
+            sec = s - m * 60
+            return f"+{m}:{sec:04.1f}"
+
+        last_epoch_sec = -1  # Track the last displayed second to avoid repeats
+
+        for lm_name in landmark_order:
+            events = landmark_events.get(lm_name, [])
+            start_t, end_t = landmark_times.get(lm_name, (0, 0))
+            dur_ms = end_t - start_t
+            status = landmark_status.get(lm_name, "")
+
+            # Landmark header row
+            epoch_sec = int(start_t / 1000)
+            epoch_cls = "tl-epoch tl-epoch-dot"
+            if status == "pass":
+                epoch_cls += " tl-lm-pass"
+            elif status == "fail":
+                epoch_cls += " tl-lm-fail"
+            h.append(f'<div class="{epoch_cls}">{fmt_epoch(start_t)}</div>\n')
+
+            badge = ""
+            if status == "pass":
+                badge = '<span class="tl-landmark-badge pass">PASS</span>'
+            elif status == "fail":
+                badge = '<span class="tl-landmark-badge fail">FAIL</span>'
+
+            dur_label = ""
+            if dur_ms >= 1:
+                if dur_ms < 1000:
+                    dur_label = f"{dur_ms}ms"
+                else:
+                    dur_label = f"{dur_ms / 1000:.1f}s"
+
+            h.append(f'<div class="tl-landmark">'
+                      f'<span class="tl-landmark-name">{html_escape(lm_name)}</span>'
+                      f'<span class="tl-landmark-dur">({dur_label})</span>'
+                      f'{badge}</div>\n')
+
+            last_epoch_sec = epoch_sec
+
+            # Event rows
+            for ev in events:
+                ev_sec = int(ev["t"] / 1000)
+                if ev_sec != last_epoch_sec:
+                    epoch_display = fmt_epoch(ev["t"])
+                    last_epoch_sec = ev_sec
+                else:
+                    epoch_display = ""
+
+                h.append(f'<div class="tl-epoch">{epoch_display}</div>\n')
+
+                etype = ev["type"]
+                if etype == "test":
+                    icon = '<span class="pass">&#10003;</span>' if ev["status"] == "pass" else '<span class="fail">&#10007;</span>'
+                    dur_s = f' <span class="tl-test-dur">({ev["duration_ms"]}ms)</span>' if ev.get("duration_ms") else ""
+                    h.append(f'<div class="tl-event tl-test">'
+                              f'<span class="tl-icon">{icon}</span>'
+                              f'<span>{html_escape(ev["name"])}</span>'
+                              f'<span class="tl-test-detail">{html_escape(ev["detail"])}</span>'
+                              f'{dur_s}</div>\n')
+
+                elif etype == "http":
+                    status_code = ev.get("status", 0)
+                    ok_cls = "tl-http-ok" if 200 <= status_code < 400 else "tl-http-err"
+                    dur_s = f" ({ev['duration_ms']}ms)" if ev.get("duration_ms") else ""
+                    h.append(f'<div class="tl-event tl-http">'
+                              f'<span class="tl-icon">&rarr;</span>'
+                              f'{html_escape(ev.get("method", ""))} {html_escape(ev.get("url", ""))}'
+                              f' <span class="tl-http-status {ok_cls}">{status_code}</span>'
+                              f'{dur_s}</div>\n')
+
+                elif etype == "screenshot":
+                    img_src = html_escape(ev.get("img_src", ""))
+                    desc_text = html_escape(ev.get("description", ev.get("name", "")))
+                    h.append(f'<div class="tl-event tl-screenshot">'
+                              f'<span class="tl-icon">&#128248;</span>'
+                              f'<span class="tl-screenshot-label">{desc_text}</span>'
+                              f'</div>\n')
+                    if img_src:
+                        h.append(f'<div class="tl-epoch"></div>\n')
+                        h.append(f'<div class="tl-event">'
+                                  f'<img src="{img_src}" alt="{html_escape(ev.get("name", ""))}"'
+                                  f' style="max-width:200px;margin:4px 0 4px 26px"></div>\n')
+
+                elif etype == "k8s-event":
+                    obj_name = html_escape(ev.get("object", ""))
+                    msg = html_escape(ev.get("message", ""))
+                    reason = html_escape(ev.get("reason", ""))
+                    h.append(f'<div class="tl-event tl-k8s">'
+                              f'<span class="tl-icon">&#9881;</span>'
+                              f'<span class="tl-k8s-obj">{obj_name}</span> '
+                              f'{reason}: {msg}</div>\n')
+
+                elif etype == "log":
+                    level = ev.get("level", "")
+                    comp = html_escape(ev.get("component", ""))
+                    msg = html_escape(ev.get("msg", ""))
+                    lcls = "log-level-info"
+                    if level in ("ERROR", "ERR", "FATAL", "PANIC"):
+                        lcls = "log-level-error"
+                    elif level in ("WARN", "WARNING"):
+                        lcls = "log-level-warn"
+                    h.append(f'<div class="tl-event tl-log-entry">'
+                              f'<span class="tl-icon">&#128203;</span>'
+                              f'<span class="log-level {lcls}">{html_escape(level)}</span> '
+                              f'<strong>{comp}</strong>: {msg}</div>\n')
+
+                elif etype == "info":
+                    msg = html_escape(ev.get("msg", ""))
+                    level = ev.get("level", "")
+                    if level == "warn":
+                        h.append(f'<div class="tl-event tl-warn-msg">'
+                                  f'<span class="tl-icon">&#9888;</span>{msg}</div>\n')
+                    else:
+                        h.append(f'<div class="tl-event tl-info-msg">'
+                                  f'<span class="tl-icon">&#8505;</span>{msg}</div>\n')
+
+            # Gap between landmarks
+            h.append('<div class="tl-epoch"></div><div class="tl-gap"></div>\n')
+
+        h.append('</div>\n')  # Close .tl
+
+        # --- Component logs (full, collapsible, at the bottom) ---
+        k8s_dir = os.path.join(report_dir, "k8s")
+        comp_logs: list[tuple[str, str]] = []
+        for comp in self.scenario.get("components", []):
+            name = comp["package_name"]
+            log_file = os.path.join(k8s_dir, f"{self.name}-{name}-logs.txt")
+            if os.path.isfile(log_file):
+                with open(log_file) as f:
+                    comp_logs.append((name, f.read().strip()))
+
+        if comp_logs:
+            h.append("<h2>Component Logs</h2>\n")
+            for comp_name, log_content in comp_logs:
+                linecount = log_content.count("\n") + 1 if log_content else 0
+                h.append(f"<details><summary>{html_escape(comp_name)} ({linecount} lines)</summary>\n")
+                h.append(render_logs_html(log_content))
+                h.append("</details>\n")
+
+        body = "".join(h)
+        page = html_page(
+            title=f"Scenario: {self.name}",
+            body=body,
+            breadcrumbs=[("Report", "../../")],
+        )
+
+        html_path = os.path.join(scenario_dir, "report.html")
+        with open(html_path, "w") as f:
+            f.write(page)
+        ok(f"Timeline report: {html_path}")
 
     def _build_output(self) -> dict:
         return {
