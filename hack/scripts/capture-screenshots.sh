@@ -61,15 +61,31 @@ USE_PLAYWRIGHT=false
 
 if command -v node &>/dev/null; then
   # Check if the playwright package is importable by node.
-  if node -e "require('playwright')" &>/dev/null 2>&1; then
+  # NODE_PATH may be set by CI to point to a custom install prefix.
+  if node -e "require('playwright')" 2>/dev/null; then
     USE_PLAYWRIGHT=true
+  else
+    info "require('playwright') failed from CWD=$(pwd)"
+    info "NODE_PATH=${NODE_PATH:-<unset>}"
+    # Try common locations
+    for candidate in ./node_modules /tmp/pw/node_modules; do
+      if [ -d "${candidate}/playwright" ]; then
+        info "Found playwright at ${candidate}/playwright — setting NODE_PATH"
+        export NODE_PATH="${candidate}"
+        if node -e "require('playwright')" 2>/dev/null; then
+          USE_PLAYWRIGHT=true
+          break
+        fi
+      fi
+    done
   fi
 fi
 
 if $USE_PLAYWRIGHT; then
-  info "Using Playwright for screenshot capture."
+  info "Using Playwright for screenshot capture (NODE_PATH=${NODE_PATH:-<default>})."
 else
   warn "Playwright not available. Falling back to curl (HTML capture)."
+  warn "To get PNG screenshots, install playwright: npm install playwright && npx playwright install chromium"
 fi
 
 # ---------------------------------------------------------------------------
@@ -108,7 +124,7 @@ const { chromium } = require('playwright');
 })();
 PLAYWRIGHT_EOF
 
-  if node "$tmp_script" 2>/dev/null; then
+  if node "$tmp_script" 2>&1; then
     ok "  ${name} -> ${output}"
   else
     warn "  Playwright failed for ${name}, falling back to curl."
@@ -183,11 +199,11 @@ const { chromium } = require('playwright');
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   try {
     await page.goto('${url}', { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(3000);
-    await page.screenshot({ path: '${output}', fullPage: false });
+    await page.screenshot({ path: '${output}', fullPage: true });
     console.log('Screenshot saved: ${output}');
   } catch (err) {
     console.error('Error capturing ${name}:', err.message);
@@ -198,7 +214,7 @@ const { chromium } = require('playwright');
 })();
 EXPLORER_PW_EOF
 
-    if node "$tmp_script" 2>/dev/null; then
+    if node "$tmp_script" 2>&1; then
       ok "  ${name} -> ${output}"
     else
       warn "  Playwright failed for ${name}, falling back to curl."

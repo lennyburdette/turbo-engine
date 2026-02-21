@@ -126,16 +126,6 @@ jobs:
         if: always()
         run: ./hack/scripts/k8s-collect-debug.sh
 
-      - name: Capture traces
-        if: always()
-        run: |
-          # Port-forward Jaeger for trace capture
-          kubectl -n turbo-engine-e2e port-forward svc/jaeger 16686:16686 &>/dev/null &
-          PF_PID=$!
-          sleep 3
-          JAEGER_PORT=16686 ./hack/scripts/k8s-dump-report.sh || true
-          kill $PF_PID 2>/dev/null || true
-
       - name: Cache Playwright browsers
         if: always()
         uses: actions/cache@v4
@@ -147,10 +137,11 @@ jobs:
         if: always()
         run: |
           # Install Playwright npm package + Chromium browser.
-          # npm install makes require('playwright') work from node scripts.
-          # Browser binaries are cached across runs via actions/cache.
-          npm install --no-save playwright 2>&1 | tail -5 || true
-          npx playwright install --with-deps chromium 2>&1 | tail -5 || true
+          # Use --prefix to install into a known location independent of workspace.
+          npm install --prefix /tmp/pw playwright 2>&1 | tail -10
+          echo "Playwright npm package installed"
+          NODE_PATH=/tmp/pw/node_modules npx --prefix /tmp/pw playwright install --with-deps chromium 2>&1 | tail -10
+          echo "Playwright browsers installed"
 
           # Port-forward console and explorer for screenshots
           kubectl -n turbo-engine-e2e port-forward svc/console 13000:3000 &>/dev/null &
@@ -158,9 +149,20 @@ jobs:
           kubectl -n turbo-engine-e2e port-forward svc/explorer 13001:3001 &>/dev/null &
           PF_EXPLORER=$!
           sleep 3
-          CONSOLE_URL=http://localhost:13000 EXPLORER_URL=http://localhost:13001 ./hack/scripts/capture-screenshots.sh || true
+          NODE_PATH=/tmp/pw/node_modules CONSOLE_URL=http://localhost:13000 EXPLORER_URL=http://localhost:13001 ./hack/scripts/capture-screenshots.sh || true
           kill $PF_CONSOLE 2>/dev/null || true
           kill $PF_EXPLORER 2>/dev/null || true
+
+      - name: Capture traces and generate report
+        if: always()
+        run: |
+          # Port-forward Jaeger for trace capture.
+          # Screenshots are already captured above, so the report includes them.
+          kubectl -n turbo-engine-e2e port-forward svc/jaeger 16686:16686 &>/dev/null &
+          PF_PID=$!
+          sleep 3
+          JAEGER_PORT=16686 ./hack/scripts/k8s-dump-report.sh || true
+          kill $PF_PID 2>/dev/null || true
 
       # ---------------------------------------------------------------
       # Upload artifacts
