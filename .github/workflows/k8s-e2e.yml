@@ -41,8 +41,8 @@ jobs:
       - name: Build gateway image (Rust)
         run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load gateway
 
-      - name: Build console + echo-server images
-        run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load console echo-server
+      - name: Build console + E2E fixture images
+        run: TAG=e2e CACHE=gha docker buildx bake --progress=plain --load console e2e-fixtures
 
       # ---------------------------------------------------------------
       # Verify images
@@ -52,7 +52,7 @@ jobs:
           IMAGES=$(docker images 'turbo-engine/*' --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}")
           echo "$IMAGES"
           echo "::warning title=Docker Images::${IMAGES//$'\n'/%0A}"
-          for svc in registry builder operator envmanager gateway console echo-server; do
+          for svc in registry builder operator envmanager gateway console petstore-mock orchestrator; do
             docker image inspect "turbo-engine/${svc}:e2e" > /dev/null 2>&1 || {
               echo "::error::Missing image turbo-engine/${svc}:e2e"
               exit 1
@@ -72,7 +72,7 @@ jobs:
       # ---------------------------------------------------------------
       - name: Load images into kind
         run: |
-          for svc in registry builder envmanager operator gateway console echo-server; do
+          for svc in registry builder envmanager operator gateway console petstore-mock orchestrator; do
             echo "Loading turbo-engine/${svc}:e2e..."
             kind load docker-image "turbo-engine/${svc}:e2e" --name turbo-engine-e2e
           done

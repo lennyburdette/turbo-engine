@@ -5,7 +5,7 @@
 //
 // Usage:
 //   docker buildx bake                       # build all platform images
-//   docker buildx bake k8s-e2e               # build all + echo-server
+//   docker buildx bake k8s-e2e               # build all + E2E test fixtures
 //   TAG=e2e docker buildx bake k8s-e2e       # custom tag (default: latest)
 //   CACHE=gha docker buildx bake             # enable GitHub Actions cache (CI only)
 
@@ -28,7 +28,11 @@ group "default" {
 }
 
 group "k8s-e2e" {
-  targets = ["registry", "builder", "operator", "envmanager", "gateway", "console", "echo-server"]
+  targets = ["registry", "builder", "operator", "envmanager", "gateway", "console", "petstore-mock", "orchestrator"]
+}
+
+group "e2e-fixtures" {
+  targets = ["petstore-mock", "orchestrator"]
 }
 
 group "go-services" {
@@ -93,9 +97,16 @@ target "console" {
 // E2E test fixtures
 // ---------------------------------------------------------------------------
 
-target "echo-server" {
-  context    = "hack/e2e/echo-server"
-  tags       = ["turbo-engine/echo-server:${TAG}"]
-  cache-from = CACHE != "" ? ["type=${CACHE},scope=echo-server"] : []
-  cache-to   = CACHE != "" ? ["type=${CACHE},mode=max,scope=echo-server"] : []
+target "petstore-mock" {
+  context    = "hack/e2e/petstore-mock"
+  tags       = ["turbo-engine/petstore-mock:${TAG}"]
+  cache-from = CACHE != "" ? ["type=${CACHE},scope=petstore-mock"] : []
+  cache-to   = CACHE != "" ? ["type=${CACHE},mode=max,scope=petstore-mock"] : []
+}
+
+target "orchestrator" {
+  context    = "hack/e2e/orchestrator"
+  tags       = ["turbo-engine/orchestrator:${TAG}"]
+  cache-from = CACHE != "" ? ["type=${CACHE},scope=orchestrator"] : []
+  cache-to   = CACHE != "" ? ["type=${CACHE},mode=max,scope=orchestrator"] : []
 }
