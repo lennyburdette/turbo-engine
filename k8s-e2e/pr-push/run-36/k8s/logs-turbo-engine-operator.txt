@@ -1,0 +1,42 @@
+{"time":"2026-02-21T19:20:41.115033263Z","level":"INFO","msg":"starting operator service","version":"0.1.0","log_level":"debug"}
+{"time":"2026-02-21T19:20:41.115297808Z","level":"WARN","msg":"failed to initialize tracer, continuing without tracing","error":"creating resource: conflicting Schema URL: https://opentelemetry.io/schemas/1.26.0 and https://opentelemetry.io/schemas/1.24.0"}
+{"time":"2026-02-21T19:20:41.115349835Z","level":"INFO","msg":"operator mode: k8s — will create real Kubernetes resources"}
+{"time":"2026-02-21T19:20:41.115900055Z","level":"INFO","msg":"listening","addr":":8084"}
+{"time":"2026-02-21T19:20:41.116290736Z","level":"INFO","msg":"starting builder poll loop","component":"poller","builder_url":"http://builder:8082","interval":5000000000}
+{"time":"2026-02-21T19:20:46.197461281Z","level":"DEBUG","msg":"failed to poll builder (will retry)","component":"poller","builder_url":"http://builder:8082","error":"Get \"http://builder:8082/v1/graphs\": dial tcp 10.96.21.124:8082: connect: connection refused"}
+{"time":"2026-02-21T19:20:51.197434839Z","level":"DEBUG","msg":"failed to poll builder (will retry)","component":"poller","builder_url":"http://builder:8082","error":"Get \"http://builder:8082/v1/graphs\": dial tcp 10.96.21.124:8082: connect: connection refused"}
+{"time":"2026-02-21T19:20:56.194008997Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:01.194154134Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:04.07576841Z","level":"INFO","msg":"gateway config request","component":"handler","routes":0}
+{"time":"2026-02-21T19:21:06.194854022Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:11.194199154Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:16.193582755Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:18.970373326Z","level":"INFO","msg":"gateway config request","component":"handler","routes":0}
+{"time":"2026-02-21T19:21:21.194907341Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:26.194294691Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:31.197727618Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:31.72602024Z","level":"INFO","msg":"reconcile request received","component":"handler","environment_id":"4f87cd22535e97df93023ae14aae4376","build_id":"bld-1771701691719-1"}
+{"time":"2026-02-21T19:21:31.726055285Z","level":"INFO","msg":"starting reconciliation","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","build_id":"bld-1771701691719-1","components":2}
+{"time":"2026-02-21T19:21:31.726107052Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","action":"Create","resource_kind":"Deployment","resource_name":"deploy-petstore-api","details":"image=artifact:petstore-api-hash replicas=1"}
+{"time":"2026-02-21T19:21:31.72612736Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","action":"Create","resource_kind":"Service","resource_name":"svc-petstore-api","details":"selector=petstore-api"}
+{"time":"2026-02-21T19:21:31.726133702Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","action":"Create","resource_kind":"ConfigMap","resource_name":"cm-petstore-api","details":"env_vars=0"}
+{"time":"2026-02-21T19:21:31.726139182Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","action":"Create","resource_kind":"Deployment","resource_name":"deploy-petstore-orchestrator","details":"image=artifact:petstore-orchestrator-hash replicas=1"}
+{"time":"2026-02-21T19:21:31.726169819Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","action":"Create","resource_kind":"Service","resource_name":"svc-petstore-orchestrator","details":"selector=petstore-orchestrator"}
+{"time":"2026-02-21T19:21:31.726178075Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","action":"Create","resource_kind":"ConfigMap","resource_name":"cm-petstore-orchestrator","details":"env_vars=1"}
+{"time":"2026-02-21T19:21:31.726183705Z","level":"INFO","msg":"reconciliation action","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","action":"Create","resource_kind":"Ingress","resource_name":"localhost-ingress","details":"host=localhost routes=1 tls=false"}
+{"time":"2026-02-21T19:21:31.726191089Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Deployment","name":"deploy-petstore-api","details":"image=artifact:petstore-api-hash replicas=1"}
+{"time":"2026-02-21T19:21:31.737657118Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Service","name":"svc-petstore-api","details":"selector=petstore-api"}
+{"time":"2026-02-21T19:21:31.744231893Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"ConfigMap","name":"cm-petstore-api","details":"env_vars=0"}
+{"time":"2026-02-21T19:21:31.752261207Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Deployment","name":"deploy-petstore-orchestrator","details":"image=artifact:petstore-orchestrator-hash replicas=1"}
+{"time":"2026-02-21T19:21:31.763066536Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Service","name":"svc-petstore-orchestrator","details":"selector=petstore-orchestrator"}
+{"time":"2026-02-21T19:21:31.774724208Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"ConfigMap","name":"cm-petstore-orchestrator","details":"env_vars=1"}
+{"time":"2026-02-21T19:21:31.782901871Z","level":"INFO","msg":"applying action","component":"k8s-applier","type":"Create","kind":"Ingress","name":"localhost-ingress","details":"host=localhost routes=1 tls=false"}
+{"time":"2026-02-21T19:21:31.78299734Z","level":"INFO","msg":"ingress action handled via gateway-config endpoint","component":"k8s-applier","type":"Create","name":"localhost-ingress"}
+{"time":"2026-02-21T19:21:31.783047804Z","level":"INFO","msg":"reconciliation complete","component":"reconciler","environment_id":"4f87cd22535e97df93023ae14aae4376","phase":"Running","actions":7}
+{"time":"2026-02-21T19:21:33.967801594Z","level":"INFO","msg":"gateway config request","component":"handler","routes":1}
+{"time":"2026-02-21T19:21:36.195134428Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:41.19390752Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:46.193808108Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:48.96743547Z","level":"INFO","msg":"gateway config request","component":"handler","routes":1}
+{"time":"2026-02-21T19:21:51.194984886Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}
+{"time":"2026-02-21T19:21:56.194205175Z","level":"WARN","msg":"builder returned non-200 status","component":"poller","builder_url":"http://builder:8082","status":404}

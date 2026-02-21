@@ -1,0 +1,23 @@
+{
+  "total": 16,
+  "passed": 16,
+  "failed": 0,
+  "tests": [
+    {"name":"control-plane-rollout","status":"pass","detail":"All control plane deployments ready","duration_ms":345},
+    {"name":"port-forward-health","status":"pass","detail":"All port-forwards healthy","duration_ms":50},
+    {"name": "petstore-basic/publish-petstore-api", "status": "pass", "detail": "Published petstore-api@1.0.0 (HTTP 201)", "duration_ms": 28},
+    {"name": "petstore-basic/publish-petstore-orchestrator", "status": "pass", "detail": "Published petstore-orchestrator@1.0.0 (HTTP 201)", "duration_ms": 4},
+    {"name": "petstore-basic/create-environment", "status": "pass", "detail": "Created 4f87cd22535e97df93023ae14aae4376", "duration_ms": 3},
+    {"name": "petstore-basic/trigger-build", "status": "pass", "detail": "Build bld-1771701691719-1 triggered", "duration_ms": 3},
+    {"name": "petstore-basic/build-status", "status": "pass", "detail": "Build bld-1771701691719-1 succeeded", "duration_ms": 3},
+    {"name": "petstore-basic/operator-reconcile", "status": "pass", "detail": "Reconciled 2 components", "duration_ms": 65},
+    {"name": "petstore-basic/verify-k8s-resources", "status": "pass", "detail": "All 6 resources created", "duration_ms": 280},
+    {"name": "petstore-basic/pods-running", "status": "pass", "detail": "All pods running", "duration_ms": 298},
+    {"name": "petstore-basic/gateway-routing", "status": "pass", "detail": "Gateway route /api/pets/rpc/listPets active (HTTP 200)", "duration_ms": 10},
+    {"name": "petstore-basic/list-pets-direct", "status": "pass", "detail": "HTTP 200; pets has 3 items (>= 1)", "duration_ms": 2004},
+    {"name": "petstore-basic/orchestrator-direct", "status": "pass", "detail": "HTTP 200; rpc=listPets; upstream_status=200", "duration_ms": 2006},
+    {"name": "petstore-basic/e2e-list-pets", "status": "pass", "detail": "HTTP 200; rpc=listPets; upstream_status=200; result.pets has 3 items (>= 1)", "duration_ms": 4},
+    {"name": "petstore-basic/e2e-get-pet", "status": "pass", "detail": "HTTP 200; result.pet.name=Whiskers", "duration_ms": 4},
+    {"name": "petstore-basic/trace-propagation", "status": "pass", "detail": "HTTP 200; trace_id=a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5", "duration_ms": 4}
+  ]
+}
