@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>K8s E2E Report</title>
+  <style>:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+.log-line { border-bottom: 1px solid var(--border); padding: 3px 0; font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+.log-line:last-child { border-bottom: none; }
+.log-time { color: var(--fg-muted); font-size: 11px; flex-shrink: 0; }
+.log-level { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; flex-shrink: 0; }
+.log-level-info { color: var(--pass); }
+.log-level-warn { color: #b08800; }
+.log-level-error { color: var(--fail); }
+.log-level-debug { color: var(--fg-muted); }
+.log-msg { font-weight: 500; }
+.log-meta { color: var(--fg-muted); font-size: 12px; }
+.log-meta-key { color: var(--fg-muted); }
+.log-meta-val { color: var(--fg); }
+.log-raw { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.log-container { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; overflow-x: auto; max-width: 100%; }</style>
+</head>
+<body>
+<div class="container">
+<h1>K8s E2E Report</h1>
+<p><strong>Generated:</strong> 2026-02-21T21:17:31Z</p>
+<p><span class="pass"><strong>ALL 16 TESTS PASSED</strong></span></p>
+<pre><code>00:00  Waiting for control plane deployments to roll out
+00:00  Control plane ready
+00:00  Setting up port-forwards
+00:07  Port-forwards healthy
+00:07  Running scenario: petstore-basic
+00:41  Scenario petstore-basic: 14/14 passed
+00:41  Tests complete: 16 passed, 0 failed</code></pre>
+<h2>Scenarios</h2>
+<h3><a href="./scenarios/petstore-basic/">petstore-basic: ALL 14 TESTS PASSED</a></h3>
+<p>4 screenshots | <a href="./traces.html">traces</a></p>
+<h2>Platform Health</h2>
+<p><strong>Pods:</strong> 11/11 running</p>
+<details><summary>Full resource list (51 lines)</summary>
+<pre><code>NAME                                                READY   STATUS    RESTARTS   AGE   IP            NODE                             NOMINATED NODE   READINESS GATES
+pod/builder-678474bf88-67fwt                        1/1     Running   0          81s   10.244.0.5    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/console-78fbd5c84-g96k7                         1/1     Running   0          81s   10.244.0.6    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/deploy-petstore-api-6b7b865c95-czkhm            1/1     Running   0          34s   10.244.0.14   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/deploy-petstore-orchestrator-68fc6bd898-6fgts   1/1     Running   0          33s   10.244.0.15   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/envmanager-76c64c8cc9-4kvzt                     1/1     Running   0          81s   10.244.0.7    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/explorer-5465b84fd-cgvzb                        1/1     Running   0          81s   10.244.0.8    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/gateway-586c64fdf5-j7fdz                        1/1     Running   0          81s   10.244.0.9    turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/jaeger-54885dfdf-676ng                          1/1     Running   0          81s   10.244.0.10   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/otel-collector-8584bc4d4c-qc9fb                 1/1     Running   0          81s   10.244.0.11   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/registry-7d5f66bcd8-5lx4t                       1/1     Running   0          81s   10.244.0.12   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+pod/turbo-engine-operator-7cd95f4bc4-p9bns          1/1     Running   0          81s   10.244.0.13   turbo-engine-e2e-control-plane   &lt;none&gt;           &lt;none&gt;
+
+NAME                                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)              AGE   SELECTOR
+service/builder                     ClusterIP   10.96.221.189   &lt;none&gt;        8082/TCP             81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=builder,app.kubernetes.io/part-of=turbo-engine
+service/console                     ClusterIP   10.96.108.159   &lt;none&gt;        3000/TCP             81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=console,app.kubernetes.io/part-of=turbo-engine
+service/envmanager                  ClusterIP   10.96.120.113   &lt;none&gt;        8083/TCP             81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=envmanager,app.kubernetes.io/part-of=turbo-engine
+service/explorer                    ClusterIP   10.96.180.247   &lt;none&gt;        3001/TCP             81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=explorer,app.kubernetes.io/part-of=turbo-engine
+service/gateway                     ClusterIP   10.96.96.88     &lt;none&gt;        8080/TCP             81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=gateway,app.kubernetes.io/part-of=turbo-engine
+service/jaeger                      ClusterIP   10.96.102.210   &lt;none&gt;        16686/TCP,4317/TCP   81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=jaeger,app.kubernetes.io/part-of=turbo-engine
+service/otel-collector              ClusterIP   10.96.80.15     &lt;none&gt;        4317/TCP,4318/TCP    81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=otel-collector,app.kubernetes.io/part-of=turbo-engine
+service/registry                    ClusterIP   10.96.18.232    &lt;none&gt;        8081/TCP             81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=registry,app.kubernetes.io/part-of=turbo-engine
+service/svc-petstore-api            ClusterIP   10.96.99.139    &lt;none&gt;        8080/TCP             34s   app.kubernetes.io/instance=649d24a5c1cb164e8090fbe0f664ed49,app.kubernetes.io/name=petstore-api
+service/svc-petstore-orchestrator   ClusterIP   10.96.108.191   &lt;none&gt;        8080/TCP             33s   app.kubernetes.io/instance=649d24a5c1cb164e8090fbe0f664ed49,app.kubernetes.io/name=petstore-orchestrator
+service/turbo-engine-operator       ClusterIP   10.96.100.1     &lt;none&gt;        8084/TCP             81s   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=operator,app.kubernetes.io/part-of=turbo-engine
+
+NAME                                           READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS              IMAGES                                        SELECTOR
+deployment.apps/builder                        1/1     1            1           81s   builder                 turbo-engine/builder:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=builder,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/console                        1/1     1            1           81s   console                 turbo-engine/console:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=console,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/deploy-petstore-api            1/1     1            1           34s   petstore-api            turbo-engine/petstore-mock:e2e                app.kubernetes.io/instance=649d24a5c1cb164e8090fbe0f664ed49,app.kubernetes.io/name=petstore-api
+deployment.apps/deploy-petstore-orchestrator   1/1     1            1           34s   petstore-orchestrator   turbo-engine/orchestrator:e2e                 app.kubernetes.io/instance=649d24a5c1cb164e8090fbe0f664ed49,app.kubernetes.io/name=petstore-orchestrator
+deployment.apps/envmanager                     1/1     1            1           81s   envmanager              turbo-engine/envmanager:e2e                   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=envmanager,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/explorer                       1/1     1            1           81s   explorer                turbo-engine/explorer:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=explorer,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/gateway                        1/1     1            1           81s   gateway                 turbo-engine/gateway:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=gateway,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/jaeger                         1/1     1            1           81s   jaeger                  jaegertracing/all-in-one:1.54                 app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=jaeger,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/otel-collector                 1/1     1            1           81s   otel-collector          otel/opentelemetry-collector-contrib:0.96.0   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=otel-collector,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/registry                       1/1     1            1           81s   registry                turbo-engine/registry:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=registry,app.kubernetes.io/part-of=turbo-engine
+deployment.apps/turbo-engine-operator          1/1     1            1           81s   operator                turbo-engine/operator:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=operator,app.kubernetes.io/part-of=turbo-engine
+
+NAME                                                      DESIRED   CURRENT   READY   AGE   CONTAINERS              IMAGES                                        SELECTOR
+replicaset.apps/builder-678474bf88                        1         1         1       81s   builder                 turbo-engine/builder:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=builder,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=678474bf88
+replicaset.apps/console-78fbd5c84                         1         1         1       81s   console                 turbo-engine/console:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=console,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=78fbd5c84
+replicaset.apps/deploy-petstore-api-6b7b865c95            1         1         1       34s   petstore-api            turbo-engine/petstore-mock:e2e                app.kubernetes.io/instance=649d24a5c1cb164e8090fbe0f664ed49,app.kubernetes.io/name=petstore-api,pod-template-hash=6b7b865c95
+replicaset.apps/deploy-petstore-orchestrator-68fc6bd898   1         1         1       33s   petstore-orchestrator   turbo-engine/orchestrator:e2e                 app.kubernetes.io/instance=649d24a5c1cb164e8090fbe0f664ed49,app.kubernetes.io/name=petstore-orchestrator,pod-template-hash=68fc6bd898
+replicaset.apps/envmanager-76c64c8cc9                     1         1         1       81s   envmanager              turbo-engine/envmanager:e2e                   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=envmanager,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=76c64c8cc9
+replicaset.apps/explorer-5465b84fd                        1         1         1       81s   explorer                turbo-engine/explorer:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=explorer,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=5465b84fd
+replicaset.apps/gateway-586c64fdf5                        1         1         1       81s   gateway                 turbo-engine/gateway:e2e                      app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=gateway,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=586c64fdf5
+replicaset.apps/jaeger-54885dfdf                          1         1         1       81s   jaeger                  jaegertracing/all-in-one:1.54                 app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=jaeger,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=54885dfdf
+replicaset.apps/otel-collector-8584bc4d4c                 1         1         1       81s   otel-collector          otel/opentelemetry-collector-contrib:0.96.0   app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=otel-collector,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=8584bc4d4c
+replicaset.apps/registry-7d5f66bcd8                       1         1         1       81s   registry                turbo-engine/registry:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=registry,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=7d5f66bcd8
+replicaset.apps/turbo-engine-operator-7cd95f4bc4          1         1         1       81s   operator                turbo-engine/operator:e2e                     app.kubernetes.io/managed-by=kustomize,app.kubernetes.io/name=operator,app.kubernetes.io/part-of=turbo-engine,pod-template-hash=7cd95f4bc4</code></pre>
+</details>
+<h2>Traces</h2>
+<p><strong>registry:</strong> 4 &nbsp; <strong>builder:</strong> 29 &nbsp; <strong>envmanager:</strong> 16 &nbsp; <strong>gateway:</strong> 5 &nbsp; <strong>orchestrator:</strong> 5 &nbsp; <strong>petstore-mock:</strong> 6 &nbsp; </p>
+<p><a href="./traces.html">Open trace viewer</a></p>
+<h2>Debug Data</h2>
+<details><summary>K8s events (69 lines)</summary>
+<pre><code>LAST SEEN   TYPE     REASON              OBJECT                                               MESSAGE
+82s         Normal   Created             pod/envmanager-76c64c8cc9-4kvzt                      Container created
+82s         Normal   ScalingReplicaSet   deployment/gateway                                   Scaled up replica set gateway-586c64fdf5 from 0 to 1
+82s         Normal   Created             pod/builder-678474bf88-67fwt                         Container created
+82s         Normal   Started             pod/builder-678474bf88-67fwt                         Container started
+82s         Normal   SuccessfulCreate    replicaset/builder-678474bf88                        Created pod: builder-678474bf88-67fwt
+82s         Normal   ScalingReplicaSet   deployment/builder                                   Scaled up replica set builder-678474bf88 from 0 to 1
+82s         Normal   Scheduled           pod/console-78fbd5c84-g96k7                          Successfully assigned turbo-engine-e2e/console-78fbd5c84-g96k7 to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/console-78fbd5c84-g96k7                          Container image &quot;turbo-engine/console:e2e&quot; already present on machine and can be accessed by the pod
+82s         Normal   Created             pod/console-78fbd5c84-g96k7                          Container created
+82s         Normal   ScalingReplicaSet   deployment/otel-collector                            Scaled up replica set otel-collector-8584bc4d4c from 0 to 1
+82s         Normal   SuccessfulCreate    replicaset/console-78fbd5c84                         Created pod: console-78fbd5c84-g96k7
+82s         Normal   ScalingReplicaSet   deployment/console                                   Scaled up replica set console-78fbd5c84 from 0 to 1
+82s         Normal   ScalingReplicaSet   deployment/turbo-engine-operator                     Scaled up replica set turbo-engine-operator-7cd95f4bc4 from 0 to 1
+82s         Normal   SuccessfulCreate    replicaset/turbo-engine-operator-7cd95f4bc4          Created pod: turbo-engine-operator-7cd95f4bc4-p9bns
+82s         Normal   Scheduled           pod/builder-678474bf88-67fwt                         Successfully assigned turbo-engine-e2e/builder-678474bf88-67fwt to turbo-engine-e2e-control-plane
+82s         Normal   Scheduled           pod/otel-collector-8584bc4d4c-qc9fb                  Successfully assigned turbo-engine-e2e/otel-collector-8584bc4d4c-qc9fb to turbo-engine-e2e-control-plane
+82s         Normal   ScalingReplicaSet   deployment/jaeger                                    Scaled up replica set jaeger-54885dfdf from 0 to 1
+82s         Normal   Scheduled           pod/turbo-engine-operator-7cd95f4bc4-p9bns           Successfully assigned turbo-engine-e2e/turbo-engine-operator-7cd95f4bc4-p9bns to turbo-engine-e2e-control-plane
+82s         Normal   ScalingReplicaSet   deployment/registry                                  Scaled up replica set registry-7d5f66bcd8 from 0 to 1
+82s         Normal   SuccessfulCreate    replicaset/registry-7d5f66bcd8                       Created pod: registry-7d5f66bcd8-5lx4t
+82s         Normal   Started             pod/envmanager-76c64c8cc9-4kvzt                      Container started
+82s         Normal   SuccessfulCreate    replicaset/envmanager-76c64c8cc9                     Created pod: envmanager-76c64c8cc9-4kvzt
+82s         Normal   Pulling             pod/jaeger-54885dfdf-676ng                           Pulling image &quot;jaegertracing/all-in-one:1.54&quot;
+82s         Normal   Scheduled           pod/registry-7d5f66bcd8-5lx4t                        Successfully assigned turbo-engine-e2e/registry-7d5f66bcd8-5lx4t to turbo-engine-e2e-control-plane
+82s         Normal   Scheduled           pod/envmanager-76c64c8cc9-4kvzt                      Successfully assigned turbo-engine-e2e/envmanager-76c64c8cc9-4kvzt to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/envmanager-76c64c8cc9-4kvzt                      Container image &quot;turbo-engine/envmanager:e2e&quot; already present on machine and can be accessed by the pod
+82s         Normal   Pulled              pod/builder-678474bf88-67fwt                         Container image &quot;turbo-engine/builder:e2e&quot; already present on machine and can be accessed by the pod
+82s         Normal   SuccessfulCreate    replicaset/jaeger-54885dfdf                          Created pod: jaeger-54885dfdf-676ng
+82s         Normal   Scheduled           pod/jaeger-54885dfdf-676ng                           Successfully assigned turbo-engine-e2e/jaeger-54885dfdf-676ng to turbo-engine-e2e-control-plane
+82s         Normal   ScalingReplicaSet   deployment/envmanager                                Scaled up replica set envmanager-76c64c8cc9 from 0 to 1
+82s         Normal   Scheduled           pod/explorer-5465b84fd-cgvzb                         Successfully assigned turbo-engine-e2e/explorer-5465b84fd-cgvzb to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/explorer-5465b84fd-cgvzb                         Container image &quot;turbo-engine/explorer:e2e&quot; already present on machine and can be accessed by the pod
+82s         Normal   Created             pod/explorer-5465b84fd-cgvzb                         Container created
+82s         Normal   SuccessfulCreate    replicaset/otel-collector-8584bc4d4c                 Created pod: otel-collector-8584bc4d4c-qc9fb
+82s         Normal   SuccessfulCreate    replicaset/explorer-5465b84fd                        Created pod: explorer-5465b84fd-cgvzb
+82s         Normal   ScalingReplicaSet   deployment/explorer                                  Scaled up replica set explorer-5465b84fd from 0 to 1
+82s         Normal   Scheduled           pod/gateway-586c64fdf5-j7fdz                         Successfully assigned turbo-engine-e2e/gateway-586c64fdf5-j7fdz to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/gateway-586c64fdf5-j7fdz                         Container image &quot;turbo-engine/gateway:e2e&quot; already present on machine and can be accessed by the pod
+82s         Normal   Created             pod/gateway-586c64fdf5-j7fdz                         Container created
+82s         Normal   SuccessfulCreate    replicaset/gateway-586c64fdf5                        Created pod: gateway-586c64fdf5-j7fdz
+81s         Normal   Started             pod/turbo-engine-operator-7cd95f4bc4-p9bns           Container started
+81s         Normal   Started             pod/explorer-5465b84fd-cgvzb                         Container started
+81s         Normal   Created             pod/registry-7d5f66bcd8-5lx4t                        Container created
+81s         Normal   Pulled              pod/registry-7d5f66bcd8-5lx4t                        Container image &quot;turbo-engine/registry:e2e&quot; already present on machine and can be accessed by the pod
+81s         Normal   Started             pod/registry-7d5f66bcd8-5lx4t                        Container started
+81s         Normal   Started             pod/gateway-586c64fdf5-j7fdz                         Container started
+81s         Normal   Pulled              pod/turbo-engine-operator-7cd95f4bc4-p9bns           Container image &quot;turbo-engine/operator:e2e&quot; already present on machine and can be accessed by the pod
+81s         Normal   Created             pod/turbo-engine-operator-7cd95f4bc4-p9bns           Container created
+81s         Normal   Pulling             pod/otel-collector-8584bc4d4c-qc9fb                  Pulling image &quot;otel/opentelemetry-collector-contrib:0.96.0&quot;
+81s         Normal   Started             pod/console-78fbd5c84-g96k7                          Container started
+80s         Normal   Pulled              pod/jaeger-54885dfdf-676ng                           Successfully pulled image &quot;jaegertracing/all-in-one:1.54&quot; in 1.226s (1.226s including waiting). Image size: 33344095 bytes.
+80s         Normal   Created             pod/jaeger-54885dfdf-676ng                           Container created
+80s         Normal   Started             pod/jaeger-54885dfdf-676ng                           Container started
+78s         Normal   Pulled              pod/otel-collector-8584bc4d4c-qc9fb                  Successfully pulled image &quot;otel/opentelemetry-collector-contrib:0.96.0&quot; in 2.097s (3.252s including waiting). Image size: 65128183 bytes.
+78s         Normal   Created             pod/otel-collector-8584bc4d4c-qc9fb                  Container created
+78s         Normal   Started             pod/otel-collector-8584bc4d4c-qc9fb                  Container started
+35s         Normal   ScalingReplicaSet   deployment/deploy-petstore-api                       Scaled up replica set deploy-petstore-api-6b7b865c95 from 0 to 1
+35s         Normal   Scheduled           pod/deploy-petstore-api-6b7b865c95-czkhm             Successfully assigned turbo-engine-e2e/deploy-petstore-api-6b7b865c95-czkhm to turbo-engine-e2e-control-plane
+35s         Normal   SuccessfulCreate    replicaset/deploy-petstore-api-6b7b865c95            Created pod: deploy-petstore-api-6b7b865c95-czkhm
+34s         Normal   SuccessfulCreate    replicaset/deploy-petstore-orchestrator-68fc6bd898   Created pod: deploy-petstore-orchestrator-68fc6bd898-6fgts
+34s         Normal   Pulled              pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Container image &quot;turbo-engine/orchestrator:e2e&quot; already present on machine and can be accessed by the pod
+34s         Normal   Scheduled           pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Successfully assigned turbo-engine-e2e/deploy-petstore-orchestrator-68fc6bd898-6fgts to turbo-engine-e2e-control-plane
+34s         Normal   Created             pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Container created
+34s         Normal   Started             pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Container started
+34s         Normal   Started             pod/deploy-petstore-api-6b7b865c95-czkhm             Container started
+34s         Normal   Created             pod/deploy-petstore-api-6b7b865c95-czkhm             Container created
+34s         Normal   Pulled              pod/deploy-petstore-api-6b7b865c95-czkhm             Container image &quot;turbo-engine/petstore-mock:e2e&quot; already present on machine and can be accessed by the pod
+34s         Normal   ScalingReplicaSet   deployment/deploy-petstore-orchestrator              Scaled up replica set deploy-petstore-orchestrator-68fc6bd898 from 0 to 1</code></pre>
+</details>
+<details><summary>Operator actions (185 lines)</summary>
+<pre><code>{
+  &quot;actions&quot;: [
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.97110674Z&quot;,
+      &quot;msg&quot;: &quot;reconcile request received&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;reconcile request received&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.971132747Z&quot;,
+      &quot;msg&quot;: &quot;starting reconciliation&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;starting reconciliation&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.971149331Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-api&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-api-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.9711605Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-api&quot;,
+      &quot;details&quot;: &quot;selector=petstore-api&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.971164769Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-api&quot;,
+      &quot;details&quot;: &quot;env_vars=0&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.971169499Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-orchestrator-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.971174323Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;selector=petstore-orchestrator&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.971184603Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;env_vars=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.97118885Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation action&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Ingress&quot;,
+      &quot;resource_name&quot;: &quot;localhost-ingress&quot;,
+      &quot;details&quot;: &quot;host=localhost routes=1 tls=false&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.971224656Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-api&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-api-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.981711397Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-api&quot;,
+      &quot;details&quot;: &quot;selector=petstore-api&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.986880737Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-api&quot;,
+      &quot;details&quot;: &quot;env_vars=0&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.991340763Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Deployment&quot;,
+      &quot;resource_name&quot;: &quot;deploy-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;image=artifact:petstore-orchestrator-hash replicas=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:53.999289448Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Service&quot;,
+      &quot;resource_name&quot;: &quot;svc-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;selector=petstore-orchestrator&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:54.008554504Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;ConfigMap&quot;,
+      &quot;resource_name&quot;: &quot;cm-petstore-orchestrator&quot;,
+      &quot;details&quot;: &quot;env_vars=1&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:54.017884647Z&quot;,
+      &quot;msg&quot;: &quot;applying action&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;Ingress&quot;,
+      &quot;resource_name&quot;: &quot;localhost-ingress&quot;,
+      &quot;details&quot;: &quot;host=localhost routes=1 tls=false&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:54.017947692Z&quot;,
+      &quot;msg&quot;: &quot;ingress action handled via gateway-config endpoint&quot;,
+      &quot;environment_id&quot;: &quot;&quot;,
+      &quot;action&quot;: &quot;Create&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;localhost-ingress&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;&quot;
+    },
+    {
+      &quot;time&quot;: &quot;2026-02-21T21:16:54.017982155Z&quot;,
+      &quot;msg&quot;: &quot;reconciliation complete&quot;,
+      &quot;environment_id&quot;: &quot;649d24a5c1cb164e8090fbe0f664ed49&quot;,
+      &quot;action&quot;: &quot;reconciliation complete&quot;,
+      &quot;resource_kind&quot;: &quot;&quot;,
+      &quot;resource_name&quot;: &quot;&quot;,
+      &quot;details&quot;: &quot;&quot;,
+      &quot;phase&quot;: &quot;Running&quot;
+    }
+  ],
+  &quot;count&quot;: 18
+}</code></pre>
+</details>
+<details><summary>registry logs (6 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">21:16:07.292</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">starting registry service</span> <span class="log-meta"><span class="log-meta-key">port</span>=<span class="log-meta-val">8081</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.958</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">published package</span> <span class="log-meta"><span class="log-meta-key">id</span>=<span class="log-meta-val">pkg_1</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">petstore-api</span> <span class="log-meta-key">version</span>=<span class="log-meta-val">1.0.0</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.961</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">published package</span> <span class="log-meta"><span class="log-meta-key">id</span>=<span class="log-meta-val">pkg_2</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">petstore-orchestrator</span> <span class="log-meta-key">version</span>=<span class="log-meta-val">1.0.0</span></span></div>
+<div class="log-line"><span class="log-time">21:17:10.816</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">listed packages</span> <span class="log-meta"><span class="log-meta-key">count</span>=<span class="log-meta-val">2</span></span></div>
+<div class="log-line"><span class="log-time">21:17:19.082</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">listed packages</span> <span class="log-meta"><span class="log-meta-key">count</span>=<span class="log-meta-val">2</span></span></div>
+<div class="log-line"><span class="log-time">21:17:23.219</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">listed packages</span> <span class="log-meta"><span class="log-meta-key">count</span>=<span class="log-meta-val">2</span></span></div>
+</div>
+</details>
+<details><summary>builder logs (4 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">21:16:06.943</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">builder service starting</span> <span class="log-meta"><span class="log-meta-key">port</span>=<span class="log-meta-val">8082</span></span></div>
+<div class="log-line"><span class="log-time">21:16:21.944</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">traces export: context deadline exceeded: rpc error: code = Unavailable desc = connection error: desc = &quot;transport: Error while dialing: dial tcp 10.96.80.15:4317: connect: connection refused&quot;</span></div>
+<div class="log-line"><span class="log-time">21:16:53.966</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">build created</span> <span class="log-meta"><span class="log-meta-key">build_id</span>=<span class="log-meta-val">bld-1771708613966-1</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.966</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">build completed successfully</span> <span class="log-meta"><span class="log-meta-key">build_id</span>=<span class="log-meta-val">bld-1771708613966-1</span></span></div>
+</div>
+</details>
+<details><summary>envmanager logs (2 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">21:16:06.969</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">starting server</span> <span class="log-meta"><span class="log-meta-key">addr</span>=<span class="log-meta-val">:8083</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.963</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">environment created</span> <span class="log-meta"><span class="log-meta-key">id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">petstore-e2e</span></span></div>
+</div>
+</details>
+<details><summary>turbo-engine-operator logs (43 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">21:16:07.394</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">starting operator service</span> <span class="log-meta"><span class="log-meta-key">version</span>=<span class="log-meta-val">0.1.0</span> <span class="log-meta-key">log_level</span>=<span class="log-meta-val">debug</span></span></div>
+<div class="log-line"><span class="log-time">21:16:07.394</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">failed to initialize tracer, continuing without tracing</span> <span class="log-meta"><span class="log-meta-key">error</span>=<span class="log-meta-val">creating resource: conflicting Schema URL: https://opentelemetry.io/schemas/1...</span></span></div>
+<div class="log-line"><span class="log-time">21:16:07.394</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">operator mode: k8s — will create real Kubernetes resources</span></div>
+<div class="log-line"><span class="log-time">21:16:07.395</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">starting builder poll loop</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">interval</span>=<span class="log-meta-val">5000000000</span></span></div>
+<div class="log-line"><span class="log-time">21:16:07.395</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">listening</span> <span class="log-meta"><span class="log-meta-key">addr</span>=<span class="log-meta-val">:8084</span></span></div>
+<div class="log-line"><span class="log-time">21:16:12.396</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:17.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:22.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:27.398</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:30.210</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">gateway config request</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">handler</span> <span class="log-meta-key">routes</span>=<span class="log-meta-val">0</span></span></div>
+<div class="log-line"><span class="log-time">21:16:32.398</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:37.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:42.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:45.207</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">gateway config request</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">handler</span> <span class="log-meta-key">routes</span>=<span class="log-meta-val">0</span></span></div>
+<div class="log-line"><span class="log-time">21:16:47.396</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:52.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconcile request received</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">handler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">build_id</span>=<span class="log-meta-val">bld-1771708613966-1</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">starting reconciliation</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">build_id</span>=<span class="log-meta-val">bld-1771708613966-1</span> <span class="log-meta-key">components</span>=<span class="log-meta-val">2</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">action</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">resource_kind</span>=<span class="log-meta-val">Deployment</span> <span class="log-meta-key">resource_name</span>=<span class="log-meta-val">deploy-petstore-api</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">image=artifact:petstore-api-hash replicas=1</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">action</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">resource_kind</span>=<span class="log-meta-val">Service</span> <span class="log-meta-key">resource_name</span>=<span class="log-meta-val">svc-petstore-api</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">selector=petstore-api</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">action</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">resource_kind</span>=<span class="log-meta-val">ConfigMap</span> <span class="log-meta-key">resource_name</span>=<span class="log-meta-val">cm-petstore-api</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">env_vars=0</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">action</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">resource_kind</span>=<span class="log-meta-val">Deployment</span> <span class="log-meta-key">resource_name</span>=<span class="log-meta-val">deploy-petstore-orchestrator</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">image=artifact:petstore-orchestrator-hash replicas=1</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">action</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">resource_kind</span>=<span class="log-meta-val">Service</span> <span class="log-meta-key">resource_name</span>=<span class="log-meta-val">svc-petstore-orchestrator</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">selector=petstore-orchestrator</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">action</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">resource_kind</span>=<span class="log-meta-val">ConfigMap</span> <span class="log-meta-key">resource_name</span>=<span class="log-meta-val">cm-petstore-orchestrator</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">env_vars=1</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">action</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">resource_kind</span>=<span class="log-meta-val">Ingress</span> <span class="log-meta-key">resource_name</span>=<span class="log-meta-val">localhost-ingress</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">host=localhost routes=1 tls=false</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.971</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">applying action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">kind</span>=<span class="log-meta-val">Deployment</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">deploy-petstore-api</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">image=artifact:petstore-api-hash replicas=1</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.981</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">applying action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">kind</span>=<span class="log-meta-val">Service</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">svc-petstore-api</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">selector=petstore-api</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.986</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">applying action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">kind</span>=<span class="log-meta-val">ConfigMap</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">cm-petstore-api</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">env_vars=0</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.991</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">applying action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">kind</span>=<span class="log-meta-val">Deployment</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">deploy-petstore-orchestrator</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">image=artifact:petstore-orchestrator-hash replicas=1</span></span></div>
+<div class="log-line"><span class="log-time">21:16:53.999</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">applying action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">kind</span>=<span class="log-meta-val">Service</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">svc-petstore-orchestrator</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">selector=petstore-orchestrator</span></span></div>
+<div class="log-line"><span class="log-time">21:16:54.008</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">applying action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">kind</span>=<span class="log-meta-val">ConfigMap</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">cm-petstore-orchestrator</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">env_vars=1</span></span></div>
+<div class="log-line"><span class="log-time">21:16:54.017</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">applying action</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">kind</span>=<span class="log-meta-val">Ingress</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">localhost-ingress</span> <span class="log-meta-key">details</span>=<span class="log-meta-val">host=localhost routes=1 tls=false</span></span></div>
+<div class="log-line"><span class="log-time">21:16:54.017</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">ingress action handled via gateway-config endpoint</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">k8s-applier</span> <span class="log-meta-key">type</span>=<span class="log-meta-val">Create</span> <span class="log-meta-key">name</span>=<span class="log-meta-val">localhost-ingress</span></span></div>
+<div class="log-line"><span class="log-time">21:16:54.017</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">reconciliation complete</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">reconciler</span> <span class="log-meta-key">environment_id</span>=<span class="log-meta-val">649d24a5c1cb164e8090fbe0f664ed49</span> <span class="log-meta-key">phase</span>=<span class="log-meta-val">Running</span> <span class="log-meta-key">actions</span>=<span class="log-meta-val">7</span></span></div>
+<div class="log-line"><span class="log-time">21:16:57.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:17:00.207</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">gateway config request</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">handler</span> <span class="log-meta-key">routes</span>=<span class="log-meta-val">1</span></span></div>
+<div class="log-line"><span class="log-time">21:17:02.398</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:17:07.396</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:17:12.400</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:17:15.208</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">gateway config request</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">handler</span> <span class="log-meta-key">routes</span>=<span class="log-meta-val">1</span></span></div>
+<div class="log-line"><span class="log-time">21:17:17.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:17:22.399</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+<div class="log-line"><span class="log-time">21:17:27.397</span> <span class="log-level log-level-warn">WARN</span> <span class="log-msg">builder returned non-200 status</span> <span class="log-meta"><span class="log-meta-key">component</span>=<span class="log-meta-val">poller</span> <span class="log-meta-key">builder_url</span>=<span class="log-meta-val">http://builder:8082</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">404</span></span></div>
+</div>
+</details>
+<details><summary>gateway logs (10 lines)</summary>
+<pre><code>[2m2026-02-21T21:16:07.097989Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m starting gateway [3mport[0m[2m=[0m8080 [3mconfig_url[0m[2m=[0mSome(&quot;http://turbo-engine-operator:8084/v1/gateway-config&quot;)
+[2m2026-02-21T21:16:07.413932Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m config not available yet, retrying [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config) [3mattempt[0m[2m=[0m1 [3mmax_attempts[0m[2m=[0m4
+[2m2026-02-21T21:16:08.612678Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m config not available yet, retrying [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config) [3mattempt[0m[2m=[0m2 [3mmax_attempts[0m[2m=[0m4
+[2m2026-02-21T21:16:10.816987Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m config not available yet, retrying [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config) [3mattempt[0m[2m=[0m3 [3mmax_attempts[0m[2m=[0m4
+[2m2026-02-21T21:16:15.007531Z[0m [33m WARN[0m [2mgateway[0m[2m:[0m failed to load config after retries — starting with empty routing table [3merr[0m[2m=[0mupstream unavailable: error sending request for url (http://turbo-engine-operator:8084/v1/gateway-config)
+[2m2026-02-21T21:16:15.213385Z[0m [32m INFO[0m [2mgateway[0m[2m:[0m gateway listening [3maddr[0m[2m=[0m0.0.0.0:8080
+[2m2026-02-21T21:16:30.211604Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m0
+[2m2026-02-21T21:16:45.208591Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m0
+[2m2026-02-21T21:17:00.207945Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m1
+[2m2026-02-21T21:17:15.209354Z[0m [32m INFO[0m [2mgateway::config[0m[2m:[0m config reloaded [3mroutes[0m[2m=[0m1</code></pre>
+</details>
+<hr>
+<p><em>End of report. Per-scenario details are in the linked scenario reports above.</em></p>
+</div>
+</body>
+</html>

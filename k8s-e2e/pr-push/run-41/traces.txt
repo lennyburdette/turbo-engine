@@ -1,0 +1,158 @@
+Trace Summary (captured 2026-02-21T21:17:31Z)
+============================================================
+
+builder: 29 traces
+envmanager: 16 traces
+gateway: 5 traces
+orchestrator: 1 traces
+petstore-mock: 1 traces
+registry: 4 traces
+
+[4e4b9e722b79] builder/builder 0.0ms (1 spans)
+
+[6048389fad16] builder/builder 0.0ms (1 spans)
+
+[266c3d309d34] envmanager/envmanager 0.1ms (1 spans)
+
+[0c0e092d6505] builder/builder 0.0ms (1 spans)
+
+[a9f493341825] builder/builder 0.0ms (1 spans)
+
+[4895ea497902] envmanager/envmanager 0.1ms (1 spans)
+
+[54211abc8222] builder/builder 0.0ms (1 spans)
+
+[a5df638b5567] builder/builder 0.0ms (1 spans)
+
+[9dddac9da37a] envmanager/envmanager 0.2ms (1 spans)
+
+[f967d64c1373] builder/builder 0.0ms (1 spans)
+
+[ca00fed9aa23] builder/builder 0.0ms (1 spans)
+
+[8282bca9c608] builder/builder 0.1ms (1 spans)
+
+[f65b2540bcac] envmanager/envmanager 0.0ms (1 spans)
+
+[a6da9ccc6ae8] builder/builder 0.1ms (1 spans)
+
+[8f4ae9fd843f] envmanager/envmanager 0.2ms (1 spans)
+
+[a0263cdafde7] builder/builder 0.0ms (1 spans)
+
+[e0ef7fa94948] builder/builder 0.0ms (1 spans)
+
+[f4e82547a65c] builder/builder 0.1ms (1 spans)
+
+[b87825e7dddf] envmanager/envmanager 0.0ms (1 spans)
+
+[b916e20477cb] builder/builder 0.1ms (1 spans)
+
+[252c5ddf1f63] builder/builder 0.0ms (1 spans)
+
+[13849d6981f9] envmanager/envmanager 0.0ms (1 spans)
+
+[aa72c52df445] builder/builder 0.0ms (1 spans)
+
+[ade175730a26] builder/builder 0.0ms (1 spans)
+
+[0d6364d2cdb2] envmanager/envmanager 0.0ms (1 spans)
+
+[037c597ba989] registry/PublishPackage 0.2ms (1 spans)
+
+[181550fb0a0f] registry/PublishPackage 0.1ms (1 spans)
+
+[d51e00b1a8a1] envmanager/envmanager 0.2ms (2 spans)
+  envmanager/Orchestrator.CreateEnvironment 0.0ms
+
+[d17d838845e0] builder/builder 0.3ms (10 spans)
+  builder/BuildEngine.Run 0.1ms
+  builder/step.resolve 0.0ms
+  builder/resolve.execute 0.0ms
+  builder/step.compose 0.0ms
+  builder/compose.execute 0.0ms
+  builder/step.validate 0.0ms
+  builder/validate.execute 0.0ms
+  builder/step.bundle 0.0ms
+  builder/bundle.execute 0.0ms
+
+[fed7c91f5350] builder/builder 0.0ms (1 spans)
+
+[fb89849f3593] builder/builder 0.0ms (1 spans)
+
+[38d4908846b2] envmanager/envmanager 0.0ms (1 spans)
+
+[37c79395c48a] gateway/proxy_handler 0.0ms (1 spans)
+
+[b37320744475] builder/builder 0.0ms (1 spans)
+
+[d7e2c32bc1f8] builder/builder 0.1ms (1 spans)
+
+[cf20050ba8e1] gateway/proxy_handler 3.3ms (6 spans)
+  gateway/proxy_upstream 3.2ms
+  orchestrator/orchestrator 2.1ms
+  orchestrator/rpc/listPets 2.0ms
+  orchestrator/HTTP GET 1.9ms
+  petstore-mock/petstore-mock 0.2ms
+
+[59add87f1618] builder/builder 0.0ms (1 spans)
+
+[6ad4939353b9] envmanager/envmanager 0.0ms (1 spans)
+
+[b53731df634a] petstore-mock/petstore-mock 0.1ms (1 spans)
+
+[8a600c9c067c] builder/builder 0.0ms (1 spans)
+
+[2325ccb4e5ab] orchestrator/orchestrator 0.7ms (4 spans)
+  orchestrator/rpc/listPets 0.6ms
+  orchestrator/HTTP GET 0.5ms
+  petstore-mock/petstore-mock 0.1ms
+
+[c12db6d9570a] gateway/proxy_handler 0.9ms (6 spans)
+  gateway/proxy_upstream 0.8ms
+  orchestrator/orchestrator 0.5ms
+  orchestrator/rpc/listPets 0.5ms
+  orchestrator/HTTP GET 0.3ms
+  petstore-mock/petstore-mock 0.1ms
+
+[01032ec9e2aa] gateway/proxy_handler 0.8ms (6 spans)
+  gateway/proxy_upstream 0.8ms
+  orchestrator/orchestrator 0.5ms
+  orchestrator/rpc/getPet 0.4ms
+  orchestrator/HTTP GET 0.4ms
+  petstore-mock/petstore-mock 0.1ms
+
+[a0b1c2d3e4f5] gateway/proxy_handler 0.7ms (6 spans)
+  gateway/proxy_upstream 0.6ms
+  orchestrator/orchestrator 0.4ms
+  orchestrator/rpc/listPets 0.4ms
+  orchestrator/HTTP GET 0.3ms
+  petstore-mock/petstore-mock 0.1ms
+
+[d2c289546595] envmanager/envmanager 0.0ms (1 spans)
+
+[a44876836e56] builder/builder 0.0ms (1 spans)
+
+[019c765466b6] registry/ListPackages 0.1ms (1 spans)
+
+[845b53d4dbfc] builder/builder 0.0ms (1 spans)
+
+[91d55849fd32] envmanager/envmanager 0.1ms (2 spans)
+  envmanager/Orchestrator.ListEnvironments 0.0ms
+
+[458bf373c32b] builder/builder 0.0ms (1 spans)
+
+[16ebfb8c54d9] envmanager/envmanager 0.0ms (1 spans)
+
+[cfec3565abd2] registry/ListPackages 0.2ms (1 spans)
+
+[1debd7153a00] envmanager/envmanager 0.1ms (2 spans)
+  envmanager/Orchestrator.ListEnvironments 0.0ms
+
+[d3b89ce1416b] builder/builder 0.0ms (1 spans)
+
+[f2fff77dc699] builder/builder 0.1ms (1 spans)
+
+[0c77e5c23468] envmanager/envmanager 0.0ms (1 spans)
+
+Total: 56 traces, 91 spans across 7 services

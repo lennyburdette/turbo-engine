@@ -1,0 +1,69 @@
+LAST SEEN   TYPE     REASON              OBJECT                                               MESSAGE
+82s         Normal   Created             pod/envmanager-76c64c8cc9-4kvzt                      Container created
+82s         Normal   ScalingReplicaSet   deployment/gateway                                   Scaled up replica set gateway-586c64fdf5 from 0 to 1
+82s         Normal   Created             pod/builder-678474bf88-67fwt                         Container created
+82s         Normal   Started             pod/builder-678474bf88-67fwt                         Container started
+82s         Normal   SuccessfulCreate    replicaset/builder-678474bf88                        Created pod: builder-678474bf88-67fwt
+82s         Normal   ScalingReplicaSet   deployment/builder                                   Scaled up replica set builder-678474bf88 from 0 to 1
+82s         Normal   Scheduled           pod/console-78fbd5c84-g96k7                          Successfully assigned turbo-engine-e2e/console-78fbd5c84-g96k7 to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/console-78fbd5c84-g96k7                          Container image "turbo-engine/console:e2e" already present on machine and can be accessed by the pod
+82s         Normal   Created             pod/console-78fbd5c84-g96k7                          Container created
+82s         Normal   ScalingReplicaSet   deployment/otel-collector                            Scaled up replica set otel-collector-8584bc4d4c from 0 to 1
+82s         Normal   SuccessfulCreate    replicaset/console-78fbd5c84                         Created pod: console-78fbd5c84-g96k7
+82s         Normal   ScalingReplicaSet   deployment/console                                   Scaled up replica set console-78fbd5c84 from 0 to 1
+82s         Normal   ScalingReplicaSet   deployment/turbo-engine-operator                     Scaled up replica set turbo-engine-operator-7cd95f4bc4 from 0 to 1
+82s         Normal   SuccessfulCreate    replicaset/turbo-engine-operator-7cd95f4bc4          Created pod: turbo-engine-operator-7cd95f4bc4-p9bns
+82s         Normal   Scheduled           pod/builder-678474bf88-67fwt                         Successfully assigned turbo-engine-e2e/builder-678474bf88-67fwt to turbo-engine-e2e-control-plane
+82s         Normal   Scheduled           pod/otel-collector-8584bc4d4c-qc9fb                  Successfully assigned turbo-engine-e2e/otel-collector-8584bc4d4c-qc9fb to turbo-engine-e2e-control-plane
+82s         Normal   ScalingReplicaSet   deployment/jaeger                                    Scaled up replica set jaeger-54885dfdf from 0 to 1
+82s         Normal   Scheduled           pod/turbo-engine-operator-7cd95f4bc4-p9bns           Successfully assigned turbo-engine-e2e/turbo-engine-operator-7cd95f4bc4-p9bns to turbo-engine-e2e-control-plane
+82s         Normal   ScalingReplicaSet   deployment/registry                                  Scaled up replica set registry-7d5f66bcd8 from 0 to 1
+82s         Normal   SuccessfulCreate    replicaset/registry-7d5f66bcd8                       Created pod: registry-7d5f66bcd8-5lx4t
+82s         Normal   Started             pod/envmanager-76c64c8cc9-4kvzt                      Container started
+82s         Normal   SuccessfulCreate    replicaset/envmanager-76c64c8cc9                     Created pod: envmanager-76c64c8cc9-4kvzt
+82s         Normal   Pulling             pod/jaeger-54885dfdf-676ng                           Pulling image "jaegertracing/all-in-one:1.54"
+82s         Normal   Scheduled           pod/registry-7d5f66bcd8-5lx4t                        Successfully assigned turbo-engine-e2e/registry-7d5f66bcd8-5lx4t to turbo-engine-e2e-control-plane
+82s         Normal   Scheduled           pod/envmanager-76c64c8cc9-4kvzt                      Successfully assigned turbo-engine-e2e/envmanager-76c64c8cc9-4kvzt to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/envmanager-76c64c8cc9-4kvzt                      Container image "turbo-engine/envmanager:e2e" already present on machine and can be accessed by the pod
+82s         Normal   Pulled              pod/builder-678474bf88-67fwt                         Container image "turbo-engine/builder:e2e" already present on machine and can be accessed by the pod
+82s         Normal   SuccessfulCreate    replicaset/jaeger-54885dfdf                          Created pod: jaeger-54885dfdf-676ng
+82s         Normal   Scheduled           pod/jaeger-54885dfdf-676ng                           Successfully assigned turbo-engine-e2e/jaeger-54885dfdf-676ng to turbo-engine-e2e-control-plane
+82s         Normal   ScalingReplicaSet   deployment/envmanager                                Scaled up replica set envmanager-76c64c8cc9 from 0 to 1
+82s         Normal   Scheduled           pod/explorer-5465b84fd-cgvzb                         Successfully assigned turbo-engine-e2e/explorer-5465b84fd-cgvzb to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/explorer-5465b84fd-cgvzb                         Container image "turbo-engine/explorer:e2e" already present on machine and can be accessed by the pod
+82s         Normal   Created             pod/explorer-5465b84fd-cgvzb                         Container created
+82s         Normal   SuccessfulCreate    replicaset/otel-collector-8584bc4d4c                 Created pod: otel-collector-8584bc4d4c-qc9fb
+82s         Normal   SuccessfulCreate    replicaset/explorer-5465b84fd                        Created pod: explorer-5465b84fd-cgvzb
+82s         Normal   ScalingReplicaSet   deployment/explorer                                  Scaled up replica set explorer-5465b84fd from 0 to 1
+82s         Normal   Scheduled           pod/gateway-586c64fdf5-j7fdz                         Successfully assigned turbo-engine-e2e/gateway-586c64fdf5-j7fdz to turbo-engine-e2e-control-plane
+82s         Normal   Pulled              pod/gateway-586c64fdf5-j7fdz                         Container image "turbo-engine/gateway:e2e" already present on machine and can be accessed by the pod
+82s         Normal   Created             pod/gateway-586c64fdf5-j7fdz                         Container created
+82s         Normal   SuccessfulCreate    replicaset/gateway-586c64fdf5                        Created pod: gateway-586c64fdf5-j7fdz
+81s         Normal   Started             pod/turbo-engine-operator-7cd95f4bc4-p9bns           Container started
+81s         Normal   Started             pod/explorer-5465b84fd-cgvzb                         Container started
+81s         Normal   Created             pod/registry-7d5f66bcd8-5lx4t                        Container created
+81s         Normal   Pulled              pod/registry-7d5f66bcd8-5lx4t                        Container image "turbo-engine/registry:e2e" already present on machine and can be accessed by the pod
+81s         Normal   Started             pod/registry-7d5f66bcd8-5lx4t                        Container started
+81s         Normal   Started             pod/gateway-586c64fdf5-j7fdz                         Container started
+81s         Normal   Pulled              pod/turbo-engine-operator-7cd95f4bc4-p9bns           Container image "turbo-engine/operator:e2e" already present on machine and can be accessed by the pod
+81s         Normal   Created             pod/turbo-engine-operator-7cd95f4bc4-p9bns           Container created
+81s         Normal   Pulling             pod/otel-collector-8584bc4d4c-qc9fb                  Pulling image "otel/opentelemetry-collector-contrib:0.96.0"
+81s         Normal   Started             pod/console-78fbd5c84-g96k7                          Container started
+80s         Normal   Pulled              pod/jaeger-54885dfdf-676ng                           Successfully pulled image "jaegertracing/all-in-one:1.54" in 1.226s (1.226s including waiting). Image size: 33344095 bytes.
+80s         Normal   Created             pod/jaeger-54885dfdf-676ng                           Container created
+80s         Normal   Started             pod/jaeger-54885dfdf-676ng                           Container started
+78s         Normal   Pulled              pod/otel-collector-8584bc4d4c-qc9fb                  Successfully pulled image "otel/opentelemetry-collector-contrib:0.96.0" in 2.097s (3.252s including waiting). Image size: 65128183 bytes.
+78s         Normal   Created             pod/otel-collector-8584bc4d4c-qc9fb                  Container created
+78s         Normal   Started             pod/otel-collector-8584bc4d4c-qc9fb                  Container started
+35s         Normal   ScalingReplicaSet   deployment/deploy-petstore-api                       Scaled up replica set deploy-petstore-api-6b7b865c95 from 0 to 1
+35s         Normal   Scheduled           pod/deploy-petstore-api-6b7b865c95-czkhm             Successfully assigned turbo-engine-e2e/deploy-petstore-api-6b7b865c95-czkhm to turbo-engine-e2e-control-plane
+35s         Normal   SuccessfulCreate    replicaset/deploy-petstore-api-6b7b865c95            Created pod: deploy-petstore-api-6b7b865c95-czkhm
+34s         Normal   SuccessfulCreate    replicaset/deploy-petstore-orchestrator-68fc6bd898   Created pod: deploy-petstore-orchestrator-68fc6bd898-6fgts
+34s         Normal   Pulled              pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Container image "turbo-engine/orchestrator:e2e" already present on machine and can be accessed by the pod
+34s         Normal   Scheduled           pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Successfully assigned turbo-engine-e2e/deploy-petstore-orchestrator-68fc6bd898-6fgts to turbo-engine-e2e-control-plane
+34s         Normal   Created             pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Container created
+34s         Normal   Started             pod/deploy-petstore-orchestrator-68fc6bd898-6fgts    Container started
+34s         Normal   Started             pod/deploy-petstore-api-6b7b865c95-czkhm             Container started
+34s         Normal   Created             pod/deploy-petstore-api-6b7b865c95-czkhm             Container created
+34s         Normal   Pulled              pod/deploy-petstore-api-6b7b865c95-czkhm             Container image "turbo-engine/petstore-mock:e2e" already present on machine and can be accessed by the pod
+34s         Normal   ScalingReplicaSet   deployment/deploy-petstore-orchestrator              Scaled up replica set deploy-petstore-orchestrator-68fc6bd898 from 0 to 1

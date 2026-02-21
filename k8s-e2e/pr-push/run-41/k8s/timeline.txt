@@ -1,0 +1,7 @@
+00:00  Waiting for control plane deployments to roll out
+00:00  Control plane ready
+00:00  Setting up port-forwards
+00:07  Port-forwards healthy
+00:07  Running scenario: petstore-basic
+00:41  Scenario petstore-basic: 14/14 passed
+00:41  Tests complete: 16 passed, 0 failed
