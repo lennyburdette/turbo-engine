@@ -39,6 +39,7 @@ import contextlib
 import json
 import os
 import re
+import secrets
 import subprocess
 import sys
 import time
@@ -523,14 +524,45 @@ class ScenarioRunner:
             fail(f"{prefixed_name}: {detail}")
             self.fail_count += 1
 
-    def _emit_http(self, method: str, url: str, status: int, duration_ms: int) -> None:
+    def _emit_http(self, method: str, url: str, status: int, duration_ms: int,
+                   trace_id: str = "") -> None:
         """Emit an HTTP request/response event to the timeline."""
         # Shorten URL for display: keep path only
         path = url.split("//", 1)[-1].split("/", 1)[-1] if "//" in url else url
-        self._emit("http", {
+        data: dict[str, Any] = {
             "method": method, "url": f"/{path}", "status": status,
             "duration_ms": duration_ms,
-        })
+        }
+        if trace_id:
+            data["trace_id"] = trace_id
+        self._emit("http", data)
+
+    @staticmethod
+    def _make_traceparent() -> tuple[str, str]:
+        """Generate a W3C traceparent header. Returns (header_value, trace_id)."""
+        trace_id = secrets.token_hex(16)  # 32 hex chars
+        span_id = secrets.token_hex(8)    # 16 hex chars
+        return f"00-{trace_id}-{span_id}-01", trace_id
+
+    def _traced_request(
+        self, url: str, method: str = "GET",
+        body: dict | None = None,
+        headers: dict[str, str] | None = None,
+        timeout: int = 30,
+    ) -> tuple[int, Any, str]:
+        """Like http_request() but injects a traceparent and returns the trace_id."""
+        hdrs = dict(headers) if headers else {}
+        # Don't override an explicit traceparent (e.g. trace-propagation test).
+        if "traceparent" in hdrs:
+            # Extract the trace_id from the existing header.
+            parts = hdrs["traceparent"].split("-")
+            trace_id = parts[1] if len(parts) >= 3 else ""
+        else:
+            traceparent, trace_id = self._make_traceparent()
+            hdrs["traceparent"] = traceparent
+        status, resp_body = http_request(url, method=method, body=body,
+                                         headers=hdrs, timeout=timeout)
+        return status, resp_body, trace_id
 
     def _port_forward_component(self, component_name: str) -> int:
         """Set up a port-forward to a component service and return the local port."""
@@ -583,9 +615,9 @@ class ScenarioRunner:
                     payload["package"]["upstreamConfig"] = {"url": pkg["upstream_url"]}
 
                 url = f"{self._base_url('registry')}/v1/packages"
-                status, body = http_request(url, method="POST", body=payload)
+                status, body, trace_id = self._traced_request(url, method="POST", body=payload)
                 duration = time.monotonic_ns() // 1_000_000 - t0
-                self._emit_http("POST", url, status, duration)
+                self._emit_http("POST", url, status, duration, trace_id=trace_id)
 
                 if status in (200, 201):
                     self._record(
@@ -616,9 +648,9 @@ class ScenarioRunner:
                 "createdBy": "k8s-e2e-scenario",
             }
             url = f"{self._base_url('envmanager')}/v1/environments"
-            status, body = http_request(url, method="POST", body=payload)
+            status, body, trace_id = self._traced_request(url, method="POST", body=payload)
             duration = time.monotonic_ns() // 1_000_000 - t0
-            self._emit_http("POST", url, status, duration)
+            self._emit_http("POST", url, status, duration, trace_id=trace_id)
 
             if status in (200, 201):
                 self.env_id = body.get("id", env_cfg["name"]) if isinstance(body, dict) else env_cfg["name"]
@@ -639,9 +671,9 @@ class ScenarioRunner:
                 "rootPackageVersion": env_cfg["root_version"],
             }
             url = f"{self._base_url('builder')}/v1/builds"
-            status, body = http_request(url, method="POST", body=payload)
+            status, body, trace_id = self._traced_request(url, method="POST", body=payload)
             duration = time.monotonic_ns() // 1_000_000 - t0
-            self._emit_http("POST", url, status, duration)
+            self._emit_http("POST", url, status, duration, trace_id=trace_id)
 
             if status not in (200, 201, 202):
                 self._record("trigger-build", False, f"HTTP {status}", duration)
@@ -716,9 +748,9 @@ class ScenarioRunner:
             }
 
             url = f"{self._base_url('operator')}/v1/reconcile"
-            status, body = http_request(url, method="POST", body=payload)
+            status, body, trace_id = self._traced_request(url, method="POST", body=payload)
             duration = time.monotonic_ns() // 1_000_000 - t0
-            self._emit_http("POST", url, status, duration)
+            self._emit_http("POST", url, status, duration, trace_id=trace_id)
 
             if status == 200:
                 self._emit("info", {"msg": "Waiting 5s for operator to settle..."})
@@ -800,9 +832,9 @@ class ScenarioRunner:
             attempt = 0
             while time.time() < deadline:
                 attempt += 1
-                status, _ = http_request(probe_url, method=probe_method, timeout=5)
+                status, _, gw_trace_id = self._traced_request(probe_url, method=probe_method, timeout=5)
                 last_code = status
-                self._emit_http(probe_method, probe_url, status, 0)
+                self._emit_http(probe_method, probe_url, status, 0, trace_id=gw_trace_id)
                 if status != 404:
                     duration = time.monotonic_ns() // 1_000_000 - t0
                     self._record("gateway-routing", True, f"Gateway route {probe_path} active (HTTP {status})", duration)
@@ -837,9 +869,12 @@ class ScenarioRunner:
                 url = f"{base}{path}"
                 info(f"  {method} {url}")
 
-                status_code, body = http_request(url, method=method, headers=extra_headers if extra_headers else None)
+                status_code, body, req_trace_id = self._traced_request(
+                    url, method=method,
+                    headers=extra_headers if extra_headers else None,
+                )
                 duration = time.monotonic_ns() // 1_000_000 - t0
-                self._emit_http(method, url, status_code, duration)
+                self._emit_http(method, url, status_code, duration, trace_id=req_trace_id)
 
                 all_passed = True
                 details = []
@@ -1573,7 +1608,10 @@ class ScenarioRunner:
                     status_code = ev.get("status", 0)
                     ok_cls = "tl-http-ok" if 200 <= status_code < 400 else "tl-http-err"
                     dur_s = f" ({ev['duration_ms']}ms)" if ev.get("duration_ms") else ""
-                    h.append(f'<div class="tl-event tl-http">'
+                    trace_attr = ""
+                    if ev.get("trace_id"):
+                        trace_attr = f' data-trace-id="{html_escape(ev["trace_id"])}"'
+                    h.append(f'<div class="tl-event tl-http"{trace_attr}>'
                               f'<span class="tl-icon">&rarr;</span>'
                               f'{html_escape(ev.get("method", ""))} {html_escape(ev.get("url", ""))}'
                               f' <span class="tl-http-status {ok_cls}">{status_code}</span>'

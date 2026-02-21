@@ -71,6 +71,13 @@ if [[ -f "$TRACE_VIEWER" && -f "$TRACES_FILE" ]]; then
   bash "$TRACE_VIEWER" || true
 fi
 
+# Enrich scenario timeline reports with matching trace spans.
+ENRICH_SCRIPT="${SCRIPT_DIR}/enrich-timeline-traces.py"
+if [[ -f "$ENRICH_SCRIPT" && -f "$TRACES_FILE" ]]; then
+  info "Enriching timeline reports with trace data..."
+  python3 "$ENRICH_SCRIPT" "${REPORT_DIR}" || true
+fi
+
 # ---------------------------------------------------------------------------
 # Build the top-level report
 # ---------------------------------------------------------------------------
