@@ -106,6 +106,20 @@ hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
 .fail { color: var(--fail); font-weight: 600; }
 img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
 blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 4px 12px; color: var(--fg-muted); }
+.log-line { border-bottom: 1px solid var(--border); padding: 3px 0; font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+.log-line:last-child { border-bottom: none; }
+.log-time { color: var(--fg-muted); font-size: 11px; flex-shrink: 0; }
+.log-level { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; flex-shrink: 0; }
+.log-level-info { color: var(--pass); }
+.log-level-warn { color: #b08800; }
+.log-level-error { color: var(--fail); }
+.log-level-debug { color: var(--fg-muted); }
+.log-msg { font-weight: 500; }
+.log-meta { color: var(--fg-muted); font-size: 12px; }
+.log-meta-key { color: var(--fg-muted); }
+.log-meta-val { color: var(--fg); }
+.log-raw { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.log-container { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; overflow-x: auto; max-width: 100%; }
 """
 
 
@@ -128,6 +142,103 @@ def html_page(title: str, body: str, breadcrumbs: list[tuple[str, str]] | None =
         f"{bc}{body}"
         "</div>\n</body>\n</html>\n"
     )
+
+
+# Known message/metadata keys in JSON logs (order matters for display).
+_LOG_MSG_KEYS = {"msg", "message"}
+_LOG_META_KEYS = {"time", "ts", "timestamp", "level", "lvl", "msg", "message"}
+
+
+def _render_log_line_html(line: str) -> str:
+    """Render a single log line.  If it's JSON, show structured output;
+    otherwise fall back to plain escaped text."""
+    stripped = line.strip()
+    if not stripped:
+        return ""
+    try:
+        obj = json.loads(stripped)
+        if not isinstance(obj, dict):
+            raise ValueError
+    except (json.JSONDecodeError, ValueError):
+        return f'<div class="log-raw">{html_escape(stripped)}</div>\n'
+
+    parts: list[str] = []
+
+    # Time
+    ts = obj.get("time") or obj.get("ts") or obj.get("timestamp") or ""
+    if ts:
+        # Trim nanosecond precision and trailing Z for readability
+        ts_str = str(ts)
+        if "T" in ts_str:
+            ts_str = ts_str.split("T", 1)[1].rstrip("Z")
+            # Truncate sub-second to 3 digits
+            if "." in ts_str:
+                base, frac = ts_str.split(".", 1)
+                ts_str = f"{base}.{frac[:3]}"
+        parts.append(f'<span class="log-time">{html_escape(ts_str)}</span>')
+
+    # Level
+    level = str(obj.get("level") or obj.get("lvl") or "").upper()
+    if level:
+        lcls = "info"
+        if level in ("WARN", "WARNING"):
+            lcls = "warn"
+        elif level in ("ERROR", "ERR", "FATAL", "PANIC"):
+            lcls = "error"
+        elif level in ("DEBUG", "TRACE"):
+            lcls = "debug"
+        parts.append(f'<span class="log-level log-level-{lcls}">{html_escape(level)}</span>')
+
+    # Message
+    msg = ""
+    for k in _LOG_MSG_KEYS:
+        if k in obj:
+            msg = str(obj[k])
+            break
+    if msg:
+        parts.append(f'<span class="log-msg">{html_escape(msg)}</span>')
+
+    # Remaining metadata keys
+    meta_parts: list[str] = []
+    for k, v in obj.items():
+        if k in _LOG_META_KEYS:
+            continue
+        sv = str(v) if not isinstance(v, str) else v
+        if len(sv) > 80:
+            sv = sv[:77] + "..."
+        meta_parts.append(
+            f'<span class="log-meta-key">{html_escape(k)}</span>='
+            f'<span class="log-meta-val">{html_escape(sv)}</span>'
+        )
+    if meta_parts:
+        parts.append('<span class="log-meta">' + " ".join(meta_parts) + "</span>")
+
+    return '<div class="log-line">' + " ".join(parts) + "</div>\n"
+
+
+def render_logs_html(log_content: str) -> str:
+    """Render a block of log lines — structured for JSON, raw otherwise."""
+    lines = log_content.split("\n")
+    # Quick check: if any line parses as JSON, use structured rendering
+    has_json = False
+    for line in lines[:5]:
+        stripped = line.strip()
+        if stripped and stripped.startswith("{"):
+            try:
+                json.loads(stripped)
+                has_json = True
+                break
+            except json.JSONDecodeError:
+                pass
+    if not has_json:
+        return f'<pre><code>{html_escape(log_content)}</code></pre>\n'
+    out: list[str] = ['<div class="log-container">\n']
+    for line in lines:
+        rendered = _render_log_line_html(line)
+        if rendered:
+            out.append(rendered)
+    out.append("</div>\n")
+    return "".join(out)
 
 
 # ---------------------------------------------------------------------------
@@ -1040,7 +1151,7 @@ class ScenarioRunner:
             for comp_name, log_content in comp_logs:
                 linecount = log_content.count("\n") + 1 if log_content else 0
                 h.append(f"<details><summary>{html_escape(comp_name)} ({linecount} lines)</summary>\n")
-                h.append(f"<pre><code>{html_escape(log_content)}</code></pre>\n")
+                h.append(render_logs_html(log_content))
                 h.append("</details>\n")
 
         body = "".join(h)

@@ -325,10 +325,107 @@ hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
 .pass { color: var(--pass); font-weight: 600; }
 .fail { color: var(--fail); font-weight: 600; }
 img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+.log-line { border-bottom: 1px solid var(--border); padding: 3px 0; font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+.log-line:last-child { border-bottom: none; }
+.log-time { color: var(--fg-muted); font-size: 11px; flex-shrink: 0; }
+.log-level { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; flex-shrink: 0; }
+.log-level-info { color: var(--pass); }
+.log-level-warn { color: #b08800; }
+.log-level-error { color: var(--fail); }
+.log-level-debug { color: var(--fg-muted); }
+.log-msg { font-weight: 500; }
+.log-meta { color: var(--fg-muted); font-size: 12px; }
+.log-meta-key { color: var(--fg-muted); }
+.log-meta-val { color: var(--fg); }
+.log-raw { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.log-container { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; overflow-x: auto; max-width: 100%; }
 CSSEOF
 
 # Helper to HTML-escape text.
 html_esc() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g'; }
+
+# Render log content as structured HTML (JSON logs get parsed, others stay raw).
+render_logs_html() {
+  local content="$1"
+  python3 -c "
+import json, sys
+from html import escape as E
+
+content = sys.stdin.read().strip()
+lines = content.split('\n')
+
+# Quick check: JSON?
+has_json = False
+for line in lines[:5]:
+    s = line.strip()
+    if s and s.startswith('{'):
+        try:
+            json.loads(s)
+            has_json = True
+            break
+        except json.JSONDecodeError:
+            pass
+
+if not has_json:
+    print(f'<pre><code>{E(content)}</code></pre>')
+    sys.exit(0)
+
+MSG_KEYS = {'msg', 'message'}
+META_SKIP = {'time', 'ts', 'timestamp', 'level', 'lvl', 'msg', 'message'}
+
+print('<div class=\"log-container\">')
+for line in lines:
+    s = line.strip()
+    if not s:
+        continue
+    try:
+        obj = json.loads(s)
+        if not isinstance(obj, dict):
+            raise ValueError
+    except (json.JSONDecodeError, ValueError):
+        print(f'<div class=\"log-raw\">{E(s)}</div>')
+        continue
+
+    parts = []
+    ts = obj.get('time') or obj.get('ts') or obj.get('timestamp') or ''
+    if ts:
+        ts_str = str(ts)
+        if 'T' in ts_str:
+            ts_str = ts_str.split('T', 1)[1].rstrip('Z')
+            if '.' in ts_str:
+                base, frac = ts_str.split('.', 1)
+                ts_str = f'{base}.{frac[:3]}'
+        parts.append(f'<span class=\"log-time\">{E(ts_str)}</span>')
+
+    level = str(obj.get('level') or obj.get('lvl') or '').upper()
+    if level:
+        lcls = 'info'
+        if level in ('WARN', 'WARNING'): lcls = 'warn'
+        elif level in ('ERROR', 'ERR', 'FATAL', 'PANIC'): lcls = 'error'
+        elif level in ('DEBUG', 'TRACE'): lcls = 'debug'
+        parts.append(f'<span class=\"log-level log-level-{lcls}\">{E(level)}</span>')
+
+    msg = ''
+    for k in MSG_KEYS:
+        if k in obj:
+            msg = str(obj[k])
+            break
+    if msg:
+        parts.append(f'<span class=\"log-msg\">{E(msg)}</span>')
+
+    meta = []
+    for k, v in obj.items():
+        if k in META_SKIP: continue
+        sv = str(v) if not isinstance(v, str) else v
+        if len(sv) > 80: sv = sv[:77] + '...'
+        meta.append(f'<span class=\"log-meta-key\">{E(k)}</span>=<span class=\"log-meta-val\">{E(sv)}</span>')
+    if meta:
+        parts.append('<span class=\"log-meta\">' + ' '.join(meta) + '</span>')
+
+    print('<div class=\"log-line\">' + ' '.join(parts) + '</div>')
+print('</div>')
+" <<< "$content"
+}
 
 {
   cat <<HTMLHEAD
@@ -479,9 +576,9 @@ print(len(svc_data.get('data',[])))
     LOG_FILE="${K8S_DIR}/logs-${svc}.txt"
     if [[ -f "$LOG_FILE" ]]; then
       lines_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
-      printf '<details><summary>%s logs (%s lines)</summary>\n<pre><code>' "$(html_esc "$svc")" "$lines_count"
-      html_esc "$(tail -50 "$LOG_FILE")"
-      printf '</code></pre>\n</details>\n'
+      printf '<details><summary>%s logs (%s lines)</summary>\n' "$(html_esc "$svc")" "$lines_count"
+      render_logs_html "$(tail -50 "$LOG_FILE")"
+      printf '</details>\n'
     fi
   done
 

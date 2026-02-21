@@ -206,7 +206,44 @@ cat > "${REPORT_DIR}/traces.html" <<'VIEWER_TOP'
     .svc-4 { background: #f0883e; } .svc-5 { background: #79c0ff; }
   }
 
+  .wf-row.selected { background: var(--accent); color: #fff; }
+  .wf-row.selected .wf-label, .wf-row.selected .wf-duration,
+  .wf-row.selected .indent { color: #fff; }
+
   .empty-state { padding: 32px; text-align: center; color: var(--fg-muted); }
+
+  /* Span detail panel */
+  .span-detail {
+    border: 1px solid var(--accent); border-radius: 6px; margin: 8px 0;
+    background: var(--bg); overflow: hidden;
+  }
+  .span-detail-header {
+    background: var(--bg-code); padding: 8px 12px; display: flex;
+    justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);
+  }
+  .span-detail-header h3 { margin: 0; font-size: 14px; }
+  .span-detail-close {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--fg-muted); cursor: pointer; padding: 2px 8px; font-size: 12px;
+  }
+  .span-detail-close:hover { background: var(--border); }
+  .span-detail-body { padding: 12px; }
+  .span-detail-body table {
+    width: 100%; display: table; border-collapse: collapse; font-size: 13px; margin: 8px 0;
+  }
+  .span-detail-body th, .span-detail-body td {
+    border: 1px solid var(--border); padding: 4px 8px; text-align: left; white-space: normal; word-break: break-all;
+  }
+  .span-detail-body th { background: var(--bg-code); font-weight: 600; width: 140px; }
+  .span-detail-section { margin-top: 12px; }
+  .span-detail-section h4 { font-size: 13px; margin: 0 0 4px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .span-event {
+    background: var(--bg-code); border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; margin: 4px 0; font-size: 12px;
+    font-family: SFMono-Regular, Consolas, monospace;
+  }
+  .span-event-time { color: var(--fg-muted); font-size: 11px; }
+  .tag-error { color: var(--error); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -347,6 +384,107 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
     return (us / 1000000).toFixed(2) + 's';
   }
 
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function formatTimestamp(us) {
+    // Jaeger timestamps are microseconds since epoch
+    var d = new Date(us / 1000);
+    return d.toISOString().replace('T', ' ').replace('Z', '');
+  }
+
+  function buildSpanDetail(span, processes, traceStart) {
+    var proc = processes[span.processID] || {};
+    var svc = proc.serviceName || '?';
+    var tags = span.tags || [];
+    var logs = span.logs || [];
+
+    var el = document.createElement('div');
+    el.className = 'span-detail';
+
+    // Header
+    var hdr = document.createElement('div');
+    hdr.className = 'span-detail-header';
+    hdr.innerHTML = '<h3>' + esc(svc) + ' / ' + esc(span.operationName) + '</h3>';
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'span-detail-close';
+    closeBtn.textContent = 'Close';
+    closeBtn.onclick = function(e) { e.stopPropagation(); el.remove(); };
+    hdr.appendChild(closeBtn);
+    el.appendChild(hdr);
+
+    var body = document.createElement('div');
+    body.className = 'span-detail-body';
+
+    // Overview table
+    var rows = [
+      ['Service', esc(svc)],
+      ['Operation', esc(span.operationName)],
+      ['Span ID', '<code>' + esc(span.spanID) + '</code>'],
+      ['Trace ID', '<code>' + esc(span.traceID) + '</code>'],
+      ['Start', formatTimestamp(span.startTime)],
+      ['Duration', formatDuration(span.duration)],
+      ['Offset', '+' + formatDuration(span.startTime - traceStart)]
+    ];
+    var html = '<table><tbody>';
+    rows.forEach(function(r) { html += '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; });
+    html += '</tbody></table>';
+    body.innerHTML = html;
+
+    // Tags section
+    if (tags.length > 0) {
+      var sec = document.createElement('div');
+      sec.className = 'span-detail-section';
+      var tagHtml = '<h4>Tags (' + tags.length + ')</h4><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>';
+      tags.forEach(function(tag) {
+        var valStr = String(tag.value);
+        var cls = (tag.key === 'error' && tag.value === true) ? ' class="tag-error"' : '';
+        tagHtml += '<tr><td' + cls + '>' + esc(tag.key) + '</td><td' + cls + '>' + esc(valStr) + '</td></tr>';
+      });
+      tagHtml += '</tbody></table>';
+      sec.innerHTML = tagHtml;
+      body.appendChild(sec);
+    }
+
+    // Logs/events section
+    if (logs.length > 0) {
+      var logSec = document.createElement('div');
+      logSec.className = 'span-detail-section';
+      var logHtml = '<h4>Events (' + logs.length + ')</h4>';
+      logs.forEach(function(log) {
+        var offsetUs = log.timestamp - span.startTime;
+        logHtml += '<div class="span-event">';
+        logHtml += '<span class="span-event-time">+' + formatDuration(offsetUs) + '</span> ';
+        (log.fields || []).forEach(function(f) {
+          logHtml += '<span class="log-meta-key">' + esc(f.key) + '</span>=<span class="log-meta-val">' + esc(String(f.value)) + '</span> ';
+        });
+        logHtml += '</div>';
+      });
+      logSec.innerHTML = logHtml;
+      body.appendChild(logSec);
+    }
+
+    // Process/library info
+    if (proc.tags && proc.tags.length > 0) {
+      var procSec = document.createElement('div');
+      procSec.className = 'span-detail-section';
+      var procHtml = '<h4>Process</h4><table><tbody>';
+      procHtml += '<tr><th>Service</th><td>' + esc(svc) + '</td></tr>';
+      proc.tags.forEach(function(tag) {
+        procHtml += '<tr><th>' + esc(tag.key) + '</th><td>' + esc(String(tag.value)) + '</td></tr>';
+      });
+      procHtml += '</tbody></table>';
+      procSec.innerHTML = procHtml;
+      body.appendChild(procSec);
+    }
+
+    el.appendChild(body);
+    return el;
+  }
+
   function renderTraces() {
     var container = document.getElementById('traces');
     container.innerHTML = '';
@@ -444,13 +582,14 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
 
         var row = document.createElement('div');
         row.className = 'wf-row';
+        row.style.cursor = 'pointer';
 
         var indent = '';
         for (var d = 0; d < depth; d++) indent += '  ';
 
         var label = document.createElement('div');
         label.className = 'wf-label';
-        label.innerHTML = '<span class="indent">' + indent + '</span>' + sSvc + '/' + s.operationName;
+        label.innerHTML = '<span class="indent">' + indent + '</span>' + esc(sSvc) + '/' + esc(s.operationName);
         label.title = sSvc + '/' + s.operationName;
 
         var barArea = document.createElement('div');
@@ -472,6 +611,34 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
         row.appendChild(label);
         row.appendChild(barArea);
         row.appendChild(dur);
+
+        // Click handler to show span detail panel
+        (function(span, rowEl) {
+          rowEl.onclick = function() {
+            // Remove any existing detail panel in this waterfall
+            var existing = wf.querySelector('.span-detail');
+            var wasForSame = false;
+            if (existing) {
+              wasForSame = existing.getAttribute('data-span-id') === span.spanID;
+              var prevRow = wf.querySelector('.wf-row.selected');
+              if (prevRow) prevRow.classList.remove('selected');
+              existing.remove();
+            }
+            // Toggle off if clicking the same span
+            if (wasForSame) return;
+
+            rowEl.classList.add('selected');
+            var detail = buildSpanDetail(span, processes, traceStart);
+            detail.setAttribute('data-span-id', span.spanID);
+            // Insert detail panel after the clicked row
+            if (rowEl.nextSibling) {
+              wf.insertBefore(detail, rowEl.nextSibling);
+            } else {
+              wf.appendChild(detail);
+            }
+          };
+        })(s, row);
+
         wf.appendChild(row);
       });
 
