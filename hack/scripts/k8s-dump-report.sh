@@ -261,3 +261,233 @@ exec >&3
 
 ok "Report written to: ${REPORT_FILE}"
 info "Size: $(wc -c < "${REPORT_FILE}") bytes"
+
+# ---------------------------------------------------------------------------
+# Generate self-contained HTML report (no Jekyll dependency)
+# ---------------------------------------------------------------------------
+HTML_FILE="${REPORT_DIR}/REPORT.html"
+info "Generating HTML report: ${HTML_FILE}"
+
+# Read the CSS from the Python script's constant (keep in sync).
+read -r -d '' REPORT_CSS <<'CSSEOF' || true
+:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+CSSEOF
+
+# Helper to HTML-escape text.
+html_esc() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g'; }
+
+{
+  cat <<HTMLHEAD
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>K8s E2E Report</title>
+  <style>${REPORT_CSS}</style>
+</head>
+<body>
+<div class="container">
+HTMLHEAD
+
+  printf '<h1>K8s E2E Report</h1>\n'
+  printf '<p><strong>Generated:</strong> %s</p>\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  # --- Result banner -------------------------------------------------------
+  if [[ -f "$RESULTS_FILE" ]]; then
+    total=$(grep -o '"total":\s*[0-9]*' "$RESULTS_FILE" | grep -o '[0-9]*' || echo "0")
+    passed=$(grep -o '"passed":\s*[0-9]*' "$RESULTS_FILE" | grep -o '[0-9]*' || echo "0")
+    failed=$(grep -o '"failed":\s*[0-9]*' "$RESULTS_FILE" | grep -o '[0-9]*' || echo "0")
+
+    if [[ "$failed" == "0" ]]; then
+      printf '<p><span class="pass"><strong>ALL %s TESTS PASSED</strong></span></p>\n' "$total"
+    else
+      printf '<p><span class="fail"><strong>%s FAILED</strong></span> (%s/%s passed)</p>\n' "$failed" "$passed" "$total"
+    fi
+  fi
+
+  # --- Timeline ------------------------------------------------------------
+  if [[ -f "$TIMELINE_FILE" ]]; then
+    printf '<pre><code>'
+    html_esc "$(cat "$TIMELINE_FILE")"
+    printf '</code></pre>\n'
+  fi
+
+  # --- Per-scenario summaries ----------------------------------------------
+  printf '<h2>Scenarios</h2>\n'
+
+  SCENARIO_DIR="${REPORT_DIR}/scenarios"
+  if [[ -d "$SCENARIO_DIR" ]]; then
+    for scenario_report in "${SCENARIO_DIR}"/*/report.md; do
+      [[ -f "$scenario_report" ]] || continue
+      scenario_name=$(basename "$(dirname "$scenario_report")")
+
+      banner=$(head -1 "$scenario_report" | sed 's/^# //')
+      banner_esc=$(html_esc "$banner")
+
+      ss_dir="${REPORT_DIR}/screenshots/${scenario_name}"
+      ss_count=0
+      if [[ -d "$ss_dir" ]]; then
+        ss_count=$(find "$ss_dir" -name '*.png' 2>/dev/null | wc -l)
+      fi
+
+      printf '<h3><a href="./scenarios/%s/">%s</a></h3>\n' "$scenario_name" "$banner_esc"
+      printf '<p>%s screenshots' "$ss_count"
+      if [[ -f "${REPORT_DIR}/traces.html" ]]; then
+        printf ' | <a href="./traces.html">traces</a>'
+      fi
+      printf '</p>\n'
+    done
+  else
+    printf '<p><em>No scenario reports found.</em></p>\n'
+  fi
+
+  # --- Platform health -----------------------------------------------------
+  printf '<h2>Platform Health</h2>\n'
+
+  if [[ -f "${K8S_DIR}/resources.txt" ]]; then
+    running=$(grep -c 'Running' "${K8S_DIR}/resources.txt" 2>/dev/null || echo "0")
+    total_pods=$(grep -c '^pod/' "${K8S_DIR}/resources.txt" 2>/dev/null || echo "0")
+    printf '<p><strong>Pods:</strong> %s/%s running</p>\n' "$running" "$total_pods"
+
+    non_running=$(grep '^pod/' "${K8S_DIR}/resources.txt" | grep -v 'Running' || true)
+    if [[ -n "$non_running" ]]; then
+      printf '<p><strong>Non-running pods:</strong></p>\n<pre><code>'
+      html_esc "$non_running"
+      printf '</code></pre>\n'
+    fi
+
+    lines_count=$(wc -l < "${K8S_DIR}/resources.txt" 2>/dev/null || echo "0")
+    printf '<details><summary>Full resource list (%s lines)</summary>\n<pre><code>' "$lines_count"
+    html_esc "$(cat "${K8S_DIR}/resources.txt")"
+    printf '</code></pre>\n</details>\n'
+  fi
+
+  # --- Errors --------------------------------------------------------------
+  SERVICES_HTML=(registry builder envmanager turbo-engine-operator gateway)
+  ERRORS_FOUND_HTML=false
+  ERROR_BUF=""
+
+  for svc in "${SERVICES_HTML[@]}"; do
+    LOG_FILE="${K8S_DIR}/logs-${svc}.txt"
+    if [[ -f "$LOG_FILE" ]]; then
+      errors=$(grep -iE '("level":"ERROR"|"level":"error"|panic|fatal)' "$LOG_FILE" \
+        | grep -v 'failed to initialise OTLP' \
+        | grep -v 'failed to initialize tracer' \
+        | tail -5 || true)
+      if [[ -n "$errors" ]]; then
+        ERRORS_FOUND_HTML=true
+        ERROR_BUF+="<p><strong>$(html_esc "$svc"):</strong></p>"
+        ERROR_BUF+="<pre><code>$(html_esc "$errors")</code></pre>"
+      fi
+    fi
+  done
+
+  if $ERRORS_FOUND_HTML; then
+    printf '<h2>Errors</h2>\n%s\n' "$ERROR_BUF"
+  fi
+
+  # --- Traces --------------------------------------------------------------
+  if [[ -f "$TRACES_FILE" ]]; then
+    printf '<h2>Traces</h2>\n<p>'
+    for svc in registry builder envmanager operator gateway orchestrator petstore-mock; do
+      count=$(python3 -c "
+import json
+data = json.load(open('${TRACES_FILE}'))
+svc_data = data.get('services',{}).get('${svc}',{})
+print(len(svc_data.get('data',[])))
+" 2>/dev/null || echo "0")
+      if [[ "$count" != "0" ]]; then
+        printf '<strong>%s:</strong> %s &nbsp; ' "$svc" "$count"
+      fi
+    done
+    printf '</p>\n'
+    if [[ -f "${REPORT_DIR}/traces.html" ]]; then
+      printf '<p><a href="./traces.html">Open trace viewer</a></p>\n'
+    fi
+  fi
+
+  # --- Debug data ----------------------------------------------------------
+  printf '<h2>Debug Data</h2>\n'
+
+  for item in "K8s events:${K8S_DIR}/events.txt" "Operator actions:${K8S_DIR}/operator-actions.json"; do
+    label="${item%%:*}"
+    fpath="${item#*:}"
+    if [[ -f "$fpath" ]]; then
+      lines_count=$(wc -l < "$fpath" 2>/dev/null || echo "0")
+      printf '<details><summary>%s (%s lines)</summary>\n<pre><code>' "$(html_esc "$label")" "$lines_count"
+      html_esc "$(cat "$fpath")"
+      printf '</code></pre>\n</details>\n'
+    fi
+  done
+
+  for svc in "${SERVICES_HTML[@]}"; do
+    LOG_FILE="${K8S_DIR}/logs-${svc}.txt"
+    if [[ -f "$LOG_FILE" ]]; then
+      lines_count=$(wc -l < "$LOG_FILE" 2>/dev/null || echo "0")
+      printf '<details><summary>%s logs (%s lines)</summary>\n<pre><code>' "$(html_esc "$svc")" "$lines_count"
+      html_esc "$(tail -50 "$LOG_FILE")"
+      printf '</code></pre>\n</details>\n'
+    fi
+  done
+
+  printf '<hr>\n<p><em>End of report. Per-scenario details are in the linked scenario reports above.</em></p>\n'
+  printf '</div>\n</body>\n</html>\n'
+} > "${HTML_FILE}"
+
+ok "HTML report written to: ${HTML_FILE}"
+info "HTML size: $(wc -c < "${HTML_FILE}") bytes"
