@@ -71,6 +71,13 @@ if [[ -f "$TRACE_VIEWER" && -f "$TRACES_FILE" ]]; then
   bash "$TRACE_VIEWER" || true
 fi
 
+# Enrich scenario timeline reports with matching trace spans.
+ENRICH_SCRIPT="${SCRIPT_DIR}/enrich-timeline-traces.py"
+if [[ -f "$ENRICH_SCRIPT" && -f "$TRACES_FILE" ]]; then
+  info "Enriching timeline reports with trace data..."
+  python3 "$ENRICH_SCRIPT" "${REPORT_DIR}" || true
+fi
+
 # ---------------------------------------------------------------------------
 # Build the top-level report
 # ---------------------------------------------------------------------------
@@ -486,6 +493,11 @@ HTMLHEAD
       printf '<p>%s screenshots' "$ss_count"
       if [[ -f "${REPORT_DIR}/traces.html" ]]; then
         printf ' | <a href="./traces.html">traces</a>'
+      fi
+      timeline_json="${SCENARIO_DIR}/${scenario_name}/timeline.json"
+      if [[ -f "$timeline_json" ]]; then
+        tl_events=$(python3 -c "import json;d=json.load(open('${timeline_json}'));print(len(d.get('events',[])))" 2>/dev/null || echo "0")
+        printf ' | %s timeline events' "$tl_events"
       fi
       printf '</p>\n'
     done
