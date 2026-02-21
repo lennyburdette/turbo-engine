@@ -1,6 +1,6 @@
 module petstore-mock
 
-go 1.24.7
+go 1.24.0
 
 require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0
