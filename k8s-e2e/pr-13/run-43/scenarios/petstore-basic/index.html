@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scenario: petstore-basic</title>
+  <style>:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 4px 12px; color: var(--fg-muted); }
+.log-line { border-bottom: 1px solid var(--border); padding: 3px 0; font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+.log-line:last-child { border-bottom: none; }
+.log-time { color: var(--fg-muted); font-size: 11px; flex-shrink: 0; }
+.log-level { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; flex-shrink: 0; }
+.log-level-info { color: var(--pass); }
+.log-level-warn { color: #b08800; }
+.log-level-error { color: var(--fail); }
+.log-level-debug { color: var(--fg-muted); }
+.log-msg { font-weight: 500; }
+.log-meta { color: var(--fg-muted); font-size: 12px; }
+.log-meta-key { color: var(--fg-muted); }
+.log-meta-val { color: var(--fg); }
+.log-raw { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.log-container { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; overflow-x: auto; max-width: 100%; }
+
+/* Timeline layout */
+.tl { display: grid; grid-template-columns: 52px 1fr; font-size: 13px; }
+.tl-epoch {
+  color: var(--fg-muted); font-size: 11px; font-family: SFMono-Regular, Consolas, monospace;
+  text-align: right; padding: 2px 8px 2px 0; border-right: 2px solid var(--border);
+  white-space: nowrap; user-select: none;
+}
+.tl-epoch-dot { position: relative; }
+.tl-epoch-dot::after {
+  content: ''; position: absolute; right: -5px; top: 8px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border);
+}
+.tl-event { padding: 2px 0 2px 12px; min-height: 22px; }
+
+/* Landmark headers */
+.tl-landmark {
+  padding: 8px 0 4px 12px; font-weight: 600; font-size: 14px;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+}
+.tl-landmark-toggle { font-size: 10px; color: var(--fg-muted); }
+.tl-landmark-name { text-transform: uppercase; letter-spacing: 0.5px; }
+.tl-landmark-dur { color: var(--fg-muted); font-weight: 400; font-size: 12px; }
+.tl-landmark-badge { font-size: 11px; margin-left: auto; padding: 1px 6px; border-radius: 3px; }
+.tl-lm-pass .tl-epoch-dot::after { background: var(--pass); }
+.tl-lm-fail .tl-epoch-dot::after { background: var(--fail); }
+
+/* Event type icons */
+.tl-icon { display: inline-block; width: 18px; text-align: center; flex-shrink: 0; }
+.tl-test { display: flex; align-items: baseline; gap: 4px; }
+.tl-test-detail { color: var(--fg-muted); }
+.tl-test-dur { color: var(--fg-muted); font-size: 11px; }
+.tl-http { color: var(--fg-muted); font-family: SFMono-Regular, Consolas, monospace; font-size: 12px; }
+.tl-http-status { font-weight: 600; }
+.tl-http-ok { color: var(--pass); }
+.tl-http-err { color: var(--fail); }
+.tl-info-msg { color: var(--fg-muted); }
+.tl-warn-msg { color: #b08800; }
+.tl-k8s { color: var(--fg-muted); font-size: 12px; }
+.tl-k8s-obj { font-weight: 500; color: var(--fg); }
+.tl-screenshot { display: flex; align-items: center; gap: 8px; }
+.tl-screenshot img {
+  max-width: 120px; height: auto; border: 1px solid var(--border);
+  border-radius: 4px; cursor: pointer; transition: max-width 0.2s;
+}
+.tl-screenshot img:hover { max-width: 300px; }
+.tl-screenshot-label { font-weight: 500; }
+.tl-log-entry { font-size: 12px; font-family: SFMono-Regular, Consolas, monospace; }
+.tl-gap { height: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="breadcrumb"><a href="../../">Report</a></nav>
+<h1><span class="fail">1 FAILED</span> (13/14 passed) &mdash; petstore-basic</h1>
+<blockquote>Petstore API with RPC-to-REST orchestrator. Validates the full request chain: gateway → orchestrator → upstream API, including trace propagation.</blockquote>
+<p style="color:var(--fg-muted);font-size:13px">Total: 27.2s &middot; 14 tests &middot; 4 screenshots &middot; 0 K8s events</p>
+<div class="tl">
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">publish</span><span class="tl-landmark-dur">(32ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="e66dd5e5a979e4084f44ef4783cef2b3"><span class="tl-icon">&rarr;</span>POST /v1/packages <span class="tl-http-status tl-http-ok">201</span> (28ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>publish-petstore-api</span><span class="tl-test-detail">Published petstore-api@1.0.0 (HTTP 201)</span> <span class="tl-test-dur">(28ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="f35d1ce2208cf13a671a548e91f8ee73"><span class="tl-icon">&rarr;</span>POST /v1/packages <span class="tl-http-status tl-http-ok">201</span> (4ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>publish-petstore-orchestrator</span><span class="tl-test-detail">Published petstore-orchestrator@1.0.0 (HTTP 201)</span> <span class="tl-test-dur">(4ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">environment</span><span class="tl-landmark-dur">(3ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="e5c0a0e8d6f1d6c848e4f2d1c3713df6"><span class="tl-icon">&rarr;</span>POST /v1/environments <span class="tl-http-status tl-http-ok">201</span> (3ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>create-environment</span><span class="tl-test-detail">Created 45de9454cf5902396338962571813693</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">build</span><span class="tl-landmark-dur">(6ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="c97bf65b06cc2ddf5477b51852471df3"><span class="tl-icon">&rarr;</span>POST /v1/builds <span class="tl-http-status tl-http-ok">201</span> (3ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>trigger-build</span><span class="tl-test-detail">Build bld-1771715780928-1 triggered</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Build poll #1: succeeded</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>build-status</span><span class="tl-test-detail">Build bld-1771715780928-1 succeeded</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+0.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">reconcile</span><span class="tl-landmark-dur">(5.1s)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="7e18a2514e84cc927998b50bad132af9"><span class="tl-icon">&rarr;</span>POST /v1/reconcile <span class="tl-http-status tl-http-ok">200</span> (58ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Waiting 5s for operator to settle...</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-api</strong>: petstore mock starting</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: orchestrator starting</div>
+<div class="tl-epoch">+5.1s</div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>operator-reconcile</span><span class="tl-test-detail">Reconciled 2 components</span> <span class="tl-test-dur">(58ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+5.1s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">k8s-resources</span><span class="tl-landmark-dur">(290ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: deployment/deploy-petstore-api</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: service/svc-petstore-api</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: configmap/cm-petstore-api</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: deployment/deploy-petstore-orchestrator</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: service/svc-petstore-orchestrator</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Found: configmap/cm-petstore-orchestrator</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>verify-k8s-resources</span><span class="tl-test-detail">All 6 resources created</span> <span class="tl-test-dur">(290ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+5.4s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">pods</span><span class="tl-landmark-dur">(303ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Waiting for deploy-petstore-api...</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>deploy-petstore-api available</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Waiting for deploy-petstore-orchestrator...</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>deploy-petstore-orchestrator available</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>pods-running</span><span class="tl-test-detail">All pods running</span> <span class="tl-test-dur">(303ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-pass">+5.7s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">gateway</span><span class="tl-landmark-dur">(8ms)</span><span class="tl-landmark-badge pass">PASS</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="2c3b9a63d0fae472171550c75553d952"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-ok">200</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>gateway-routing</span><span class="tl-test-detail">Gateway route /api/pets/rpc/listPets active (HTTP 200)</span> <span class="tl-test-dur">(8ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot tl-lm-fail">+5.7s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">requests</span><span class="tl-landmark-dur">(4.0s)</span><span class="tl-landmark-badge fail">FAIL</span></div>
+<div class="tl-epoch">+7.7s</div>
+<div class="tl-event tl-http" data-trace-id="d9ace8a57d6ed090d6c7dc02cf21e7a2"><span class="tl-icon">&rarr;</span>GET /pets <span class="tl-http-status tl-http-ok">200</span> (2004ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>list-pets-direct</span><span class="tl-test-detail">HTTP 200; pets has 3 items (&gt;= 1)</span> <span class="tl-test-dur">(2004ms)</span></div>
+<div class="tl-epoch">+9.7s</div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="51db2cf3c55e81f8735c1b34f256e240"><span class="tl-icon">&rarr;</span>POST /rpc/listPets <span class="tl-http-status tl-http-ok">200</span> (2006ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>orchestrator-direct</span><span class="tl-test-detail">HTTP 200; rpc=listPets; upstream_status=200</span> <span class="tl-test-dur">(2006ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="815cdd1909b4988ef2446abc8f4f4adf"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-ok">200</span> (3ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>e2e-list-pets</span><span class="tl-test-detail">HTTP 200; rpc=listPets; upstream_status=200; result.pets has 3 items (&gt;= 1)</span> <span class="tl-test-dur">(3ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="72088b9c45e03c8a336b4aa12144fb16"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/getPet?id=2 <span class="tl-http-status tl-http-ok">200</span> (4ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="pass">&#10003;</span></span><span>e2e-get-pet</span><span class="tl-test-detail">HTTP 200; result.pet.name=Whiskers</span> <span class="tl-test-dur">(4ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-log-entry"><span class="tl-icon">&#128203;</span><span class="log-level log-level-info">INFO</span> <strong>petstore-orchestrator</strong>: upstream call start</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-http" data-trace-id="b31e7208ce63cd5a02daf3ece18fcd56"><span class="tl-icon">&rarr;</span>POST /api/pets/rpc/listPets <span class="tl-http-status tl-http-ok">200</span> (4ms)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-test"><span class="tl-icon"><span class="fail">&#10007;</span></span><span>trace-propagation</span><span class="tl-test-detail">HTTP 200; trace_id: expected &#x27;a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5&#x27;, got &#x27;b31e7208ce63cd5a02daf3ece18fcd56&#x27;</span> <span class="tl-test-dur">(4ms)</span></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot">+9.7s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">screenshots</span><span class="tl-landmark-dur">(17.3s)</span></div>
+<div class="tl-epoch">+14.4s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Console packages list after publishing petstore components</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/packages.png" alt="packages" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch">+18.6s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Environments list showing the petstore-e2e environment</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/environments.png" alt="environments" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch">+22.8s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Console dashboard overview</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/dashboard.png" alt="dashboard" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch">+27.0s</div>
+<div class="tl-event tl-screenshot"><span class="tl-icon">&#128248;</span><span class="tl-screenshot-label">Explorer mobile UI showing deployed services and traces</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event"><img src="../../screenshots/petstore-basic/explorer.png" alt="explorer" style="max-width:200px;margin:4px 0 4px 26px"></div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+<div class="tl-epoch tl-epoch-dot">+27.0s</div>
+<div class="tl-landmark"><span class="tl-landmark-name">logs</span><span class="tl-landmark-dur">(212ms)</span></div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Captured petstore-api logs (13 lines)</div>
+<div class="tl-epoch"></div>
+<div class="tl-event tl-info-msg"><span class="tl-icon">&#8505;</span>Captured petstore-orchestrator logs (21 lines)</div>
+<div class="tl-epoch"></div><div class="tl-gap"></div>
+</div>
+<h2>Component Logs</h2>
+<details><summary>petstore-api (13 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">23:16:21.499</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">petstore mock starting</span> <span class="log-meta"><span class="log-meta-key">port</span>=<span class="log-meta-val">8080</span></span></div>
+<div class="log-line"><span class="log-time">23:16:26.589</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">2c3b9a63d0fae472171550c75553d952</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-2c3b9a63d0fae472171550c75553d952-ad7f28f9156ea474-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">23:16:26.589</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">2c3b9a63d0fae472171550c75553d952</span></span></div>
+<div class="log-line"><span class="log-time">23:16:28.594</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">d9ace8a57d6ed090d6c7dc02cf21e7a2</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-d9ace8a57d6ed090d6c7dc02cf21e7a2-dd6ae2f3cf051fa9-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">23:16:28.594</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">d9ace8a57d6ed090d6c7dc02cf21e7a2</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.599</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">51db2cf3c55e81f8735c1b34f256e240</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-51db2cf3c55e81f8735c1b34f256e240-5662265c0af76f18-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.599</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">51db2cf3c55e81f8735c1b34f256e240</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.602</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">815cdd1909b4988ef2446abc8f4f4adf</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-815cdd1909b4988ef2446abc8f4f4adf-65a83bc88e6bae3b-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.602</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">815cdd1909b4988ef2446abc8f4f4adf</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.606</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets/2</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">72088b9c45e03c8a336b4aa12144fb16</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-72088b9c45e03c8a336b4aa12144fb16-044433f242a69e2a-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.606</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets/2</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">72088b9c45e03c8a336b4aa12144fb16</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.610</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">b31e7208ce63cd5a02daf3ece18fcd56</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-b31e7208ce63cd5a02daf3ece18fcd56-fa4f13bd8c9ff238-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.610</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/pets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">b31e7208ce63cd5a02daf3ece18fcd56</span></span></div>
+</div>
+</details>
+<details><summary>petstore-orchestrator (21 lines)</summary>
+<div class="log-container">
+<div class="log-line"><span class="log-time">23:16:21.537</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">orchestrator starting</span> <span class="log-meta"><span class="log-meta-key">port</span>=<span class="log-meta-val">8080</span> <span class="log-meta-key">upstream_url</span>=<span class="log-meta-val">http://svc-petstore-api:8080</span></span></div>
+<div class="log-line"><span class="log-time">23:16:26.587</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">2c3b9a63d0fae472171550c75553d952</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-2c3b9a63d0fae472171550c75553d952-c7445fd02883e63a-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">bca0502d-2d4b-448c-ad18-c9e27509f901</span></span></div>
+<div class="log-line"><span class="log-time">23:16:26.587</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">2c3b9a63d0fae472171550c75553d952</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:26.589</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">1</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">2c3b9a63d0fae472171550c75553d952</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:26.589</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">1</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">2c3b9a63d0fae472171550c75553d952</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.598</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">51db2cf3c55e81f8735c1b34f256e240</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-51db2cf3c55e81f8735c1b34f256e240-df56f7542cc014b0-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val"></span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.598</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">51db2cf3c55e81f8735c1b34f256e240</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.599</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">51db2cf3c55e81f8735c1b34f256e240</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.599</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">51db2cf3c55e81f8735c1b34f256e240</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.602</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">815cdd1909b4988ef2446abc8f4f4adf</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-815cdd1909b4988ef2446abc8f4f4adf-20e91409029f24ae-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">cab42afb-74e9-4fdc-92ec-b5c50fb94b11</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.602</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">815cdd1909b4988ef2446abc8f4f4adf</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.603</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">815cdd1909b4988ef2446abc8f4f4adf</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.603</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">815cdd1909b4988ef2446abc8f4f4adf</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.606</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/getPet</span> <span class="log-meta-key">query</span>=<span class="log-meta-val">id=2</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">72088b9c45e03c8a336b4aa12144fb16</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-72088b9c45e03c8a336b4aa12144fb16-d1fa60f99336c5f7-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">35e701c8-228c-45cc-8f04-489f3aa98054</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.606</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">getPet</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">72088b9c45e03c8a336b4aa12144fb16</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets/2</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.606</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">118</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">getPet</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">72088b9c45e03c8a336b4aa12144fb16</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets/2</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.606</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/getPet</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">72088b9c45e03c8a336b4aa12144fb16</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.609</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">request received</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">query</span>=<span class="log-meta-val"></span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">b31e7208ce63cd5a02daf3ece18fcd56</span> <span class="log-meta-key">traceparent</span>=<span class="log-meta-val">00-b31e7208ce63cd5a02daf3ece18fcd56-1ecd3d702b5012fa-01</span> <span class="log-meta-key">x_request_id</span>=<span class="log-meta-val">783b79b7-1ecb-406d-ad95-76ccef069a97</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.609</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call start</span> <span class="log-meta"><span class="log-meta-key">method</span>=<span class="log-meta-val">GET</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">b31e7208ce63cd5a02daf3ece18fcd56</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.610</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">upstream call complete</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">response_bytes</span>=<span class="log-meta-val">240</span> <span class="log-meta-key">rpc</span>=<span class="log-meta-val">listPets</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">b31e7208ce63cd5a02daf3ece18fcd56</span> <span class="log-meta-key">upstream_status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">url</span>=<span class="log-meta-val">http://svc-petstore-api:8080/pets</span></span></div>
+<div class="log-line"><span class="log-time">23:16:30.610</span> <span class="log-level log-level-info">INFO</span> <span class="log-msg">response sent</span> <span class="log-meta"><span class="log-meta-key">duration_ms</span>=<span class="log-meta-val">0</span> <span class="log-meta-key">method</span>=<span class="log-meta-val">POST</span> <span class="log-meta-key">path</span>=<span class="log-meta-val">/rpc/listPets</span> <span class="log-meta-key">status</span>=<span class="log-meta-val">200</span> <span class="log-meta-key">trace_id</span>=<span class="log-meta-val">b31e7208ce63cd5a02daf3ece18fcd56</span></span></div>
+</div>
+</details>
+</div>
+<script>
+var INLINE_TRACES = {"815cdd1909b4988ef2446abc8f4f4adf":{"traceID":"815cdd1909b4988ef2446abc8f4f4adf","spans":[{"spanID":"65864122f9ad4703","traceID":"815cdd1909b4988ef2446abc8f4f4adf","operationName":"petstore-mock","startTime":1771715790602770,"duration":47,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"815cdd1909b4988ef2446abc8f4f4adf","spanID":"65a83bc88e6bae3b"}],"tags":[{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":8080},{"key":"network.peer.address","type":"string","value":"10.244.0.15"},{"key":"network.peer.port","type":"int64","value":43708},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"client.address","type":"string","value":"10.244.0.15"},{"key":"url.path","type":"string","value":"/pets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":240},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"65a83bc88e6bae3b","traceID":"815cdd1909b4988ef2446abc8f4f4adf","operationName":"HTTP GET","startTime":1771715790602652,"duration":353,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"815cdd1909b4988ef2446abc8f4f4adf","spanID":"aa72553095e6f562"}],"tags":[{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.full","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"server.port","type":"int64","value":8080},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"client"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"6e81ec46132eccb6","traceID":"815cdd1909b4988ef2446abc8f4f4adf","operationName":"orchestrator","startTime":1771715790602609,"duration":509,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"815cdd1909b4988ef2446abc8f4f4adf","spanID":"20e91409029f24ae"}],"tags":[{"key":"server.address","type":"string","value":"localhost"},{"key":"http.request.method","type":"string","value":"POST"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":18080},{"key":"network.peer.address","type":"string","value":"10.244.0.9"},{"key":"network.peer.port","type":"int64","value":36510},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"client.address","type":"string","value":"10.244.0.9"},{"key":"url.path","type":"string","value":"/rpc/listPets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":412},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"aa72553095e6f562","traceID":"815cdd1909b4988ef2446abc8f4f4adf","operationName":"rpc/listPets","startTime":1771715790602632,"duration":437,"processID":"p3","references":[{"refType":"CHILD_OF","traceID":"815cdd1909b4988ef2446abc8f4f4adf","spanID":"6e81ec46132eccb6"}],"tags":[{"key":"rpc.method","type":"string","value":"listPets"},{"key":"upstream.url","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"upstream.method","type":"string","value":"GET"},{"key":"upstream.status","type":"int64","value":200},{"key":"upstream.response_bytes","type":"int64","value":240},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"20e91409029f24ae","traceID":"815cdd1909b4988ef2446abc8f4f4adf","operationName":"proxy_upstream","startTime":1771715790602461,"duration":760,"processID":"p4","references":[{"refType":"CHILD_OF","traceID":"815cdd1909b4988ef2446abc8f4f4adf","spanID":"cf914e546c573f8a"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":128},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"upstream","type":"string","value":"http://svc-petstore-orchestrator:8080/rpc/listPets"},{"key":"busy_ns","type":"int64","value":34825},{"key":"idle_ns","type":"int64","value":726675},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"cf914e546c573f8a","traceID":"815cdd1909b4988ef2446abc8f4f4adf","operationName":"proxy_handler","startTime":1771715790602431,"duration":822,"processID":"p4","references":[{"refType":"CHILD_OF","traceID":"815cdd1909b4988ef2446abc8f4f4adf","spanID":"340576bd533e7045"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":70},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"method","type":"string","value":"POST"},{"key":"path","type":"string","value":"/api/pets/rpc/listPets"},{"key":"busy_ns","type":"int64","value":126457},{"key":"idle_ns","type":"int64","value":697128},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"petstore-mock","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p2":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p3":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"orchestrator"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p4":{"serviceName":"gateway","tags":[{"key":"otel.library.name","type":"string","value":"gateway"},{"key":"telemetry.sdk.language","type":"string","value":"rust"},{"key":"telemetry.sdk.name","type":"string","value":"opentelemetry"},{"key":"telemetry.sdk.version","type":"string","value":"0.23.0"}]}}},"51db2cf3c55e81f8735c1b34f256e240":{"traceID":"51db2cf3c55e81f8735c1b34f256e240","spans":[{"spanID":"3f97c4c92b1db583","traceID":"51db2cf3c55e81f8735c1b34f256e240","operationName":"petstore-mock","startTime":1771715790599108,"duration":83,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"51db2cf3c55e81f8735c1b34f256e240","spanID":"5662265c0af76f18"}],"tags":[{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":8080},{"key":"network.peer.address","type":"string","value":"10.244.0.15"},{"key":"network.peer.port","type":"int64","value":43708},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"client.address","type":"string","value":"10.244.0.15"},{"key":"url.path","type":"string","value":"/pets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":240},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"5662265c0af76f18","traceID":"51db2cf3c55e81f8735c1b34f256e240","operationName":"HTTP GET","startTime":1771715790598922,"duration":419,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"51db2cf3c55e81f8735c1b34f256e240","spanID":"9523d0c012880697"}],"tags":[{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.full","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"server.port","type":"int64","value":8080},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"client"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"333aaa0c281ea32d","traceID":"51db2cf3c55e81f8735c1b34f256e240","operationName":"orchestrator","startTime":1771715790598803,"duration":624,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"51db2cf3c55e81f8735c1b34f256e240","spanID":"df56f7542cc014b0"}],"tags":[{"key":"server.address","type":"string","value":"localhost"},{"key":"http.request.method","type":"string","value":"POST"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":19001},{"key":"network.peer.address","type":"string","value":"127.0.0.1"},{"key":"network.peer.port","type":"int64","value":54156},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"client.address","type":"string","value":"127.0.0.1"},{"key":"url.path","type":"string","value":"/rpc/listPets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":412},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"9523d0c012880697","traceID":"51db2cf3c55e81f8735c1b34f256e240","operationName":"rpc/listPets","startTime":1771715790598885,"duration":517,"processID":"p3","references":[{"refType":"CHILD_OF","traceID":"51db2cf3c55e81f8735c1b34f256e240","spanID":"333aaa0c281ea32d"}],"tags":[{"key":"rpc.method","type":"string","value":"listPets"},{"key":"upstream.url","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"upstream.method","type":"string","value":"GET"},{"key":"upstream.status","type":"int64","value":200},{"key":"upstream.response_bytes","type":"int64","value":240},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"petstore-mock","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p2":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p3":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"orchestrator"},{"key":"service.version","type":"string","value":"0.1.0"}]}}},"d9ace8a57d6ed090d6c7dc02cf21e7a2":{"traceID":"d9ace8a57d6ed090d6c7dc02cf21e7a2","spans":[{"spanID":"d6747b41f4172c15","traceID":"d9ace8a57d6ed090d6c7dc02cf21e7a2","operationName":"petstore-mock","startTime":1771715788594013,"duration":96,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"d9ace8a57d6ed090d6c7dc02cf21e7a2","spanID":"dd6ae2f3cf051fa9"}],"tags":[{"key":"server.address","type":"string","value":"localhost"},{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":19000},{"key":"network.peer.address","type":"string","value":"127.0.0.1"},{"key":"network.peer.port","type":"int64","value":54112},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"client.address","type":"string","value":"127.0.0.1"},{"key":"url.path","type":"string","value":"/pets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":240},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"petstore-mock","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]}}},"b31e7208ce63cd5a02daf3ece18fcd56":{"traceID":"b31e7208ce63cd5a02daf3ece18fcd56","spans":[{"spanID":"571f9c33bc1602f9","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","operationName":"petstore-mock","startTime":1771715790610137,"duration":53,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","spanID":"fa4f13bd8c9ff238"}],"tags":[{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":8080},{"key":"network.peer.address","type":"string","value":"10.244.0.15"},{"key":"network.peer.port","type":"int64","value":43708},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"client.address","type":"string","value":"10.244.0.15"},{"key":"url.path","type":"string","value":"/pets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":240},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"fa4f13bd8c9ff238","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","operationName":"HTTP GET","startTime":1771715790610013,"duration":314,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","spanID":"66fae487c43a3bed"}],"tags":[{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.full","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"server.port","type":"int64","value":8080},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"client"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"6f98661a8cf5b88c","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","operationName":"orchestrator","startTime":1771715790609963,"duration":438,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","spanID":"1ecd3d702b5012fa"}],"tags":[{"key":"server.address","type":"string","value":"localhost"},{"key":"http.request.method","type":"string","value":"POST"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":18080},{"key":"network.peer.address","type":"string","value":"10.244.0.9"},{"key":"network.peer.port","type":"int64","value":36510},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"client.address","type":"string","value":"10.244.0.9"},{"key":"url.path","type":"string","value":"/rpc/listPets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":412},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"66fae487c43a3bed","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","operationName":"rpc/listPets","startTime":1771715790609991,"duration":391,"processID":"p3","references":[{"refType":"CHILD_OF","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","spanID":"6f98661a8cf5b88c"}],"tags":[{"key":"rpc.method","type":"string","value":"listPets"},{"key":"upstream.url","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"upstream.method","type":"string","value":"GET"},{"key":"upstream.status","type":"int64","value":200},{"key":"upstream.response_bytes","type":"int64","value":240},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"1ecd3d702b5012fa","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","operationName":"proxy_upstream","startTime":1771715790609801,"duration":697,"processID":"p4","references":[{"refType":"CHILD_OF","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","spanID":"2825ce2d93a4b4a2"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":128},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"upstream","type":"string","value":"http://svc-petstore-orchestrator:8080/rpc/listPets"},{"key":"busy_ns","type":"int64","value":27783},{"key":"idle_ns","type":"int64","value":670625},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"2825ce2d93a4b4a2","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","operationName":"proxy_handler","startTime":1771715790609788,"duration":720,"processID":"p4","references":[{"refType":"CHILD_OF","traceID":"b31e7208ce63cd5a02daf3ece18fcd56","spanID":"5a6d1890be646048"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":70},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"method","type":"string","value":"POST"},{"key":"path","type":"string","value":"/api/pets/rpc/listPets"},{"key":"busy_ns","type":"int64","value":80851},{"key":"idle_ns","type":"int64","value":640510},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"petstore-mock","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p2":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p3":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"orchestrator"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p4":{"serviceName":"gateway","tags":[{"key":"otel.library.name","type":"string","value":"gateway"},{"key":"telemetry.sdk.language","type":"string","value":"rust"},{"key":"telemetry.sdk.name","type":"string","value":"opentelemetry"},{"key":"telemetry.sdk.version","type":"string","value":"0.23.0"}]}}},"c97bf65b06cc2ddf5477b51852471df3":{"traceID":"c97bf65b06cc2ddf5477b51852471df3","spans":[{"spanID":"991a23a7ca9900c6","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"builder","startTime":1771715780928073,"duration":212,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"508adea3e1532eca"}],"tags":[{"key":"http.method","type":"string","value":"POST"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"localhost"},{"key":"net.host.port","type":"int64","value":18082},{"key":"net.sock.peer.addr","type":"string","value":"127.0.0.1"},{"key":"net.sock.peer.port","type":"int64","value":35002},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"http.target","type":"string","value":"/v1/builds"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.request_content_length","type":"int64","value":128},{"key":"http.response_content_length","type":"int64","value":230},{"key":"http.status_code","type":"int64","value":201},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771715780928102,"fields":[{"key":"event","type":"string","value":"read"},{"key":"http.read_bytes","type":"int64","value":128}]},{"timestamp":1771715780928271,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":230}]}]},{"spanID":"892ccf9e9e3afd2d","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"resolve.execute","startTime":1771715780928314,"duration":3,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"993df64d04c25be6"}],"tags":[{"key":"root_package_name","type":"string","value":"petstore-orchestrator"},{"key":"root_package_version","type":"string","value":"1.0.0"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"993df64d04c25be6","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"step.resolve","startTime":1771715780928309,"duration":10,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"bc3679268529c02a"}],"tags":[{"key":"build.id","type":"string","value":"bld-1771715780928-1"},{"key":"step","type":"string","value":"resolve"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"6345ed536c7803be","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"compose.execute","startTime":1771715780928325,"duration":0,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"de9b3653144b5849"}],"tags":[{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"de9b3653144b5849","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"step.compose","startTime":1771715780928323,"duration":4,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"bc3679268529c02a"}],"tags":[{"key":"build.id","type":"string","value":"bld-1771715780928-1"},{"key":"step","type":"string","value":"compose"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"4d9d4410154fc255","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"validate.execute","startTime":1771715780928331,"duration":0,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"df7fbf31322d0ad3"}],"tags":[{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"df7fbf31322d0ad3","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"step.validate","startTime":1771715780928329,"duration":4,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"bc3679268529c02a"}],"tags":[{"key":"build.id","type":"string","value":"bld-1771715780928-1"},{"key":"step","type":"string","value":"validate"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"56c3883e7f32390c","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"bundle.execute","startTime":1771715780928336,"duration":13,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"1ea4790aaf653b0d"}],"tags":[{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"1ea4790aaf653b0d","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"step.bundle","startTime":1771715780928335,"duration":24,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"bc3679268529c02a"}],"tags":[{"key":"build.id","type":"string","value":"bld-1771715780928-1"},{"key":"step","type":"string","value":"bundle"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"bc3679268529c02a","traceID":"c97bf65b06cc2ddf5477b51852471df3","operationName":"BuildEngine.Run","startTime":1771715780928290,"duration":87,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"c97bf65b06cc2ddf5477b51852471df3","spanID":"991a23a7ca9900c6"}],"tags":[{"key":"build.id","type":"string","value":"bld-1771715780928-1"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p2":{"serviceName":"builder","tags":[{"key":"otel.library.name","type":"string","value":"builder/engine"},{"key":"service.version","type":"string","value":"0.1.0"}]}}},"2c3b9a63d0fae472171550c75553d952":{"traceID":"2c3b9a63d0fae472171550c75553d952","spans":[{"spanID":"9372efa23d70776a","traceID":"2c3b9a63d0fae472171550c75553d952","operationName":"proxy_handler","startTime":1771715786586721,"duration":3011,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"2c3b9a63d0fae472171550c75553d952","spanID":"dd15ea62cbb0f2aa"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":70},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"method","type":"string","value":"POST"},{"key":"path","type":"string","value":"/api/pets/rpc/listPets"},{"key":"busy_ns","type":"int64","value":287156},{"key":"idle_ns","type":"int64","value":2726316},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"c7445fd02883e63a","traceID":"2c3b9a63d0fae472171550c75553d952","operationName":"proxy_upstream","startTime":1771715786586756,"duration":2951,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"2c3b9a63d0fae472171550c75553d952","spanID":"9372efa23d70776a"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":128},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"upstream","type":"string","value":"http://svc-petstore-orchestrator:8080/rpc/listPets"},{"key":"busy_ns","type":"int64","value":195345},{"key":"idle_ns","type":"int64","value":2757073},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"ad604a2ea5264d84","traceID":"2c3b9a63d0fae472171550c75553d952","operationName":"petstore-mock","startTime":1771715786589098,"duration":212,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"2c3b9a63d0fae472171550c75553d952","spanID":"ad7f28f9156ea474"}],"tags":[{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":8080},{"key":"network.peer.address","type":"string","value":"10.244.0.15"},{"key":"network.peer.port","type":"int64","value":43708},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"client.address","type":"string","value":"10.244.0.15"},{"key":"url.path","type":"string","value":"/pets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":240},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"ad7f28f9156ea474","traceID":"2c3b9a63d0fae472171550c75553d952","operationName":"HTTP GET","startTime":1771715786588000,"duration":1465,"processID":"p3","references":[{"refType":"CHILD_OF","traceID":"2c3b9a63d0fae472171550c75553d952","spanID":"cccb467cdd4543fb"}],"tags":[{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.full","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"server.port","type":"int64","value":8080},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"client"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"03e1a6a5c3872e93","traceID":"2c3b9a63d0fae472171550c75553d952","operationName":"orchestrator","startTime":1771715786587822,"duration":1790,"processID":"p3","references":[{"refType":"CHILD_OF","traceID":"2c3b9a63d0fae472171550c75553d952","spanID":"c7445fd02883e63a"}],"tags":[{"key":"server.address","type":"string","value":"localhost"},{"key":"http.request.method","type":"string","value":"POST"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":18080},{"key":"network.peer.address","type":"string","value":"10.244.0.9"},{"key":"network.peer.port","type":"int64","value":36510},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"client.address","type":"string","value":"10.244.0.9"},{"key":"url.path","type":"string","value":"/rpc/listPets"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":412},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"cccb467cdd4543fb","traceID":"2c3b9a63d0fae472171550c75553d952","operationName":"rpc/listPets","startTime":1771715786587947,"duration":1629,"processID":"p4","references":[{"refType":"CHILD_OF","traceID":"2c3b9a63d0fae472171550c75553d952","spanID":"03e1a6a5c3872e93"}],"tags":[{"key":"rpc.method","type":"string","value":"listPets"},{"key":"upstream.url","type":"string","value":"http://svc-petstore-api:8080/pets"},{"key":"upstream.method","type":"string","value":"GET"},{"key":"upstream.status","type":"int64","value":200},{"key":"upstream.response_bytes","type":"int64","value":240},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"gateway","tags":[{"key":"otel.library.name","type":"string","value":"gateway"},{"key":"telemetry.sdk.language","type":"string","value":"rust"},{"key":"telemetry.sdk.name","type":"string","value":"opentelemetry"},{"key":"telemetry.sdk.version","type":"string","value":"0.23.0"}]},"p2":{"serviceName":"petstore-mock","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p3":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p4":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"orchestrator"},{"key":"service.version","type":"string","value":"0.1.0"}]}}},"72088b9c45e03c8a336b4aa12144fb16":{"traceID":"72088b9c45e03c8a336b4aa12144fb16","spans":[{"spanID":"4a047bd58c8a512d","traceID":"72088b9c45e03c8a336b4aa12144fb16","operationName":"petstore-mock","startTime":1771715790606491,"duration":54,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"72088b9c45e03c8a336b4aa12144fb16","spanID":"044433f242a69e2a"}],"tags":[{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":8080},{"key":"network.peer.address","type":"string","value":"10.244.0.15"},{"key":"network.peer.port","type":"int64","value":43708},{"key":"user_agent.original","type":"string","value":"Go-http-client/1.1"},{"key":"client.address","type":"string","value":"10.244.0.15"},{"key":"url.path","type":"string","value":"/pets/2"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":118},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"044433f242a69e2a","traceID":"72088b9c45e03c8a336b4aa12144fb16","operationName":"HTTP GET","startTime":1771715790606379,"duration":317,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"72088b9c45e03c8a336b4aa12144fb16","spanID":"0f75b295fa491dbb"}],"tags":[{"key":"http.request.method","type":"string","value":"GET"},{"key":"url.full","type":"string","value":"http://svc-petstore-api:8080/pets/2"},{"key":"server.address","type":"string","value":"svc-petstore-api"},{"key":"server.port","type":"int64","value":8080},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"client"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"15a52adf944b6e65","traceID":"72088b9c45e03c8a336b4aa12144fb16","operationName":"orchestrator","startTime":1771715790606335,"duration":464,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"72088b9c45e03c8a336b4aa12144fb16","spanID":"d1fa60f99336c5f7"}],"tags":[{"key":"server.address","type":"string","value":"localhost"},{"key":"http.request.method","type":"string","value":"POST"},{"key":"url.scheme","type":"string","value":"http"},{"key":"server.port","type":"int64","value":18080},{"key":"network.peer.address","type":"string","value":"10.244.0.9"},{"key":"network.peer.port","type":"int64","value":36510},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"client.address","type":"string","value":"10.244.0.9"},{"key":"url.path","type":"string","value":"/rpc/getPet"},{"key":"network.protocol.version","type":"string","value":"1.1"},{"key":"http.response.body.size","type":"int64","value":290},{"key":"http.response.status_code","type":"int64","value":200},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"0f75b295fa491dbb","traceID":"72088b9c45e03c8a336b4aa12144fb16","operationName":"rpc/getPet","startTime":1771715790606362,"duration":386,"processID":"p3","references":[{"refType":"CHILD_OF","traceID":"72088b9c45e03c8a336b4aa12144fb16","spanID":"15a52adf944b6e65"}],"tags":[{"key":"rpc.method","type":"string","value":"getPet"},{"key":"upstream.url","type":"string","value":"http://svc-petstore-api:8080/pets/2"},{"key":"upstream.method","type":"string","value":"GET"},{"key":"upstream.status","type":"int64","value":200},{"key":"upstream.response_bytes","type":"int64","value":118},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"d1fa60f99336c5f7","traceID":"72088b9c45e03c8a336b4aa12144fb16","operationName":"proxy_upstream","startTime":1771715790606221,"duration":693,"processID":"p4","references":[{"refType":"CHILD_OF","traceID":"72088b9c45e03c8a336b4aa12144fb16","spanID":"dbf83f146baba95c"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":128},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"upstream","type":"string","value":"http://svc-petstore-orchestrator:8080/rpc/getPet?id=2"},{"key":"busy_ns","type":"int64","value":20169},{"key":"idle_ns","type":"int64","value":673745},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]},{"spanID":"dbf83f146baba95c","traceID":"72088b9c45e03c8a336b4aa12144fb16","operationName":"proxy_handler","startTime":1771715790606205,"duration":718,"processID":"p4","references":[{"refType":"CHILD_OF","traceID":"72088b9c45e03c8a336b4aa12144fb16","spanID":"b369663454642087"}],"tags":[{"key":"code.filepath","type":"string","value":"src/proxy.rs"},{"key":"code.namespace","type":"string","value":"gateway::proxy"},{"key":"code.lineno","type":"int64","value":70},{"key":"thread.id","type":"int64","value":2},{"key":"thread.name","type":"string","value":"tokio-runtime-worker"},{"key":"method","type":"string","value":"POST"},{"key":"path","type":"string","value":"/api/pets/rpc/getPet"},{"key":"busy_ns","type":"int64","value":64871},{"key":"idle_ns","type":"int64","value":653909},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"petstore-mock","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p2":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.65.0"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p3":{"serviceName":"orchestrator","tags":[{"key":"otel.library.name","type":"string","value":"orchestrator"},{"key":"service.version","type":"string","value":"0.1.0"}]},"p4":{"serviceName":"gateway","tags":[{"key":"otel.library.name","type":"string","value":"gateway"},{"key":"telemetry.sdk.language","type":"string","value":"rust"},{"key":"telemetry.sdk.name","type":"string","value":"opentelemetry"},{"key":"telemetry.sdk.version","type":"string","value":"0.23.0"}]}}},"e5c0a0e8d6f1d6c848e4f2d1c3713df6":{"traceID":"e5c0a0e8d6f1d6c848e4f2d1c3713df6","spans":[{"spanID":"494a0b0c911f486c","traceID":"e5c0a0e8d6f1d6c848e4f2d1c3713df6","operationName":"envmanager","startTime":1771715780924704,"duration":245,"processID":"p1","references":[{"refType":"CHILD_OF","traceID":"e5c0a0e8d6f1d6c848e4f2d1c3713df6","spanID":"461d455d3a0d7dca"}],"tags":[{"key":"http.method","type":"string","value":"POST"},{"key":"http.scheme","type":"string","value":"http"},{"key":"net.host.name","type":"string","value":"localhost"},{"key":"net.host.port","type":"int64","value":18083},{"key":"net.sock.peer.addr","type":"string","value":"127.0.0.1"},{"key":"net.sock.peer.port","type":"int64","value":58628},{"key":"user_agent.original","type":"string","value":"Python-urllib/3.12"},{"key":"http.target","type":"string","value":"/v1/environments"},{"key":"net.protocol.version","type":"string","value":"1.1"},{"key":"http.request_content_length","type":"int64","value":150},{"key":"http.response_content_length","type":"int64","value":289},{"key":"http.status_code","type":"int64","value":201},{"key":"span.kind","type":"string","value":"server"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[{"timestamp":1771715780924735,"fields":[{"key":"event","type":"string","value":"read"},{"key":"http.read_bytes","type":"int64","value":150}]},{"timestamp":1771715780924935,"fields":[{"key":"event","type":"string","value":"write"},{"key":"http.wrote_bytes","type":"int64","value":289}]}]},{"spanID":"25c2fd14fd5b51ef","traceID":"e5c0a0e8d6f1d6c848e4f2d1c3713df6","operationName":"Orchestrator.CreateEnvironment","startTime":1771715780924811,"duration":35,"processID":"p2","references":[{"refType":"CHILD_OF","traceID":"e5c0a0e8d6f1d6c848e4f2d1c3713df6","spanID":"494a0b0c911f486c"}],"tags":[{"key":"env.name","type":"string","value":"petstore-e2e"},{"key":"span.kind","type":"string","value":"internal"},{"key":"internal.span.format","type":"string","value":"otlp"}],"logs":[]}],"processes":{"p1":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"},{"key":"otel.library.version","type":"string","value":"0.58.0"}]},"p2":{"serviceName":"envmanager","tags":[{"key":"otel.library.name","type":"string","value":"envmanager/orchestrator"}]}}}};
+
+(function() {
+  if (!INLINE_TRACES || Object.keys(INLINE_TRACES).length === 0) return;
+
+  // Utility functions.
+  function esc(s) {
+    var d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+  }
+  function fmtDur(us) {
+    if (us < 1000) return us + '\u03bcs';
+    if (us < 1000000) return (us / 1000).toFixed(1) + 'ms';
+    return (us / 1000000).toFixed(2) + 's';
+  }
+  function fmtTime(us) {
+    var d = new Date(us / 1000);
+    return d.toISOString().replace('T', ' ').replace('Z', '');
+  }
+
+  // Service color palette.
+  var svcColors = {};
+  var colorIdx = 0;
+  var palette = [
+    '#0366d6','#28a745','#6f42c1','#d73a49','#e36209','#005cc5'
+  ];
+  var paletteDark = [
+    '#58a6ff','#3fb950','#bc8cff','#f85149','#f0883e','#79c0ff'
+  ];
+  var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  function svcColor(name) {
+    if (!(name in svcColors)) {
+      svcColors[name] = colorIdx % 6;
+      colorIdx++;
+    }
+    return (isDark ? paletteDark : palette)[svcColors[name]];
+  }
+
+  // Inject CSS for trace panels.
+  var style = document.createElement('style');
+  style.textContent = [
+    '.tl-trace-btn { cursor:pointer; color:var(--link); font-size:11px; margin-left:4px; text-decoration:underline; }',
+    '.tl-trace-panel { grid-column:2; padding:8px 12px; border:1px solid var(--accent,var(--link)); border-radius:6px; margin:2px 0 6px 12px; background:var(--bg-code); overflow-x:auto; }',
+    '.tl-trace-panel .tp-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }',
+    '.tl-trace-panel .tp-header h4 { margin:0; font-size:13px; }',
+    '.tl-trace-panel .tp-close { background:none; border:1px solid var(--border); border-radius:4px; color:var(--fg-muted); cursor:pointer; padding:1px 6px; font-size:11px; }',
+    '.tl-trace-panel .tp-close:hover { background:var(--border); }',
+    '.tp-wf-row { display:flex; align-items:center; border-top:1px solid var(--border); font-size:11px; min-height:22px; cursor:pointer; }',
+    '.tp-wf-row:first-child { border-top:none; }',
+    '.tp-wf-row:hover { background:var(--border); }',
+    '.tp-wf-row.selected { outline:2px solid var(--link); outline-offset:-2px; }',
+    '.tp-wf-label { min-width:140px; max-width:240px; padding:1px 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:SFMono-Regular,Consolas,monospace; flex-shrink:0; }',
+    '.tp-wf-label .indent { color:var(--fg-muted); }',
+    '.tp-wf-bar-area { flex:1; min-width:120px; position:relative; height:22px; }',
+    '.tp-wf-bar { position:absolute; top:4px; height:14px; border-radius:2px; min-width:2px; opacity:0.85; }',
+    '.tp-wf-bar:hover { opacity:1; }',
+    '.tp-wf-bar.error { background:var(--fail) !important; }',
+    '.tp-wf-dur { font-size:10px; color:var(--fg-muted); padding:1px 4px; white-space:nowrap; flex-shrink:0; min-width:50px; text-align:right; }',
+    '.tp-detail { border:1px solid var(--border); border-radius:4px; margin:4px 0; padding:8px; font-size:12px; background:var(--bg); }',
+    '.tp-detail table { width:100%; display:table; border-collapse:collapse; font-size:12px; margin:4px 0; }',
+    '.tp-detail th, .tp-detail td { border:1px solid var(--border); padding:3px 6px; text-align:left; white-space:normal; word-break:break-all; }',
+    '.tp-detail th { background:var(--bg-code); font-weight:600; width:100px; }',
+    '.tp-detail-section { margin-top:8px; }',
+    '.tp-detail-section h5 { margin:0 0 2px; font-size:11px; color:var(--fg-muted); text-transform:uppercase; }',
+    '.tp-tag-error { color:var(--fail); font-weight:600; }',
+    '.tp-event { background:var(--bg-code); border:1px solid var(--border); border-radius:3px; padding:3px 6px; margin:2px 0; font-size:11px; font-family:SFMono-Regular,Consolas,monospace; }',
+    '.tp-event-time { color:var(--fg-muted); }',
+  ].join('\n');
+  document.head.appendChild(style);
+
+  // Find all HTTP event divs with data-trace-id attributes.
+  var httpDivs = document.querySelectorAll('.tl-event.tl-http[data-trace-id]');
+  httpDivs.forEach(function(div) {
+    var traceId = div.getAttribute('data-trace-id');
+    var traceData = INLINE_TRACES[traceId];
+    if (!traceData) return;
+    addTraceButton(div, traceData, traceId);
+  });
+
+  function addTraceButton(httpDiv, traceData, traceId) {
+    var spans = traceData.spans || [];
+    if (spans.length === 0) return;
+
+    var btn = document.createElement('span');
+    btn.className = 'tl-trace-btn';
+    btn.textContent = spans.length + ' spans';
+    btn.title = 'Click to expand trace ' + traceId.substring(0, 12);
+    httpDiv.appendChild(btn);
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+
+      // Toggle: if panel already exists, remove it.
+      var existing = httpDiv.parentElement.querySelector('.tl-trace-panel[data-trace="' + traceId + '"]');
+      if (existing) {
+        existing.remove();
+        return;
+      }
+
+      // Remove any other open trace panel in the timeline.
+      var old = document.querySelectorAll('.tl-trace-panel');
+      old.forEach(function(p) { p.remove(); });
+
+      var panel = buildTracePanel(traceData, traceId);
+      // Insert after the http div's grid row (need to insert after the next tl-epoch).
+      var next = httpDiv.nextElementSibling;
+      // The grid structure: tl-epoch | tl-event.  We want to insert a new
+      // row spanning the event column.  Insert a pair: empty epoch + panel.
+      var epochPlaceholder = document.createElement('div');
+      epochPlaceholder.className = 'tl-epoch';
+      epochPlaceholder.setAttribute('data-trace-epoch', traceId);
+
+      if (httpDiv.parentElement) {
+        // Insert after httpDiv in the grid.
+        var ref = httpDiv.nextElementSibling;
+        httpDiv.parentElement.insertBefore(panel, ref);
+        httpDiv.parentElement.insertBefore(epochPlaceholder, panel);
+      }
+    });
+  }
+
+  function buildTracePanel(traceData, traceId) {
+    var spans = traceData.spans || [];
+    var processes = traceData.processes || {};
+
+    // Find root span.
+    var spanIds = {};
+    spans.forEach(function(s) { spanIds[s.spanID] = true; });
+    var rootSpan = null;
+    spans.forEach(function(s) {
+      var refs = s.references || [];
+      var hasParent = refs.some(function(r) { return r.refType === 'CHILD_OF' && spanIds[r.spanID]; });
+      if (!hasParent) {
+        if (!rootSpan || s.startTime < rootSpan.startTime) rootSpan = s;
+      }
+    });
+    if (!rootSpan && spans.length) rootSpan = spans[0];
+
+    var traceStart = Math.min.apply(null, spans.map(function(s) { return s.startTime; }));
+    var traceEnd = Math.max.apply(null, spans.map(function(s) { return s.startTime + s.duration; }));
+    var totalDuration = traceEnd - traceStart;
+
+    // Build span tree and flatten via DFS.
+    var childMap = {};
+    spans.forEach(function(s) {
+      (s.references || []).forEach(function(r) {
+        if (r.refType === 'CHILD_OF' && spanIds[r.spanID]) {
+          if (!childMap[r.spanID]) childMap[r.spanID] = [];
+          childMap[r.spanID].push(s);
+        }
+      });
+    });
+
+    var flat = [];
+    function dfs(span, depth) {
+      flat.push({ span: span, depth: depth });
+      var children = childMap[span.spanID] || [];
+      children.sort(function(a, b) { return a.startTime - b.startTime; });
+      children.forEach(function(c) { dfs(c, depth + 1); });
+    }
+    if (rootSpan) dfs(rootSpan, 0);
+    var visited = {};
+    flat.forEach(function(f) { visited[f.span.spanID] = true; });
+    spans.forEach(function(s) {
+      if (!visited[s.spanID]) flat.push({ span: s, depth: 0 });
+    });
+
+    // Build panel DOM.
+    var panel = document.createElement('div');
+    panel.className = 'tl-event tl-trace-panel';
+    panel.setAttribute('data-trace', traceId);
+
+    // Header.
+    var hdr = document.createElement('div');
+    hdr.className = 'tp-header';
+    var rootProc = processes[(rootSpan || {}).processID] || {};
+    hdr.innerHTML = '<h4>Trace: ' + esc((rootProc.serviceName || '?') + ' / ' + ((rootSpan || {}).operationName || '?')) + ' <span style="color:var(--fg-muted);font-weight:400;font-size:11px">(' + fmtDur(totalDuration) + ', ' + spans.length + ' spans)</span></h4>';
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'tp-close';
+    closeBtn.textContent = '\u2715';
+    closeBtn.onclick = function(e) {
+      e.stopPropagation();
+      var epochEl = panel.previousElementSibling;
+      if (epochEl && epochEl.getAttribute('data-trace-epoch') === traceId) epochEl.remove();
+      panel.remove();
+    };
+    hdr.appendChild(closeBtn);
+    panel.appendChild(hdr);
+
+    // Waterfall rows.
+    var wf = document.createElement('div');
+    var detailContainer = document.createElement('div');
+
+    flat.forEach(function(item) {
+      var s = item.span;
+      var depth = item.depth;
+      var sProc = processes[s.processID] || {};
+      var sSvc = sProc.serviceName || '?';
+      var hasError = (s.tags || []).some(function(tag) { return tag.key === 'error' && tag.value === true; });
+
+      var row = document.createElement('div');
+      row.className = 'tp-wf-row';
+
+      var indent = '';
+      for (var d = 0; d < depth; d++) indent += '\u00a0\u00a0';
+
+      var label = document.createElement('div');
+      label.className = 'tp-wf-label';
+      label.innerHTML = '<span class="indent">' + indent + '</span>' + esc(sSvc) + '/' + esc(s.operationName);
+      label.title = sSvc + '/' + s.operationName;
+
+      var barArea = document.createElement('div');
+      barArea.className = 'tp-wf-bar-area';
+      var bar = document.createElement('div');
+      var leftPct = totalDuration > 0 ? ((s.startTime - traceStart) / totalDuration * 100) : 0;
+      var widthPct = totalDuration > 0 ? (s.duration / totalDuration * 100) : 100;
+      bar.className = 'tp-wf-bar' + (hasError ? ' error' : '');
+      bar.style.left = leftPct + '%';
+      bar.style.width = Math.max(widthPct, 1) + '%';
+      bar.style.background = hasError ? '' : svcColor(sSvc);
+      bar.title = fmtDur(s.duration);
+      barArea.appendChild(bar);
+
+      var dur = document.createElement('div');
+      dur.className = 'tp-wf-dur';
+      dur.textContent = fmtDur(s.duration);
+
+      row.appendChild(label);
+      row.appendChild(barArea);
+      row.appendChild(dur);
+
+      // Click to show span detail.
+      (function(span, rowEl) {
+        rowEl.onclick = function(e) {
+          e.stopPropagation();
+          var wasSelected = rowEl.classList.contains('selected');
+          // Deselect all.
+          wf.querySelectorAll('.tp-wf-row.selected').forEach(function(r) { r.classList.remove('selected'); });
+          detailContainer.innerHTML = '';
+          if (wasSelected) return;
+
+          rowEl.classList.add('selected');
+          detailContainer.appendChild(buildSpanDetail(span, processes, traceStart));
+        };
+      })(s, row);
+
+      wf.appendChild(row);
+    });
+
+    panel.appendChild(wf);
+    panel.appendChild(detailContainer);
+    return panel;
+  }
+
+  function buildSpanDetail(span, processes, traceStart) {
+    var proc = processes[span.processID] || {};
+    var svc = proc.serviceName || '?';
+    var tags = span.tags || [];
+    var logs = span.logs || [];
+
+    var el = document.createElement('div');
+    el.className = 'tp-detail';
+
+    var rows = [
+      ['Service', esc(svc)],
+      ['Operation', esc(span.operationName)],
+      ['Span ID', '<code>' + esc(span.spanID) + '</code>'],
+      ['Trace ID', '<code>' + esc(span.traceID) + '</code>'],
+      ['Start', fmtTime(span.startTime)],
+      ['Duration', fmtDur(span.duration)],
+      ['Offset', '+' + fmtDur(span.startTime - traceStart)]
+    ];
+    var html = '<table><tbody>';
+    rows.forEach(function(r) { html += '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; });
+    html += '</tbody></table>';
+
+    if (tags.length > 0) {
+      html += '<div class="tp-detail-section"><h5>Tags (' + tags.length + ')</h5>';
+      html += '<table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>';
+      tags.forEach(function(tag) {
+        var cls = (tag.key === 'error' && tag.value === true) ? ' class="tp-tag-error"' : '';
+        html += '<tr><td' + cls + '>' + esc(tag.key) + '</td><td' + cls + '>' + esc(String(tag.value)) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    if (logs.length > 0) {
+      html += '<div class="tp-detail-section"><h5>Events (' + logs.length + ')</h5>';
+      logs.forEach(function(log) {
+        var offsetUs = log.timestamp - span.startTime;
+        html += '<div class="tp-event"><span class="tp-event-time">+' + fmtDur(offsetUs) + '</span> ';
+        (log.fields || []).forEach(function(f) {
+          html += esc(f.key) + '=' + esc(String(f.value)) + ' ';
+        });
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    el.innerHTML = html;
+    return el;
+  }
+})();
+
+</script>
+</body>
+</html>
