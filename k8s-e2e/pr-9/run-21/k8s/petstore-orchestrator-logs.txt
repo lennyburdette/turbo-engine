@@ -1,0 +1,19 @@
+{"level":"info","msg":"orchestrator starting","port":"8080","time":"2026-02-21T00:36:28.425028553Z","upstream_url":"http://localhost:8081"}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/listPets","query":"","time":"2026-02-21T00:36:37.829653565Z","trace_id":"","traceparent":"","x_request_id":""}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"listPets","time":"2026-02-21T00:36:37.829680865Z","trace_id":"","url":"http://localhost:8081/pets"}
+{"duration_ms":0,"error":"Get \"http://localhost:8081/pets\": dial tcp [::1]:8081: connect: connection refused","level":"error","msg":"upstream call failed","rpc":"listPets","time":"2026-02-21T00:36:37.830183722Z","trace_id":"","url":"http://localhost:8081/pets"}
+{"duration_ms":0,"level":"info","method":"POST","msg":"response sent","path":"/rpc/listPets","status":502,"time":"2026-02-21T00:36:37.830210191Z","trace_id":""}
+{"level":"info","method":"GET","msg":"request received","path":"/healthz","query":"","time":"2026-02-21T00:36:39.989343337Z","trace_id":"","traceparent":"","x_request_id":"5cd3de53-9086-428a-9fd1-1accbc566865"}
+{"duration_ms":0,"level":"info","method":"GET","msg":"response sent","path":"/healthz","status":200,"time":"2026-02-21T00:36:39.98942031Z","trace_id":""}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/listPets","query":"","time":"2026-02-21T00:36:40.004869877Z","trace_id":"","traceparent":"","x_request_id":"27140c22-a72e-4876-89ff-1c962e2cea56"}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"listPets","time":"2026-02-21T00:36:40.004899532Z","trace_id":"","url":"http://localhost:8081/pets"}
+{"duration_ms":0,"error":"Get \"http://localhost:8081/pets\": dial tcp [::1]:8081: connect: connection refused","level":"error","msg":"upstream call failed","rpc":"listPets","time":"2026-02-21T00:36:40.005293073Z","trace_id":"","url":"http://localhost:8081/pets"}
+{"duration_ms":0,"level":"info","method":"POST","msg":"response sent","path":"/rpc/listPets","status":502,"time":"2026-02-21T00:36:40.005316957Z","trace_id":""}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/getPet","query":"id=2","time":"2026-02-21T00:36:40.090863901Z","trace_id":"","traceparent":"","x_request_id":"eec53eab-8db6-4bec-8238-1fc35529edb2"}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"getPet","time":"2026-02-21T00:36:40.090970089Z","trace_id":"","url":"http://localhost:8081/pets/2"}
+{"duration_ms":0,"error":"Get \"http://localhost:8081/pets/2\": dial tcp [::1]:8081: connect: connection refused","level":"error","msg":"upstream call failed","rpc":"getPet","time":"2026-02-21T00:36:40.091409326Z","trace_id":"","url":"http://localhost:8081/pets/2"}
+{"duration_ms":0,"level":"info","method":"POST","msg":"response sent","path":"/rpc/getPet","status":502,"time":"2026-02-21T00:36:40.091438861Z","trace_id":""}
+{"level":"info","method":"POST","msg":"request received","path":"/rpc/listPets","query":"","time":"2026-02-21T00:36:40.131363796Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","traceparent":"00-a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5-0000000000000001-01","x_request_id":"3f28c61c-0c39-4029-bf83-ded69b96e010"}
+{"level":"info","method":"GET","msg":"upstream call start","rpc":"listPets","time":"2026-02-21T00:36:40.131396788Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","url":"http://localhost:8081/pets"}
+{"duration_ms":0,"error":"Get \"http://localhost:8081/pets\": dial tcp [::1]:8081: connect: connection refused","level":"error","msg":"upstream call failed","rpc":"listPets","time":"2026-02-21T00:36:40.131814557Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5","url":"http://localhost:8081/pets"}
+{"duration_ms":0,"level":"info","method":"POST","msg":"response sent","path":"/rpc/listPets","status":502,"time":"2026-02-21T00:36:40.131838232Z","trace_id":"a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5"}

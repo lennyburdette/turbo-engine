@@ -1,0 +1,52 @@
+Trace Summary (captured 2026-02-21T00:36:44Z)
+============================================================
+
+builder: 12 traces, 21 spans
+  [6a16fd88e200] builder/builder 0.0ms (1 spans)
+  [883f46dd1893] builder/builder 0.0ms (1 spans)
+  [09b2461359c2] builder/builder 0.1ms (1 spans)
+  [2d89ab2b892c] builder/builder 0.2ms (1 spans)
+  [6923d2563c39] builder/builder 0.0ms (1 spans)
+  [db574502c0cf] builder/builder 0.1ms (1 spans)
+  [29e9fa0af863] builder/builder 0.0ms (1 spans)
+  [7546f86cf872] builder/builder 0.1ms (1 spans)
+  [49bef56f0856] builder/builder 0.0ms (1 spans)
+  [5d1d3831ad48] builder/builder 0.0ms (1 spans)
+  [0b87d63f83ab] builder/builder 0.3ms (10 spans)
+    builder/BuildEngine.Run 0.1ms
+    builder/step.resolve 0.0ms
+    builder/resolve.execute 0.0ms
+    builder/step.compose 0.0ms
+    builder/compose.execute 0.0ms
+    builder/step.validate 0.0ms
+    builder/validate.execute 0.0ms
+    builder/step.bundle 0.0ms
+    builder/bundle.execute 0.0ms
+  [6fdb38677d2f] builder/builder 0.1ms (1 spans)
+
+envmanager: 7 traces, 8 spans
+  [d21a04885057] envmanager/envmanager 0.1ms (1 spans)
+  [140b50f2ca13] envmanager/envmanager 0.0ms (1 spans)
+  [4b356df458fb] envmanager/envmanager 0.0ms (1 spans)
+  [2fe361206371] envmanager/envmanager 0.1ms (1 spans)
+  [da8b33f3ef2f] envmanager/envmanager 0.3ms (2 spans)
+    envmanager/Orchestrator.CreateEnvironment 0.0ms
+  [b123fff3436d] envmanager/envmanager 0.0ms (1 spans)
+  [5326b202e813] envmanager/envmanager 0.0ms (1 spans)
+
+gateway: 4 traces, 8 spans
+  [76e6fb484510] gateway/proxy_handler 0.9ms (2 spans)
+    gateway/proxy_upstream 0.8ms
+  [b12aa7ff37d2] gateway/proxy_handler 1.1ms (2 spans)
+    gateway/proxy_upstream 1.1ms
+  [c3bdc0cdc5e0] gateway/proxy_handler 1.2ms (2 spans)
+    gateway/proxy_upstream 1.1ms
+  [0fb993fa421c] gateway/proxy_handler 0.8ms (2 spans)
+    gateway/proxy_upstream 0.8ms
+
+operator: no traces
+registry: 2 traces, 2 spans
+  [fdc5739a4417] registry/PublishPackage 0.2ms (1 spans)
+  [1a86927f240e] registry/PublishPackage 0.1ms (1 spans)
+
+Total: 25 traces, 39 spans across 5 services
