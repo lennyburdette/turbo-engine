@@ -42,7 +42,203 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from html import escape as html_escape
 from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Shared HTML template (self-contained, no Jekyll dependency)
+# ---------------------------------------------------------------------------
+REPORT_CSS = """\
+:root {
+  --bg: #fff; --fg: #24292e; --fg-muted: #586069;
+  --border: #e1e4e8; --bg-code: #f6f8fa; --link: #0366d6;
+  --pass: #22863a; --fail: #cb2431;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --fg: #c9d1d9; --fg-muted: #8b949e;
+    --border: #30363d; --bg-code: #161b22; --link: #58a6ff;
+    --pass: #3fb950; --fail: #f85149;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+               Arial, sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--fg);
+  background: var(--bg); margin: 0; padding: 16px;
+  max-width: 100vw; overflow-x: hidden;
+}
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+h2 { font-size: 1.25em; margin-top: 1.5em; }
+h3 { font-size: 1.1em; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px; overflow-x: auto;
+  font-size: 13px; line-height: 1.4; max-width: 100%;
+}
+code {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+p code, li code, td code {
+  background: var(--bg-code); padding: 2px 6px; border-radius: 3px;
+}
+table {
+  border-collapse: collapse; width: 100%; font-size: 14px;
+  margin: 12px 0; overflow-x: auto; display: block;
+}
+th, td {
+  border: 1px solid var(--border); padding: 6px 10px;
+  text-align: left; white-space: nowrap;
+}
+th { background: var(--bg-code); font-weight: 600; }
+details { margin: 8px 0; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.breadcrumb { font-size: 13px; color: var(--fg-muted); margin-bottom: 8px; }
+.breadcrumb a { color: var(--fg-muted); }
+.pass { color: var(--pass); font-weight: 600; }
+.fail { color: var(--fail); font-weight: 600; }
+img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; margin: 8px 0; }
+blockquote { border-left: 3px solid var(--border); margin: 8px 0; padding: 4px 12px; color: var(--fg-muted); }
+.log-line { border-bottom: 1px solid var(--border); padding: 3px 0; font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+.log-line:last-child { border-bottom: none; }
+.log-time { color: var(--fg-muted); font-size: 11px; flex-shrink: 0; }
+.log-level { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; flex-shrink: 0; }
+.log-level-info { color: var(--pass); }
+.log-level-warn { color: #b08800; }
+.log-level-error { color: var(--fail); }
+.log-level-debug { color: var(--fg-muted); }
+.log-msg { font-weight: 500; }
+.log-meta { color: var(--fg-muted); font-size: 12px; }
+.log-meta-key { color: var(--fg-muted); }
+.log-meta-val { color: var(--fg); }
+.log-raw { font-size: 13px; font-family: SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.log-container { background: var(--bg-code); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; overflow-x: auto; max-width: 100%; }
+"""
+
+
+def html_page(title: str, body: str, breadcrumbs: list[tuple[str, str]] | None = None) -> str:
+    """Wrap body HTML in a full self-contained page."""
+    bc = ""
+    if breadcrumbs:
+        links = " / ".join(
+            f'<a href="{html_escape(href)}">{html_escape(label)}</a>'
+            for label, href in breadcrumbs
+        )
+        bc = f'<nav class="breadcrumb">{links}</nav>\n'
+    return (
+        "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
+        "  <meta charset=\"utf-8\">\n"
+        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+        f"  <title>{html_escape(title)}</title>\n"
+        f"  <style>{REPORT_CSS}</style>\n"
+        "</head>\n<body>\n<div class=\"container\">\n"
+        f"{bc}{body}"
+        "</div>\n</body>\n</html>\n"
+    )
+
+
+# Known message/metadata keys in JSON logs (order matters for display).
+_LOG_MSG_KEYS = {"msg", "message"}
+_LOG_META_KEYS = {"time", "ts", "timestamp", "level", "lvl", "msg", "message"}
+
+
+def _render_log_line_html(line: str) -> str:
+    """Render a single log line.  If it's JSON, show structured output;
+    otherwise fall back to plain escaped text."""
+    stripped = line.strip()
+    if not stripped:
+        return ""
+    try:
+        obj = json.loads(stripped)
+        if not isinstance(obj, dict):
+            raise ValueError
+    except (json.JSONDecodeError, ValueError):
+        return f'<div class="log-raw">{html_escape(stripped)}</div>\n'
+
+    parts: list[str] = []
+
+    # Time
+    ts = obj.get("time") or obj.get("ts") or obj.get("timestamp") or ""
+    if ts:
+        # Trim nanosecond precision and trailing Z for readability
+        ts_str = str(ts)
+        if "T" in ts_str:
+            ts_str = ts_str.split("T", 1)[1].rstrip("Z")
+            # Truncate sub-second to 3 digits
+            if "." in ts_str:
+                base, frac = ts_str.split(".", 1)
+                ts_str = f"{base}.{frac[:3]}"
+        parts.append(f'<span class="log-time">{html_escape(ts_str)}</span>')
+
+    # Level
+    level = str(obj.get("level") or obj.get("lvl") or "").upper()
+    if level:
+        lcls = "info"
+        if level in ("WARN", "WARNING"):
+            lcls = "warn"
+        elif level in ("ERROR", "ERR", "FATAL", "PANIC"):
+            lcls = "error"
+        elif level in ("DEBUG", "TRACE"):
+            lcls = "debug"
+        parts.append(f'<span class="log-level log-level-{lcls}">{html_escape(level)}</span>')
+
+    # Message
+    msg = ""
+    for k in _LOG_MSG_KEYS:
+        if k in obj:
+            msg = str(obj[k])
+            break
+    if msg:
+        parts.append(f'<span class="log-msg">{html_escape(msg)}</span>')
+
+    # Remaining metadata keys
+    meta_parts: list[str] = []
+    for k, v in obj.items():
+        if k in _LOG_META_KEYS:
+            continue
+        sv = str(v) if not isinstance(v, str) else v
+        if len(sv) > 80:
+            sv = sv[:77] + "..."
+        meta_parts.append(
+            f'<span class="log-meta-key">{html_escape(k)}</span>='
+            f'<span class="log-meta-val">{html_escape(sv)}</span>'
+        )
+    if meta_parts:
+        parts.append('<span class="log-meta">' + " ".join(meta_parts) + "</span>")
+
+    return '<div class="log-line">' + " ".join(parts) + "</div>\n"
+
+
+def render_logs_html(log_content: str) -> str:
+    """Render a block of log lines — structured for JSON, raw otherwise."""
+    lines = log_content.split("\n")
+    # Quick check: if any line parses as JSON, use structured rendering
+    has_json = False
+    for line in lines[:5]:
+        stripped = line.strip()
+        if stripped and stripped.startswith("{"):
+            try:
+                json.loads(stripped)
+                has_json = True
+                break
+            except json.JSONDecodeError:
+                pass
+    if not has_json:
+        return f'<pre><code>{html_escape(log_content)}</code></pre>\n'
+    out: list[str] = ['<div class="log-container">\n']
+    for line in lines:
+        rendered = _render_log_line_html(line)
+        if rendered:
+            out.append(rendered)
+    out.append("</div>\n")
+    return "".join(out)
 
 
 # ---------------------------------------------------------------------------
@@ -753,10 +949,222 @@ class ScenarioRunner:
             # Capture screenshots after requests (so UIs reflect scenario state).
             self.capture_screenshots()
             self.capture_logs()
+            self.generate_report()
+            self.generate_html_report()
         finally:
             self.cleanup()
 
         return self._build_output()
+
+    def generate_report(self) -> None:
+        """Write a concise per-scenario report.md."""
+        report_dir = os.environ.get("REPORT_DIR", "ci-report")
+        scenario_dir = os.path.join(report_dir, "scenarios", self.name)
+        os.makedirs(scenario_dir, exist_ok=True)
+
+        lines: list[str] = []
+
+        # --- Banner ---
+        total = self.pass_count + self.fail_count
+        if self.fail_count == 0:
+            lines.append(f"# {self.name}: ALL {total} TESTS PASSED\n")
+        else:
+            lines.append(f"# {self.name}: {self.fail_count} FAILED ({self.pass_count}/{total} passed)\n")
+
+        desc = self.scenario.get("description", "")
+        if desc:
+            lines.append(f"> {desc}\n")
+        lines.append("")
+
+        # --- Test results table ---
+        lines.append("## Test Results\n")
+        lines.append("| Test | Result | Detail | Time |")
+        lines.append("|------|--------|--------|------|")
+        for r in self.results:
+            short_name = r["name"].split("/", 1)[-1]
+            icon = "PASS" if r["status"] == "pass" else "**FAIL**"
+            dur = f"{r['duration_ms']}ms" if r["duration_ms"] else "-"
+            lines.append(f"| {short_name} | {icon} | {r['detail']} | {dur} |")
+        lines.append("")
+
+        # --- Screenshots (inline images) ---
+        screenshot_dir = os.path.join(report_dir, "screenshots", self.name)
+        screenshots = self.scenario.get("screenshots", [])
+        has_screenshots = False
+        for ss in screenshots:
+            png = os.path.join(screenshot_dir, f"{ss['name']}.png")
+            if os.path.isfile(png):
+                has_screenshots = True
+                break
+
+        if has_screenshots:
+            lines.append("## Screenshots\n")
+            for ss in screenshots:
+                name = ss["name"]
+                png = os.path.join(screenshot_dir, f"{name}.png")
+                if not os.path.isfile(png):
+                    continue
+                desc_text = ss.get("description", name)
+                # Relative path: scenarios/{name}/ → ../../screenshots/{name}/
+                lines.append(f"### {desc_text}\n")
+                lines.append(f"![{name}](../../screenshots/{self.name}/{name}.png)\n")
+
+                # Console log (collapsed)
+                logfile = os.path.join(screenshot_dir, f"{name}.log")
+                if os.path.isfile(logfile):
+                    with open(logfile) as lf:
+                        content = lf.read().strip()
+                    if content:
+                        linecount = content.count("\n") + 1
+                        lines.append(f"<details><summary>Browser console ({linecount} lines)</summary>\n")
+                        lines.append(f"```\n{content}\n```\n")
+                        lines.append("</details>\n")
+                lines.append("")
+
+        # --- Component logs (collapsed, only errors highlighted) ---
+        k8s_dir = os.path.join(report_dir, "k8s")
+        comp_logs: list[tuple[str, str]] = []
+        for comp in self.scenario.get("components", []):
+            name = comp["package_name"]
+            log_file = os.path.join(k8s_dir, f"{self.name}-{name}-logs.txt")
+            if os.path.isfile(log_file):
+                with open(log_file) as f:
+                    comp_logs.append((name, f.read().strip()))
+
+        if comp_logs:
+            has_errors = False
+            error_lines: list[str] = []
+            for comp_name, log_content in comp_logs:
+                for line in log_content.split("\n"):
+                    low = line.lower()
+                    if any(kw in low for kw in ['"error"', "panic", "fatal"]):
+                        if not has_errors:
+                            error_lines.append("## Errors\n")
+                            has_errors = True
+                        error_lines.append(f"**{comp_name}**: `{line.strip()[:200]}`\n")
+
+            if has_errors:
+                lines.extend(error_lines)
+                lines.append("")
+
+            lines.append("## Component Logs\n")
+            for comp_name, log_content in comp_logs:
+                linecount = log_content.count("\n") + 1 if log_content else 0
+                lines.append(f"<details><summary>{comp_name} ({linecount} lines)</summary>\n")
+                lines.append(f"```\n{log_content}\n```\n")
+                lines.append("</details>\n")
+            lines.append("")
+
+        report_path = os.path.join(scenario_dir, "report.md")
+        with open(report_path, "w") as f:
+            f.write("\n".join(lines))
+        ok(f"Scenario report: {report_path}")
+
+    def generate_html_report(self) -> None:
+        """Write a self-contained per-scenario report.html (no Jekyll)."""
+        report_dir = os.environ.get("REPORT_DIR", "ci-report")
+        scenario_dir = os.path.join(report_dir, "scenarios", self.name)
+        os.makedirs(scenario_dir, exist_ok=True)
+
+        h: list[str] = []
+
+        # --- Banner ---
+        total = self.pass_count + self.fail_count
+        if self.fail_count == 0:
+            h.append(f'<h1><span class="pass">ALL {total} TESTS PASSED</span> &mdash; {html_escape(self.name)}</h1>\n')
+        else:
+            h.append(f'<h1><span class="fail">{self.fail_count} FAILED</span> ({self.pass_count}/{total} passed) &mdash; {html_escape(self.name)}</h1>\n')
+
+        desc = self.scenario.get("description", "")
+        if desc:
+            h.append(f"<blockquote>{html_escape(desc)}</blockquote>\n")
+
+        # --- Test results table ---
+        h.append("<h2>Test Results</h2>\n")
+        h.append("<table>\n<thead><tr><th>Test</th><th>Result</th><th>Detail</th><th>Time</th></tr></thead>\n<tbody>\n")
+        for r in self.results:
+            short_name = r["name"].split("/", 1)[-1]
+            if r["status"] == "pass":
+                icon = '<span class="pass">PASS</span>'
+            else:
+                icon = '<span class="fail">FAIL</span>'
+            dur = f"{r['duration_ms']}ms" if r["duration_ms"] else "-"
+            h.append(f"<tr><td>{html_escape(short_name)}</td><td>{icon}</td>"
+                      f"<td>{html_escape(r['detail'])}</td><td>{dur}</td></tr>\n")
+        h.append("</tbody></table>\n")
+
+        # --- Screenshots ---
+        screenshot_dir = os.path.join(report_dir, "screenshots", self.name)
+        screenshots = self.scenario.get("screenshots", [])
+        has_screenshots = any(
+            os.path.isfile(os.path.join(screenshot_dir, f"{ss['name']}.png"))
+            for ss in screenshots
+        )
+
+        if has_screenshots:
+            h.append("<h2>Screenshots</h2>\n")
+            for ss in screenshots:
+                name = ss["name"]
+                png = os.path.join(screenshot_dir, f"{name}.png")
+                if not os.path.isfile(png):
+                    continue
+                desc_text = ss.get("description", name)
+                # Path from scenarios/{name}/ up to report root, then into screenshots/
+                img_src = f"../../screenshots/{self.name}/{name}.png"
+                h.append(f"<h3>{html_escape(desc_text)}</h3>\n")
+                h.append(f'<img src="{html_escape(img_src)}" alt="{html_escape(name)}">\n')
+
+                logfile = os.path.join(screenshot_dir, f"{name}.log")
+                if os.path.isfile(logfile):
+                    with open(logfile) as lf:
+                        content = lf.read().strip()
+                    if content:
+                        linecount = content.count("\n") + 1
+                        h.append(f"<details><summary>Browser console ({linecount} lines)</summary>\n")
+                        h.append(f"<pre><code>{html_escape(content)}</code></pre>\n")
+                        h.append("</details>\n")
+
+        # --- Errors ---
+        k8s_dir = os.path.join(report_dir, "k8s")
+        comp_logs: list[tuple[str, str]] = []
+        for comp in self.scenario.get("components", []):
+            name = comp["package_name"]
+            log_file = os.path.join(k8s_dir, f"{self.name}-{name}-logs.txt")
+            if os.path.isfile(log_file):
+                with open(log_file) as f:
+                    comp_logs.append((name, f.read().strip()))
+
+        if comp_logs:
+            error_html: list[str] = []
+            for comp_name, log_content in comp_logs:
+                for line in log_content.split("\n"):
+                    low = line.lower()
+                    if any(kw in low for kw in ['"error"', "panic", "fatal"]):
+                        if not error_html:
+                            error_html.append("<h2>Errors</h2>\n")
+                        error_html.append(f"<p><strong>{html_escape(comp_name)}</strong>: "
+                                          f"<code>{html_escape(line.strip()[:200])}</code></p>\n")
+            h.extend(error_html)
+
+            # --- Component logs ---
+            h.append("<h2>Component Logs</h2>\n")
+            for comp_name, log_content in comp_logs:
+                linecount = log_content.count("\n") + 1 if log_content else 0
+                h.append(f"<details><summary>{html_escape(comp_name)} ({linecount} lines)</summary>\n")
+                h.append(render_logs_html(log_content))
+                h.append("</details>\n")
+
+        body = "".join(h)
+        page = html_page(
+            title=f"Scenario: {self.name}",
+            body=body,
+            breadcrumbs=[("Report", "../../")],
+        )
+
+        html_path = os.path.join(scenario_dir, "report.html")
+        with open(html_path, "w") as f:
+            f.write(page)
+        ok(f"Scenario HTML report: {html_path}")
 
     def _build_output(self) -> dict:
         return {

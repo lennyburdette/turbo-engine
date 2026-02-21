@@ -34,62 +34,64 @@ print(f'Trace Summary (captured {captured})')
 print('=' * 60)
 print()
 
-total_traces = 0
+# Deduplicate traces by traceID across services.
+# Jaeger returns the same trace from each service query.
+by_id = {}
+for svc_name, svc_data in services.items():
+    for t in svc_data.get('data', []):
+        tid = t['traceID']
+        existing = by_id.get(tid)
+        if not existing or len(t.get('spans', [])) > len(existing.get('spans', [])):
+            by_id[tid] = t
+
+# Attribute each trace to its root span's service.
+unique_traces = []
+for tid, t in sorted(by_id.items(), key=lambda x: min((s.get('startTime', 0) for s in x[1].get('spans', [0])), default=0)):
+    spans = t.get('spans', [])
+    processes = t.get('processes', {})
+    span_ids = {s['spanID'] for s in spans}
+
+    root = None
+    for s in spans:
+        refs = s.get('references', [])
+        if not any(r.get('spanID') in span_ids and r.get('refType') == 'CHILD_OF' for r in refs):
+            if root is None or s.get('startTime', 0) < root.get('startTime', 0):
+                root = s
+    if root is None and spans:
+        root = spans[0]
+    root_svc = processes.get(root.get('processID', ''), {}).get('serviceName', '?') if root else '?'
+    unique_traces.append((root_svc, t, root))
+
+# Per-service summary.
+from collections import Counter
+svc_counts = Counter(svc for svc, _, _ in unique_traces)
+for svc in sorted(svc_counts):
+    print(f'{svc}: {svc_counts[svc]} traces')
+
+print()
+
 total_spans = 0
+for root_svc, t, root in unique_traces:
+    spans = t.get('spans', [])
+    processes = t.get('processes', {})
+    total_spans += len(spans)
+    tid = t['traceID'][:12]
+    if root:
+        dur_ms = root.get('duration', 0) / 1000
+        print(f'[{tid}] {root_svc}/{root[\"operationName\"]} {dur_ms:.1f}ms ({len(spans)} spans)')
 
-for svc_name, svc_data in sorted(services.items()):
-    traces = svc_data.get('data', [])
-    if not traces:
-        print(f'{svc_name}: no traces')
-        continue
-
-    svc_spans = sum(len(t.get('spans', [])) for t in traces)
-    total_traces += len(traces)
-    total_spans += svc_spans
-    print(f'{svc_name}: {len(traces)} traces, {svc_spans} spans')
-
-    for t in traces:
-        tid = t['traceID'][:12]
-        spans = t.get('spans', [])
-        processes = t.get('processes', {})
-        if not spans:
-            continue
-
-        # Find root span (no parent or parent not in this trace)
-        span_ids = {s['spanID'] for s in spans}
-        root_spans = []
-        for s in spans:
-            refs = s.get('references', [])
-            parent_in_trace = any(
-                r.get('spanID') in span_ids and r.get('refType') == 'CHILD_OF'
-                for r in refs
-            )
-            if not parent_in_trace:
-                root_spans.append(s)
-
-        # Sort root spans by start time
-        root_spans.sort(key=lambda s: s.get('startTime', 0))
-
-        for root in root_spans[:1]:  # Show first root
-            dur_ms = root.get('duration', 0) / 1000
-            proc = processes.get(root.get('processID', ''), {}).get('serviceName', '?')
-            print(f'  [{tid}] {proc}/{root[\"operationName\"]} {dur_ms:.1f}ms ({len(spans)} spans)')
-
-            # Show child spans indented
-            children = sorted(spans, key=lambda s: s.get('startTime', 0))
-            for child in children:
-                if child['spanID'] == root['spanID']:
-                    continue
-                child_dur = child.get('duration', 0) / 1000
-                child_proc = processes.get(child.get('processID', ''), {}).get('serviceName', '?')
-                # Check for errors
-                error_tags = [tag for tag in child.get('tags', []) if tag.get('key') == 'error' and tag.get('value') == True]
-                status = ' ERROR' if error_tags else ''
-                print(f'    {child_proc}/{child[\"operationName\"]} {child_dur:.1f}ms{status}')
-
+        children = sorted(spans, key=lambda s: s.get('startTime', 0))
+        for child in children:
+            if child['spanID'] == root['spanID']:
+                continue
+            child_dur = child.get('duration', 0) / 1000
+            child_proc = processes.get(child.get('processID', ''), {}).get('serviceName', '?')
+            error_tags = [tag for tag in child.get('tags', []) if tag.get('key') == 'error' and tag.get('value') == True]
+            status = ' ERROR' if error_tags else ''
+            print(f'  {child_proc}/{child[\"operationName\"]} {child_dur:.1f}ms{status}')
     print()
 
-print(f'Total: {total_traces} traces, {total_spans} spans across {len(services)} services')
+print(f'Total: {len(unique_traces)} traces, {total_spans} spans across {len(services)} services')
 " > "${REPORT_DIR}/traces.txt" 2>/dev/null || echo "Failed to generate trace summary" > "${REPORT_DIR}/traces.txt"
 
 echo "Generated traces.txt ($(wc -c < "${REPORT_DIR}/traces.txt") bytes)"
@@ -204,7 +206,44 @@ cat > "${REPORT_DIR}/traces.html" <<'VIEWER_TOP'
     .svc-4 { background: #f0883e; } .svc-5 { background: #79c0ff; }
   }
 
+  .wf-row.selected { background: var(--accent); color: #fff; }
+  .wf-row.selected .wf-label, .wf-row.selected .wf-duration,
+  .wf-row.selected .indent { color: #fff; }
+
   .empty-state { padding: 32px; text-align: center; color: var(--fg-muted); }
+
+  /* Span detail panel */
+  .span-detail {
+    border: 1px solid var(--accent); border-radius: 6px; margin: 8px 0;
+    background: var(--bg); overflow: hidden;
+  }
+  .span-detail-header {
+    background: var(--bg-code); padding: 8px 12px; display: flex;
+    justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);
+  }
+  .span-detail-header h3 { margin: 0; font-size: 14px; }
+  .span-detail-close {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--fg-muted); cursor: pointer; padding: 2px 8px; font-size: 12px;
+  }
+  .span-detail-close:hover { background: var(--border); }
+  .span-detail-body { padding: 12px; }
+  .span-detail-body table {
+    width: 100%; display: table; border-collapse: collapse; font-size: 13px; margin: 8px 0;
+  }
+  .span-detail-body th, .span-detail-body td {
+    border: 1px solid var(--border); padding: 4px 8px; text-align: left; white-space: normal; word-break: break-all;
+  }
+  .span-detail-body th { background: var(--bg-code); font-weight: 600; width: 140px; }
+  .span-detail-section { margin-top: 12px; }
+  .span-detail-section h4 { font-size: 13px; margin: 0 0 4px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .span-event {
+    background: var(--bg-code); border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; margin: 4px 0; font-size: 12px;
+    font-family: SFMono-Regular, Consolas, monospace;
+  }
+  .span-event-time { color: var(--fg-muted); font-size: 11px; }
+  .tag-error { color: var(--error); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -232,8 +271,12 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
 
   document.getElementById('subtitle').textContent = 'Captured at ' + capturedAt;
 
-  // Collect all traces with their service name.
-  var allTraces = [];
+  // Collect all traces, deduplicating by traceID.
+  // Jaeger returns the same trace from each service's query, so a trace
+  // spanning gateway → registry → builder would appear 3 times.  We keep
+  // only the copy with the most spans (most complete) and attribute the
+  // trace to the service that owns the root span.
+  var traceById = {};
   var svcNames = Object.keys(services).sort();
   var svcColorMap = {};
   svcNames.forEach(function(name, i) { svcColorMap[name] = 'svc-' + (i % 6); });
@@ -242,11 +285,50 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
     var svcData = services[svcName];
     var traces = (svcData && svcData.data) || [];
     traces.forEach(function(t) {
-      allTraces.push({ svcName: svcName, trace: t });
+      var tid = t.traceID;
+      var existing = traceById[tid];
+      // Keep the copy with the most spans (most complete).
+      if (!existing || (t.spans || []).length > (existing.trace.spans || []).length) {
+        traceById[tid] = { svcName: svcName, trace: t };
+      }
     });
   });
 
-  // Stats.
+  // Re-attribute each trace to its root span's service.
+  var allTraces = Object.keys(traceById).map(function(tid) {
+    var item = traceById[tid];
+    var t = item.trace;
+    var spans = t.spans || [];
+    var processes = t.processes || {};
+    var spanIds = {};
+    spans.forEach(function(s) { spanIds[s.spanID] = true; });
+
+    // Find root span (no parent in this trace).
+    var rootSpan = null;
+    spans.forEach(function(s) {
+      var refs = s.references || [];
+      var hasParentInTrace = refs.some(function(r) {
+        return r.refType === 'CHILD_OF' && spanIds[r.spanID];
+      });
+      if (!hasParentInTrace) {
+        if (!rootSpan || s.startTime < rootSpan.startTime) rootSpan = s;
+      }
+    });
+    if (rootSpan) {
+      var proc = processes[rootSpan.processID] || {};
+      if (proc.serviceName) item.svcName = proc.serviceName;
+    }
+    return item;
+  });
+
+  // Sort traces chronologically by earliest span start time.
+  allTraces.sort(function(a, b) {
+    var aStart = Math.min.apply(null, (a.trace.spans || []).map(function(s) { return s.startTime; }));
+    var bStart = Math.min.apply(null, (b.trace.spans || []).map(function(s) { return s.startTime; }));
+    return aStart - bStart;
+  });
+
+  // Stats (after deduplication).
   var totalSpans = allTraces.reduce(function(sum, t) {
     return sum + (t.trace.spans || []).length;
   }, 0);
@@ -300,6 +382,107 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
     if (us < 1000) return us + 'μs';
     if (us < 1000000) return (us / 1000).toFixed(1) + 'ms';
     return (us / 1000000).toFixed(2) + 's';
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function formatTimestamp(us) {
+    // Jaeger timestamps are microseconds since epoch
+    var d = new Date(us / 1000);
+    return d.toISOString().replace('T', ' ').replace('Z', '');
+  }
+
+  function buildSpanDetail(span, processes, traceStart) {
+    var proc = processes[span.processID] || {};
+    var svc = proc.serviceName || '?';
+    var tags = span.tags || [];
+    var logs = span.logs || [];
+
+    var el = document.createElement('div');
+    el.className = 'span-detail';
+
+    // Header
+    var hdr = document.createElement('div');
+    hdr.className = 'span-detail-header';
+    hdr.innerHTML = '<h3>' + esc(svc) + ' / ' + esc(span.operationName) + '</h3>';
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'span-detail-close';
+    closeBtn.textContent = 'Close';
+    closeBtn.onclick = function(e) { e.stopPropagation(); el.remove(); };
+    hdr.appendChild(closeBtn);
+    el.appendChild(hdr);
+
+    var body = document.createElement('div');
+    body.className = 'span-detail-body';
+
+    // Overview table
+    var rows = [
+      ['Service', esc(svc)],
+      ['Operation', esc(span.operationName)],
+      ['Span ID', '<code>' + esc(span.spanID) + '</code>'],
+      ['Trace ID', '<code>' + esc(span.traceID) + '</code>'],
+      ['Start', formatTimestamp(span.startTime)],
+      ['Duration', formatDuration(span.duration)],
+      ['Offset', '+' + formatDuration(span.startTime - traceStart)]
+    ];
+    var html = '<table><tbody>';
+    rows.forEach(function(r) { html += '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>'; });
+    html += '</tbody></table>';
+    body.innerHTML = html;
+
+    // Tags section
+    if (tags.length > 0) {
+      var sec = document.createElement('div');
+      sec.className = 'span-detail-section';
+      var tagHtml = '<h4>Tags (' + tags.length + ')</h4><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>';
+      tags.forEach(function(tag) {
+        var valStr = String(tag.value);
+        var cls = (tag.key === 'error' && tag.value === true) ? ' class="tag-error"' : '';
+        tagHtml += '<tr><td' + cls + '>' + esc(tag.key) + '</td><td' + cls + '>' + esc(valStr) + '</td></tr>';
+      });
+      tagHtml += '</tbody></table>';
+      sec.innerHTML = tagHtml;
+      body.appendChild(sec);
+    }
+
+    // Logs/events section
+    if (logs.length > 0) {
+      var logSec = document.createElement('div');
+      logSec.className = 'span-detail-section';
+      var logHtml = '<h4>Events (' + logs.length + ')</h4>';
+      logs.forEach(function(log) {
+        var offsetUs = log.timestamp - span.startTime;
+        logHtml += '<div class="span-event">';
+        logHtml += '<span class="span-event-time">+' + formatDuration(offsetUs) + '</span> ';
+        (log.fields || []).forEach(function(f) {
+          logHtml += '<span class="log-meta-key">' + esc(f.key) + '</span>=<span class="log-meta-val">' + esc(String(f.value)) + '</span> ';
+        });
+        logHtml += '</div>';
+      });
+      logSec.innerHTML = logHtml;
+      body.appendChild(logSec);
+    }
+
+    // Process/library info
+    if (proc.tags && proc.tags.length > 0) {
+      var procSec = document.createElement('div');
+      procSec.className = 'span-detail-section';
+      var procHtml = '<h4>Process</h4><table><tbody>';
+      procHtml += '<tr><th>Service</th><td>' + esc(svc) + '</td></tr>';
+      proc.tags.forEach(function(tag) {
+        procHtml += '<tr><th>' + esc(tag.key) + '</th><td>' + esc(String(tag.value)) + '</td></tr>';
+      });
+      procHtml += '</tbody></table>';
+      procSec.innerHTML = procHtml;
+      body.appendChild(procSec);
+    }
+
+    el.appendChild(body);
+    return el;
   }
 
   function renderTraces() {
@@ -399,13 +582,14 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
 
         var row = document.createElement('div');
         row.className = 'wf-row';
+        row.style.cursor = 'pointer';
 
         var indent = '';
         for (var d = 0; d < depth; d++) indent += '  ';
 
         var label = document.createElement('div');
         label.className = 'wf-label';
-        label.innerHTML = '<span class="indent">' + indent + '</span>' + sSvc + '/' + s.operationName;
+        label.innerHTML = '<span class="indent">' + indent + '</span>' + esc(sSvc) + '/' + esc(s.operationName);
         label.title = sSvc + '/' + s.operationName;
 
         var barArea = document.createElement('div');
@@ -427,6 +611,34 @@ cat >> "${REPORT_DIR}/traces.html" <<'VIEWER_BOTTOM'
         row.appendChild(label);
         row.appendChild(barArea);
         row.appendChild(dur);
+
+        // Click handler to show span detail panel
+        (function(span, rowEl) {
+          rowEl.onclick = function() {
+            // Remove any existing detail panel in this waterfall
+            var existing = wf.querySelector('.span-detail');
+            var wasForSame = false;
+            if (existing) {
+              wasForSame = existing.getAttribute('data-span-id') === span.spanID;
+              var prevRow = wf.querySelector('.wf-row.selected');
+              if (prevRow) prevRow.classList.remove('selected');
+              existing.remove();
+            }
+            // Toggle off if clicking the same span
+            if (wasForSame) return;
+
+            rowEl.classList.add('selected');
+            var detail = buildSpanDetail(span, processes, traceStart);
+            detail.setAttribute('data-span-id', span.spanID);
+            // Insert detail panel after the clicked row
+            if (rowEl.nextSibling) {
+              wf.insertBefore(detail, rowEl.nextSibling);
+            } else {
+              wf.appendChild(detail);
+            }
+          };
+        })(s, row);
+
         wf.appendChild(row);
       });
 
