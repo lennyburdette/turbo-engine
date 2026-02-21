@@ -1,0 +1,139 @@
+Trace Summary (captured 2026-02-21T08:59:31Z)
+============================================================
+
+builder: 27 traces, 36 spans
+  [11bf5a6629de] builder/builder 0.0ms (1 spans)
+  [db5edc2b47a1] builder/builder 0.0ms (1 spans)
+  [ed6726201c90] builder/builder 0.0ms (1 spans)
+  [cf041a45eaea] builder/builder 0.0ms (1 spans)
+  [09d651120bf8] builder/builder 0.0ms (1 spans)
+  [4854ea1afeb3] builder/builder 0.1ms (1 spans)
+  [33da3d3291a3] builder/builder 0.0ms (1 spans)
+  [f5af26381340] builder/builder 0.0ms (1 spans)
+  [d66cbcd2b420] builder/builder 0.0ms (1 spans)
+  [76bccd57ca0e] builder/builder 0.0ms (1 spans)
+  [c169103cc7fc] builder/builder 0.0ms (1 spans)
+  [01c4b93b79a7] builder/builder 0.0ms (1 spans)
+  [5fed09517e39] builder/builder 0.0ms (1 spans)
+  [346cd6ea98f4] builder/builder 0.0ms (1 spans)
+  [6ec6f40b1174] builder/builder 0.0ms (1 spans)
+  [5e8506058cee] builder/builder 0.0ms (1 spans)
+  [f5aae3068666] builder/builder 0.1ms (1 spans)
+  [5a5ecc6a4b1f] builder/builder 0.0ms (1 spans)
+  [ce24413056b1] builder/builder 0.0ms (1 spans)
+  [bc9f2a273919] builder/builder 0.0ms (1 spans)
+  [074f2dfc97c9] builder/builder 0.1ms (1 spans)
+  [40bbe07161e4] builder/builder 0.0ms (1 spans)
+  [5bcc0cb5bfb5] builder/builder 0.5ms (10 spans)
+    builder/BuildEngine.Run 0.1ms
+    builder/step.resolve 0.0ms
+    builder/resolve.execute 0.0ms
+    builder/step.compose 0.0ms
+    builder/compose.execute 0.0ms
+    builder/step.validate 0.0ms
+    builder/validate.execute 0.0ms
+    builder/step.bundle 0.0ms
+    builder/bundle.execute 0.0ms
+  [2846c23e1a1b] builder/builder 0.0ms (1 spans)
+  [c8337802d4f0] builder/builder 0.1ms (1 spans)
+  [58dc4cc6d035] builder/builder 0.0ms (1 spans)
+  [a326c782e32e] builder/builder 0.1ms (1 spans)
+
+envmanager: 14 traces, 15 spans
+  [9791e0009219] envmanager/envmanager 0.0ms (1 spans)
+  [0d56c68db211] envmanager/envmanager 0.2ms (2 spans)
+    envmanager/Orchestrator.CreateEnvironment 0.0ms
+  [946f6c217b58] envmanager/envmanager 0.0ms (1 spans)
+  [d6f2d7e7be48] envmanager/envmanager 0.0ms (1 spans)
+  [0ad0731c4300] envmanager/envmanager 0.0ms (1 spans)
+  [49393717e6c1] envmanager/envmanager 0.0ms (1 spans)
+  [191cb1b3e168] envmanager/envmanager 0.1ms (1 spans)
+  [9e69e320e979] envmanager/envmanager 0.0ms (1 spans)
+  [b65bf6b5e0a1] envmanager/envmanager 0.0ms (1 spans)
+  [ccbd4eb4fd72] envmanager/envmanager 0.1ms (1 spans)
+  [de1690466f58] envmanager/envmanager 0.1ms (1 spans)
+  [0ef231af03f4] envmanager/envmanager 0.0ms (1 spans)
+  [e8b756b5aa75] envmanager/envmanager 0.0ms (1 spans)
+  [0da3d76c232e] envmanager/envmanager 0.1ms (1 spans)
+
+gateway: 4 traces, 21 spans
+  [a0b1c2d3e4f5] gateway/proxy_handler 0.9ms (6 spans)
+    gateway/proxy_upstream 0.9ms
+    orchestrator/orchestrator 0.6ms
+    orchestrator/rpc/listPets 0.5ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [e79895112aa1] gateway/proxy_handler 0.8ms (6 spans)
+    gateway/proxy_upstream 0.8ms
+    orchestrator/orchestrator 0.6ms
+    orchestrator/rpc/listPets 0.5ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [b8f1e1c9d54b] gateway/proxy_handler 1.5ms (6 spans)
+    gateway/proxy_upstream 1.4ms
+    orchestrator/orchestrator 0.7ms
+    orchestrator/rpc/getPet 0.6ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [a96cd8d9bc0e] gateway/proxy_handler 1.2ms (3 spans)
+    gateway/proxy_upstream 1.2ms
+    orchestrator/orchestrator 0.1ms
+
+operator: no traces
+orchestrator: 5 traces, 25 spans
+  [b8f1e1c9d54b] gateway/proxy_handler 1.5ms (6 spans)
+    gateway/proxy_upstream 1.4ms
+    orchestrator/orchestrator 0.7ms
+    orchestrator/rpc/getPet 0.6ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [a96cd8d9bc0e] gateway/proxy_handler 1.2ms (3 spans)
+    gateway/proxy_upstream 1.2ms
+    orchestrator/orchestrator 0.1ms
+  [c2cb031fd5a9] orchestrator/orchestrator 1.8ms (4 spans)
+    orchestrator/rpc/listPets 1.6ms
+    orchestrator/HTTP GET 1.5ms
+    petstore-mock/petstore-mock 0.1ms
+  [a0b1c2d3e4f5] gateway/proxy_handler 0.9ms (6 spans)
+    gateway/proxy_upstream 0.9ms
+    orchestrator/orchestrator 0.6ms
+    orchestrator/rpc/listPets 0.5ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [e79895112aa1] gateway/proxy_handler 0.8ms (6 spans)
+    gateway/proxy_upstream 0.8ms
+    orchestrator/orchestrator 0.6ms
+    orchestrator/rpc/listPets 0.5ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+
+petstore-mock: 5 traces, 23 spans
+  [c2cb031fd5a9] orchestrator/orchestrator 1.8ms (4 spans)
+    orchestrator/rpc/listPets 1.6ms
+    orchestrator/HTTP GET 1.5ms
+    petstore-mock/petstore-mock 0.1ms
+  [a0b1c2d3e4f5] gateway/proxy_handler 0.9ms (6 spans)
+    gateway/proxy_upstream 0.9ms
+    orchestrator/orchestrator 0.6ms
+    orchestrator/rpc/listPets 0.5ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [e79895112aa1] gateway/proxy_handler 0.8ms (6 spans)
+    gateway/proxy_upstream 0.8ms
+    orchestrator/orchestrator 0.6ms
+    orchestrator/rpc/listPets 0.5ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+  [126ea0548411] petstore-mock/petstore-mock 0.2ms (1 spans)
+  [b8f1e1c9d54b] gateway/proxy_handler 1.5ms (6 spans)
+    gateway/proxy_upstream 1.4ms
+    orchestrator/orchestrator 0.7ms
+    orchestrator/rpc/getPet 0.6ms
+    orchestrator/HTTP GET 0.4ms
+    petstore-mock/petstore-mock 0.1ms
+
+registry: 2 traces, 2 spans
+  [22bcf8a2cf9d] registry/PublishPackage 0.2ms (1 spans)
+  [efff3ed10c58] registry/PublishPackage 0.1ms (1 spans)
+
+Total: 57 traces, 122 spans across 7 services

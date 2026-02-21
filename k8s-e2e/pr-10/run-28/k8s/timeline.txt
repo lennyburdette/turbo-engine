@@ -1,0 +1,33 @@
+00:00  Waiting for control plane deployments to roll out
+00:00  Control plane ready
+00:00  Setting up port-forwards
+00:06  Port-forwards healthy
+00:06  Publishing petstore-api package
+00:06  Published petstore-api@1.0.0
+00:06  Publishing petstore-orchestrator package
+00:06  Published petstore-orchestrator@1.0.0
+00:06  Creating test environment
+00:06  Created environment 21f168163cf1aa13c6042dcca8eacec6
+00:06  Triggering build
+00:06  Build bld-1771664309718-1 triggered
+00:06  Polling build status
+00:06  Build bld-1771664309718-1 succeeded
+00:06  Triggering operator reconciliation (2 components)
+00:11  Operator reconciliation complete
+00:11  Verifying operator-created K8s resources
+00:12  K8s resources verified
+00:12  Both pods running
+00:12  Testing petstore-api directly
+00:14  Petstore API responding (3 pets)
+00:14  Testing orchestrator directly
+00:16  Orchestrator RPC→REST working
+00:16  Checking gateway routing config
+00:18  Gateway routing active
+00:18  Testing end-to-end RPC call through full chain
+00:18  E2E RPC call passed (3 pets)
+00:18  Testing getPet RPC call
+00:19  getPet RPC passed
+00:19  Verifying trace propagation
+00:19  Trace propagation verified
+00:19  Capturing component logs
+00:19  Tests complete: 17 passed, 0 failed

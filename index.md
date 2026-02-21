@@ -9,6 +9,7 @@ title: CI Reports
 
 | Type | PR | Run | Link |
 |------|-----|-----|------|
+| k8s-e2e | pr-10 | run-28 | [View](./k8s-e2e/pr-10/run-28/) |
 | k8s-e2e | pr-10 | run-27 | [View](./k8s-e2e/pr-10/run-27/) |
 | k8s-e2e | pr-10 | run-26 | [View](./k8s-e2e/pr-10/run-26/) |
 | k8s-e2e | pr-push | run-25 | [View](./k8s-e2e/pr-push/run-25/) |
